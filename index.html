@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NSE Market Dashboard Pro</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Georgia, serif; background: #f0ede6; display: flex; justify-content: center; padding: 20px 12px; min-height: 100vh; }
+  .dash-wrap { width: 100%; max-width: 1000px; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.12); background: white; }
+  .top-bar { background: #1a2744; color: #f0e6c8; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+  .top-bar h1 { font-size: 18px; font-weight: 500; letter-spacing: 0.5px; }
+  .refresh-info { font-size: 12px; color: #a0b0c8; font-family: Arial, sans-serif; }
+  .refresh-info .timer { color: #f0e6c8; font-weight: bold; }
+
+  .main-tabs { display: flex; background: #233354; }
+  .main-tab { flex: 1; text-align: center; padding: 12px 8px; color: #a0b0c8; font-size: 13px; font-family: Arial, sans-serif; cursor: pointer; border-bottom: 3px solid transparent; user-select: none; }
+  .main-tab:hover { background: #2a3d63; }
+  .main-tab.active { color: #f0e6c8; border-bottom-color: #e8b94a; background: #2a3d63; font-weight: bold; }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; padding: 16px; background: #f7f5f0; }
+  .kpi { background: white; border: 0.5px solid #ddd; border-radius: 8px; padding: 12px 14px; cursor: pointer; transition: transform 0.1s, box-shadow 0.1s; }
+  .kpi:hover { transform: translateY(-2px); box-shadow: 0 3px 10px rgba(0,0,0,0.1); }
+  .kpi.selected { outline: 2px solid #e8b94a; }
+  .kpi-label { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 4px; font-family: Arial, sans-serif; }
+  .kpi-value { font-size: 19px; font-weight: 500; color: #1a2744; font-family: 'Courier New', monospace; }
+  .kpi-sub { font-size: 10px; color: #aaa; font-family: Arial, sans-serif; margin-top: 2px; }
+  .kpi-change { font-size: 12px; margin-top: 3px; font-weight: 500; font-family: Arial, sans-serif; }
+  .up { color: #2d7a4f; } .down { color: #c0392b; }
+  .kpi-border-up { border-top: 3px solid #2d7a4f; } .kpi-border-down { border-top: 3px solid #c0392b; }
+
+  .section { padding: 16px; background: white; border-top: 1px solid #eee; }
+  .section-title { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #888; margin-bottom: 10px; font-family: Arial, sans-serif; }
+  .chart-wrap { position: relative; width: 100%; height: 260px; }
+  .chart-wrap-sm { position: relative; width: 100%; height: 220px; }
+
+  .signals-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; }
+  .signal-card { border: 0.5px solid #ddd; border-radius: 8px; padding: 10px 12px; background: #fafafa; }
+  .signal-name { font-size: 12px; color: #555; font-family: Arial, sans-serif; margin-bottom: 4px; }
+  .signal-badge { display: inline-block; font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px; font-family: Arial, sans-serif; }
+  .badge-buy { background: #d4edda; color: #155724; }
+  .badge-sell { background: #f8d7da; color: #721c24; }
+  .badge-caution { background: #fff3cd; color: #856404; }
+  .signal-detail { font-size: 11px; color: #888; margin-top: 4px; font-family: Arial, sans-serif; }
+
+  .bottom-bar { background: #1a2744; color: #a0b0c8; font-size: 11px; padding: 10px 16px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px; font-family: Arial, sans-serif; }
+
+  .pill-row { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
+  .pill { font-size: 11px; padding: 5px 14px; border-radius: 20px; border: 0.5px solid #ddd; background: white; cursor: pointer; font-family: Arial, sans-serif; color: #555; user-select: none; }
+  .pill.active { background: #1a2744; color: #f0e6c8; border-color: #1a2744; }
+
+  select, input[type=text] { font-family: Arial, sans-serif; font-size: 13px; padding: 8px 12px; border: 1px solid #ccc; border-radius: 6px; background: white; color: #333; }
+  select:focus, input[type=text]:focus { outline: 2px solid #2e75b6; border-color: #2e75b6; }
+  .btn { font-family: Arial, sans-serif; font-size: 13px; padding: 8px 18px; border: none; border-radius: 6px; background: #1a2744; color: #f0e6c8; cursor: pointer; }
+  .btn:hover { background: #2a3d63; }
+  .btn:active { transform: scale(0.98); }
+
+  .control-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
+  .control-label { font-size: 12px; color: #555; font-family: Arial, sans-serif; }
+
+  .ratio-stat-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+  .ratio-stat { background: #f7f5f0; border-radius: 8px; padding: 10px 16px; min-width: 140px; }
+  .ratio-stat .rs-label { font-size: 10px; color: #888; text-transform: uppercase; font-family: Arial, sans-serif; letter-spacing: 0.5px; }
+  .ratio-stat .rs-value { font-size: 18px; color: #1a2744; font-family: 'Courier New', monospace; font-weight: bold; margin-top: 2px; }
+  .ratio-stat .rs-change { font-size: 11px; font-family: Arial, sans-serif; margin-top: 2px; }
+
+  .note-box { background: #fdf6e3; border-left: 3px solid #e8b94a; padding: 10px 14px; font-size: 12px; color: #6b5b2e; font-family: Arial, sans-serif; border-radius: 0 6px 6px 0; margin-bottom: 12px; }
+  .error-box { background: #f8d7da; border-left: 3px solid #c0392b; padding: 10px 14px; font-size: 12px; color: #721c24; font-family: Arial, sans-serif; border-radius: 0 6px 6px 0; margin: 10px 0; display: none; }
+
+  .spin { display: inline-block; animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  @media (max-width: 640px) {
+    .kpi-value { font-size: 16px; }
+    .main-tab { font-size: 11px; padding: 10px 4px; }
+  }
+</style>
+</head>
+<body>
+<div class="dash-wrap">
+  <div class="top-bar">
+    <h1>&#127470;&#127475; NSE Market Dashboard Pro</h1>
+    <div class="refresh-info">
+      <span id="last-update">Loading...</span> &nbsp;|&nbsp; Next refresh: <span class="timer" id="countdown">5:00</span>
+    </div>
+  </div>
+
+  <div class="main-tabs">
+    <div class="main-tab active" onclick="showTab('overview', this)">&#128202; Overview</div>
+    <div class="main-tab" onclick="showTab('ratios', this)">&#128300; Index Ratios</div>
+    <div class="main-tab" onclick="showTab('stocks', this)">&#128201; Stock vs Nifty</div>
+    <div class="main-tab" onclick="showTab('custom', this)">&#11088; Custom Analysis</div>
+  </div>
+
+  <!-- ============ TAB 1: OVERVIEW ============ -->
+  <div class="tab-content active" id="tab-overview">
+    <div class="kpi-grid" id="kpi-grid"></div>
+    <div class="section">
+      <p class="section-title" id="trend-title">Nifty 50 trend &mdash; click any card above to switch index</p>
+      <div class="pill-row">
+        <div class="pill" onclick="switchPeriod('1D',this)">1D</div>
+        <div class="pill" onclick="switchPeriod('1W',this)">1W</div>
+        <div class="pill active" onclick="switchPeriod('1M',this)">1M</div>
+        <div class="pill" onclick="switchPeriod('3M',this)">3M</div>
+        <div class="pill" onclick="switchPeriod('6M',this)">6M</div>
+        <div class="pill" onclick="switchPeriod('1Y',this)">1Y</div>
+        <div class="pill" onclick="switchPeriod('5Y',this)">5Y</div>
+      </div>
+      <div class="chart-wrap"><canvas id="trendChart" role="img" aria-label="Nifty 50 trend">Chart</canvas></div>
+      <div style="display:flex;gap:16px;font-size:12px;color:#888;padding:6px 0 0;font-family:Arial,sans-serif;">
+        <span>&#9644; Nifty 50</span><span style="color:#2e75b6">- - 20 DMA</span><span style="color:#c0392b">- - 50 DMA</span>
+      </div>
+    </div>
+    <div class="section">
+      <p class="section-title" id="signals-title">Technical signals</p>
+      <div class="signals-grid" id="signals-grid"></div>
+    </div>
+  </div>
+
+  <!-- ============ TAB 2: INDEX RATIOS ============ -->
+  <div class="tab-content" id="tab-ratios">
+    <div class="section">
+      <div class="note-box">Index-to-index ratios reveal relative strength. Rising ratio = numerator outperforming denominator.</div>
+      <div class="control-row">
+        <span class="control-label">Select ratio:</span>
+        <select id="ratio-select" onchange="renderIndexRatio()">
+          <option value="N50_NN50">Nifty 50 &divide; Nifty Next 50</option>
+          <option value="N50_SENSEX">Nifty 50 &divide; Sensex</option>
+          <option value="BANK_N50">Bank Nifty &divide; Nifty 50</option>
+          <option value="MID_N50">Nifty Midcap &divide; Nifty 50</option>
+          <option value="IT_N50">Nifty IT &divide; Nifty 50</option>
+          <option value="NN50_N50">Nifty Next 50 &divide; Nifty 50</option>
+        </select>
+        <span class="control-label">Period:</span>
+        <select id="ratio-period" onchange="renderIndexRatio()">
+          <option value="3M">3 Months</option>
+          <option value="6M" selected>6 Months</option>
+          <option value="1Y">1 Year</option>
+        </select>
+      </div>
+      <div class="ratio-stat-row" id="ratio-stats"></div>
+      <div class="chart-wrap"><canvas id="ratioChart" role="img" aria-label="Index ratio trend">Chart</canvas></div>
+    </div>
+  </div>
+
+  <!-- ============ TAB 3: STOCK VS NIFTY ============ -->
+  <div class="tab-content" id="tab-stocks">
+    <div class="section">
+      <div class="note-box">Stock &divide; Nifty 50 ratio. Stock price in numerator, Nifty 50 in denominator. Rising line = stock beating the index.</div>
+      <div class="control-row">
+        <span class="control-label">Nifty 50 stock:</span>
+        <select id="stock-select" onchange="renderStockRatio()">
+          <option value="RELIANCE.NS">Reliance Industries</option>
+          <option value="TCS.NS">TCS</option>
+          <option value="HDFCBANK.NS">HDFC Bank</option>
+          <option value="INFY.NS">Infosys</option>
+          <option value="ICICIBANK.NS">ICICI Bank</option>
+          <option value="LT.NS">L&amp;T</option>
+          <option value="ITC.NS">ITC</option>
+          <option value="SBIN.NS">SBI</option>
+          <option value="BHARTIARTL.NS">Bharti Airtel</option>
+          <option value="HINDUNILVR.NS">Hindustan Unilever</option>
+          <option value="BAJFINANCE.NS">Bajaj Finance</option>
+          <option value="MARUTI.NS">Maruti Suzuki</option>
+          <option value="TATAMOTORS.NS">Tata Motors</option>
+          <option value="TECHM.NS">Tech Mahindra</option>
+          <option value="WIPRO.NS">Wipro</option>
+        </select>
+        <span class="control-label">Period:</span>
+        <select id="stock-period" onchange="renderStockRatio()">
+          <option value="3M">3 Months</option>
+          <option value="6M" selected>6 Months</option>
+          <option value="1Y">1 Year</option>
+        </select>
+      </div>
+      <div class="ratio-stat-row" id="stock-stats"></div>
+      <div class="chart-wrap"><canvas id="stockChart" role="img" aria-label="Stock vs Nifty ratio">Chart</canvas></div>
+      <div class="error-box" id="stock-error"></div>
+    </div>
+  </div>
+
+  <!-- ============ TAB 4: CUSTOM ANALYSIS ============ -->
+  <div class="tab-content" id="tab-custom">
+    <div class="section">
+      <div class="note-box"><b>Step 1:</b> Search a company name to find its NSE symbol. <b>Step 2:</b> Pick its sector index and period. <b>Step 3:</b> Analyze &mdash; three charts: the stock itself, stock &divide; sector, and sector &divide; Nifty 50.</div>
+      <div class="control-row">
+        <span class="control-label">Company name:</span>
+        <input type="text" id="company-search" placeholder="e.g., Mazagon Dock" style="width:200px" />
+        <button class="btn" onclick="findSymbol()">&#128269; Find symbol</button>
+      </div>
+      <div class="pill-row" id="search-results"></div>
+      <div class="control-row">
+        <span class="control-label">NSE Symbol:</span>
+        <input type="text" id="custom-symbol" placeholder="e.g., MAZDOCK" style="width:130px;text-transform:uppercase" />
+        <span class="control-label">Sector index:</span>
+        <select id="custom-sector">
+          <option value="^CNXIT">Nifty IT</option>
+          <option value="^NSEBANK">Nifty Bank</option>
+          <option value="^CNXAUTO">Nifty Auto</option>
+          <option value="^CNXPHARMA">Nifty Pharma</option>
+          <option value="^CNXFMCG">Nifty FMCG</option>
+          <option value="^CNXMETAL">Nifty Metal</option>
+          <option value="^CNXENERGY">Nifty Energy</option>
+          <option value="^CNXINFRA">Nifty Infra</option>
+          <option value="^CNXPSUBANK">Nifty PSU Bank</option>
+          <option value="^CNXREALTY">Nifty Realty</option>
+          <option value="^CNXMEDIA">Nifty Media</option>
+          <option value="NIFTY_IND_DEFENCE.NS">Nifty India Defence</option>
+          <option value="^NSEI">Nifty 50 (default)</option>
+        </select>
+        <span class="control-label">Period:</span>
+        <select id="custom-period">
+          <option value="3M">3 Months</option>
+          <option value="6M" selected>6 Months</option>
+          <option value="1Y">1 Year</option>
+        </select>
+        <button class="btn" onclick="runCustomAnalysis()">Analyze</button>
+      </div>
+      <div class="ratio-stat-row" id="custom-stats"></div>
+      <p class="section-title" id="custom-title0" style="display:none">1 &mdash; Stock price performance</p>
+      <div class="chart-wrap-sm"><canvas id="customChart0" role="img" aria-label="Stock price trend">Chart</canvas></div>
+      <p class="section-title" id="custom-title1" style="display:none;margin-top:16px">2 &mdash; Stock &divide; sector index</p>
+      <div class="chart-wrap-sm"><canvas id="customChart1" role="img" aria-label="Stock vs sector ratio">Chart</canvas></div>
+      <p class="section-title" id="custom-title2" style="display:none;margin-top:16px">3 &mdash; Sector index &divide; Nifty 50</p>
+      <div class="chart-wrap-sm"><canvas id="customChart2" role="img" aria-label="Sector vs Nifty ratio">Chart</canvas></div>
+      <div class="error-box" id="custom-error"></div>
+    </div>
+  </div>
+
+  <div class="bottom-bar">
+    <span>Source: NSE/BSE via Google Finance backend | Auto-refresh every 5 min | Quotes may be delayed by exchange rules</span>
+    <span>Personal research only — not financial advice</span>
+  </div>
+</div>
+<script>
+/* ===================== CONFIG ===================== */
+const BACKEND = 'https://script.google.com/macros/s/AKfycbxbqcip3QPPRP5YUxngoWecv5nN2eKk5h9T2WYL2_vmTs3ix6Tjt_KTfKq2MDptrmPMcw/exec';
+const REFRESH_MS = 5 * 60 * 1000;
+const OZ_TO_10G = 10 / 31.1034768;
+
+const CORE_TICKERS = {
+  'Nifty 50':      { sym: '^NSEI' },
+  'Nifty Bank':    { sym: '^NSEBANK' },
+  'Nifty Midcap':  { sym: '^NSMIDCP50' },
+  'Nifty Next 50': { sym: '^NSMIDCP50', alt: '^NSEMDCP50' },
+  'Sensex':        { sym: '^BSESN' },
+  'Nifty IT':      { sym: '^CNXIT' },
+  'USD/INR':       { sym: 'USDINR=X' },
+  'Gold (USD/oz)': { sym: 'GC=F' },
+};
+
+let DATA = {};       // label -> [{date, close}]
+let CACHE = {};      // symbol -> [{date, close}]
+let trendChart=null, ratioChart=null, stockChart=null, cChart0=null, cChart1=null, cChart2=null;
+let currentPeriod = '1M';
+let selIndex = { label: 'Nifty 50', sym: '^NSEI' };
+const IDX_SYMBOLS = {
+  'Nifty 50': '^NSEI', 'Nifty Bank': '^NSEBANK', 'Nifty Midcap': '^NSMIDCP50',
+  'Nifty Next 50': '^NSEMDCP50', 'Sensex': '^BSESN',
+  'USD/INR': 'USDINR=X', 'Gold (10g)': 'GC=F'
+};
+const PERIODS = {
+  '1D': { range: '1d',  interval: '5m',  fmt: 'time',      dma: false },
+  '1W': { range: '5d',  interval: '30m', fmt: 'datetime',  dma: false },
+  '1M': { range: '1mo', interval: '1d',  fmt: 'date',      dma: true },
+  '3M': { range: '3mo', interval: '1d',  fmt: 'date',      dma: true },
+  '6M': { range: '6mo', interval: '1d',  fmt: 'date',      dma: true },
+  '1Y': { range: '1y',  interval: '1d',  fmt: 'date',      dma: true },
+  '5Y': { range: '5y',  interval: '1wk', fmt: 'monthyear', dma: true },
+};
+function fmtChartDate(d, fmt) {
+  if (fmt === 'time') return d.toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'});
+  if (fmt === 'datetime') return d.toLocaleDateString('en-IN', {day:'2-digit', month:'short'}) + ' ' + d.toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'});
+  if (fmt === 'monthyear') return d.toLocaleDateString('en-IN', {month:'short', year:'2-digit'});
+  return d.toLocaleDateString('en-IN', {day:'2-digit', month:'short'});
+}
+let countdownLeft = REFRESH_MS/1000;
+
+/* ===================== FETCH ===================== */
+async function fetchSym(symbol, range='1y', interval='1d') {
+  const key = symbol + '_' + range + '_' + interval;
+  const urls = [
+    BACKEND + '?symbol=' + encodeURIComponent(symbol) + '&range=' + range + '&interval=' + interval,
+    'https://query1.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(symbol) + '?interval=' + interval + '&range=' + range
+  ];
+  for (const url of urls) {
+    try {
+      const r = await fetch(url);
+      if (!r.ok) continue;
+      const j = await r.json();
+      if (!j.chart || !j.chart.result) continue;
+      const res = j.chart.result[0];
+      const out = res.timestamp.map((t,i) => ({
+        date: new Date(t*1000),
+        close: res.indicators.quote[0].close[i]
+      })).filter(d => d.close != null);
+      if (out.length) { CACHE[key] = out; return out; }
+    } catch(e) {}
+  }
+  return CACHE[key] || null;
+}
+
+/* ===================== HELPERS ===================== */
+function sma(arr, p) {
+  return arr.map((d,i) => i < p-1 ? null :
+    arr.slice(i-p+1,i+1).reduce((s,x)=>s+x.close,0)/p);
+}
+function fmtN(n, dec) {
+  if (n == null) return '-';
+  if (dec === undefined) dec = n > 1000 ? 0 : n > 10 ? 2 : 4;
+  return n.toLocaleString('en-IN', {maximumFractionDigits: dec, minimumFractionDigits: dec > 2 ? dec : 0});
+}
+function periodCutoff(p) {
+  const now = new Date(); const c = new Date(now);
+  if (p==='1M') c.setMonth(now.getMonth()-1);
+  else if (p==='3M') c.setMonth(now.getMonth()-3);
+  else if (p==='6M') c.setMonth(now.getMonth()-6);
+  else c.setFullYear(now.getFullYear()-1);
+  return c;
+}
+function alignSeries(a, b) {
+  const mapB = new Map(b.map(d => [d.date.toDateString(), d.close]));
+  const out = [];
+  a.forEach(d => {
+    const bc = mapB.get(d.date.toDateString());
+    if (bc != null) out.push({ date: d.date, a: d.close, b: bc, ratio: d.close / bc });
+  });
+  return out;
+}
+function lineChartConfig(labels, datasets, yFmtDec) {
+  return {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false },
+        tooltip: { mode: 'index', intersect: false } },
+      scales: {
+        x: { ticks: { maxTicksLimit: 6, color: '#888', font: {size:11} }, grid: { color: 'rgba(0,0,0,0.05)' } },
+        y: { ticks: { color: '#888', font: {size:11},
+             callback: v => fmtN(v, yFmtDec) }, grid: { color: 'rgba(0,0,0,0.05)' } }
+      }
+    }
+  };
+}
+
+/* ===================== TAB SWITCHING ===================== */
+function showTab(name, el) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.main-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  el.classList.add('active');
+  if (name === 'ratios' && !ratioChart) renderIndexRatio();
+  if (name === 'stocks' && !stockChart) renderStockRatio();
+}
+
+/* ===================== TAB 1: OVERVIEW ===================== */
+function renderKPIs() {
+  const grid = document.getElementById('kpi-grid');
+  grid.innerHTML = '';
+
+  const usdinr = DATA['USD/INR'];
+  const goldUsd = DATA['Gold (USD/oz)'];
+  let goldInr10g = null, goldInr10gPrev = null;
+  if (usdinr && goldUsd && usdinr.length > 1 && goldUsd.length > 1) {
+    const fx  = usdinr[usdinr.length-1].close;
+    const fxP = usdinr[usdinr.length-2].close;
+    goldInr10g     = goldUsd[goldUsd.length-1].close * OZ_TO_10G * fx;
+    goldInr10gPrev = goldUsd[goldUsd.length-2].close * OZ_TO_10G * fxP;
+  }
+
+  const cards = [
+    { label: 'Nifty 50',      data: DATA['Nifty 50'] },
+    { label: 'Nifty Bank',    data: DATA['Nifty Bank'] },
+    { label: 'Nifty Midcap',  data: DATA['Nifty Midcap'] },
+    { label: 'Sensex',        data: DATA['Sensex'] },
+    { label: 'USD/INR',       data: DATA['USD/INR'], dec: 2 },
+  ];
+
+  cards.forEach(cd => {
+    if (!cd.data || cd.data.length < 2) return;
+    const last = cd.data[cd.data.length-1].close;
+    const prev = cd.data[cd.data.length-2].close;
+    const chg  = (last-prev)/prev*100;
+    addKPI(grid, cd.label, fmtN(last, cd.dec), chg, '');
+  });
+
+  if (goldInr10g != null) {
+    const chg = (goldInr10g - goldInr10gPrev)/goldInr10gPrev*100;
+    addKPI(grid, 'Gold (10g)', '\u20B9' + fmtN(goldInr10g, 0), chg, 'Converted: COMEX &times; USD/INR');
+  }
+}
+function addKPI(grid, label, valueStr, chg, sub) {
+  const isUp = chg >= 0;
+  const div = document.createElement('div');
+  div.className = 'kpi ' + (isUp ? 'kpi-border-up' : 'kpi-border-down') +
+    (selIndex.label === label ? ' selected' : '');
+  div.title = 'Click to chart ' + label;
+  div.innerHTML = '<div class="kpi-label">' + label + '</div>' +
+    '<div class="kpi-value">' + valueStr + '</div>' +
+    '<div class="kpi-change ' + (isUp?'up':'down') + '">' + (isUp?'&#9650;':'&#9660;') + ' ' +
+    Math.abs(chg).toFixed(2) + '%</div>' +
+    (sub ? '<div class="kpi-sub">' + sub + '</div>' : '');
+  div.onclick = () => selectIndex(label, div);
+  grid.appendChild(div);
+}
+
+function selectIndex(label, cardEl) {
+  const sym = IDX_SYMBOLS[label];
+  if (!sym) return;
+  selIndex = { label: label, sym: sym };
+  document.querySelectorAll('.kpi').forEach(k => k.classList.remove('selected'));
+  if (cardEl) cardEl.classList.add('selected');
+  renderTrend(currentPeriod);
+  renderSignals();
+}
+
+async function renderTrend(period) {
+  const cfg = PERIODS[period] || PERIODS['1M'];
+  const titleEl = document.getElementById('trend-title');
+  const dispLabel = selIndex.label === 'Gold (10g)' ? 'Gold (USD/oz)' : selIndex.label;
+  titleEl.textContent = dispLabel + ' \u2014 loading ' + period + '...';
+
+  let d = await fetchSym(selIndex.sym, cfg.range, cfg.interval);
+
+  // Fallback: slice the 1y daily data we already have (works in demo mode too)
+  if ((!d || !d.length) && DATA[selIndex.label] && cfg.interval === '1d') {
+    d = DATA[selIndex.label].filter(x => x.date >= periodCutoff(period));
+  }
+  if (!d || !d.length) {
+    titleEl.textContent = dispLabel + ' \u2014 ' + period + ' data unavailable';
+    return;
+  }
+
+  titleEl.textContent = dispLabel + ' \u2014 ' + period + (cfg.dma ? ' (with 20/50 MA)' : '') + ' \u00b7 click any card above to switch';
+  const labels = d.map(x => fmtChartDate(x.date, cfg.fmt));
+  const dec = selIndex.sym === 'USDINR=X' ? 2 : 0;
+
+  const datasets = [
+    { label: dispLabel, data: d.map(x=>x.close), borderColor:'#1a2744', borderWidth:2, pointRadius:0, tension:0.3, fill: {target:'origin', above:'rgba(26,39,68,0.04)'} },
+  ];
+  if (cfg.dma && d.length > 50) {
+    datasets.push({ label:'20 MA', data: sma(d,20), borderColor:'#2e75b6', borderWidth:1.5, borderDash:[4,3], pointRadius:0, tension:0.3 });
+    datasets.push({ label:'50 MA', data: sma(d,50), borderColor:'#c0392b', borderWidth:1.5, borderDash:[4,3], pointRadius:0, tension:0.3 });
+  }
+
+  if (trendChart) { trendChart.destroy(); trendChart = null; }
+  trendChart = new Chart(document.getElementById('trendChart'), lineChartConfig(labels, datasets, dec));
+}
+function switchPeriod(p, el) {
+  currentPeriod = p;
+  document.querySelectorAll('#tab-overview .pill').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  renderTrend(p);
+}
+
+async function renderSignals() {
+  let d = await fetchSym(selIndex.sym, '1y', '1d');
+  if ((!d || d.length < 51) && DATA[selIndex.label]) d = DATA[selIndex.label];
+  const grid = document.getElementById('signals-grid');
+  grid.innerHTML = '';
+  document.getElementById('signals-title').textContent = 'Technical signals \u2014 ' + selIndex.label;
+  if (!d || d.length < 51) return;
+  const ma20a = sma(d,20), ma50a = sma(d,50);
+  const last = d[d.length-1].close;
+  const ma20 = ma20a[ma20a.length-1], ma50 = ma50a[ma50a.length-1];
+  const sig = last>ma20 && last>ma50 ? 'BUY' : last>ma50 ? 'CAUTION' : 'SELL';
+  const cls = sig==='BUY'?'badge-buy':sig==='CAUTION'?'badge-caution':'badge-sell';
+  const mom = ma20a[ma20a.length-1] > ma20a[ma20a.length-6] ? 'Rising' : 'Falling';
+  const items = [
+    { n:'Trend Signal', b:sig, c:cls, d:'20 & 50 DMA combined' },
+    { n:'vs 20-DMA', b:last>ma20?'ABOVE':'BELOW', c:last>ma20?'badge-buy':'badge-sell', d:'MA: '+fmtN(ma20,0) },
+    { n:'vs 50-DMA', b:last>ma50?'ABOVE':'BELOW', c:last>ma50?'badge-buy':'badge-sell', d:'MA: '+fmtN(ma50,0) },
+    { n:'Momentum', b:mom, c:mom==='Rising'?'badge-buy':'badge-sell', d:'20-DMA slope (5d)' },
+  ];
+  items.forEach(it => {
+    const div = document.createElement('div');
+    div.className = 'signal-card';
+    div.innerHTML = '<div class="signal-name">'+it.n+'</div><span class="signal-badge '+it.c+'">'+it.b+'</span><div class="signal-detail">'+it.d+'</div>';
+    grid.appendChild(div);
+  });
+}
+
+/* ===================== TAB 2: INDEX RATIOS ===================== */
+const RATIO_DEFS = {
+  N50_NN50:  { num: '^NSEI',    den: '^NSEMDCP50', label: 'Nifty 50 / Nifty Next 50' },
+  N50_SENSEX:{ num: '^NSEI',    den: '^BSESN',  label: 'Nifty 50 / Sensex' },
+  BANK_N50:  { num: '^NSEBANK', den: '^NSEI',   label: 'Bank Nifty / Nifty 50' },
+  MID_N50:   { num: '^NSMIDCP50', den: '^NSEI', label: 'Nifty Midcap / Nifty 50' },
+  IT_N50:    { num: '^CNXIT',   den: '^NSEI',   label: 'Nifty IT / Nifty 50' },
+  NN50_N50:  { num: '^NSEMDCP50', den: '^NSEI', label: 'Nifty Next 50 / Nifty 50' },
+};
+
+async function renderIndexRatio() {
+  const sel = document.getElementById('ratio-select').value;
+  const per = document.getElementById('ratio-period').value;
+  const def = RATIO_DEFS[sel];
+  const statRow = document.getElementById('ratio-stats');
+  statRow.innerHTML = '<div class="ratio-stat"><div class="rs-label">Loading</div><div class="rs-value"><span class="spin">&#8635;</span></div></div>';
+
+  const [numD, denD] = await Promise.all([fetchSym(def.num), fetchSym(def.den)]);
+  if (!numD || !denD) {
+    statRow.innerHTML = '<div class="ratio-stat"><div class="rs-label">Error</div><div class="rs-value" style="font-size:13px">Data unavailable on this network</div></div>';
+    return;
+  }
+  const aligned = alignSeries(numD, denD).filter(x => x.date >= periodCutoff(per));
+  if (aligned.length < 2) return;
+
+  const first = aligned[0].ratio, last = aligned[aligned.length-1].ratio;
+  const chg = (last-first)/first*100;
+  const hi = Math.max(...aligned.map(x=>x.ratio));
+  const lo = Math.min(...aligned.map(x=>x.ratio));
+
+  statRow.innerHTML = '';
+  [['Current ratio', fmtN(last,4), chg],
+   ['Period high', fmtN(hi,4), null],
+   ['Period low', fmtN(lo,4), null]].forEach(([l,v,c]) => {
+    const div = document.createElement('div');
+    div.className = 'ratio-stat';
+    div.innerHTML = '<div class="rs-label">'+l+'</div><div class="rs-value">'+v+'</div>' +
+      (c!=null ? '<div class="rs-change '+(c>=0?'up':'down')+'">'+(c>=0?'&#9650;':'&#9660;')+' '+Math.abs(c).toFixed(2)+'% over period</div>' : '');
+    statRow.appendChild(div);
+  });
+
+  const labels = aligned.map(x => x.date.toLocaleDateString('en-IN',{day:'2-digit',month:'short'}));
+  if (ratioChart) { ratioChart.destroy(); ratioChart = null; }
+  ratioChart = new Chart(document.getElementById('ratioChart'), lineChartConfig(labels, [
+    { label: def.label, data: aligned.map(x=>x.ratio), borderColor:'#1a6e54', borderWidth:2, pointRadius:0, tension:0.3, fill: {target:'origin', above:'rgba(26,110,84,0.05)'} },
+  ], 4));
+}
+
+/* ===================== TAB 3: STOCK VS NIFTY ===================== */
+async function renderStockRatio() {
+  const sym = document.getElementById('stock-select').value;
+  const per = document.getElementById('stock-period').value;
+  const name = document.getElementById('stock-select').selectedOptions[0].text;
+  const statRow = document.getElementById('stock-stats');
+  const errBox = document.getElementById('stock-error');
+  errBox.style.display = 'none';
+  statRow.innerHTML = '<div class="ratio-stat"><div class="rs-label">Loading</div><div class="rs-value"><span class="spin">&#8635;</span></div></div>';
+
+  const [stockD, niftyD] = await Promise.all([fetchSym(sym), fetchSym('^NSEI')]);
+  if (!stockD || !niftyD) {
+    statRow.innerHTML = '';
+    errBox.textContent = 'Could not fetch data for ' + name + '. Network may be blocking Yahoo Finance.';
+    errBox.style.display = 'block';
+    return;
+  }
+  const aligned = alignSeries(stockD, niftyD).filter(x => x.date >= periodCutoff(per));
+  if (aligned.length < 2) return;
+
+  const first = aligned[0], last = aligned[aligned.length-1];
+  const ratioChg = (last.ratio-first.ratio)/first.ratio*100;
+  const stockChg = (last.a-first.a)/first.a*100;
+  const niftyChg = (last.b-first.b)/first.b*100;
+
+  statRow.innerHTML = '';
+  [['Ratio ('+name.split(' ')[0]+' / Nifty50)', fmtN(last.ratio,5), ratioChg],
+   ['Stock price', '\u20B9'+fmtN(last.a,2), stockChg],
+   ['Nifty 50', fmtN(last.b,0), niftyChg]].forEach(([l,v,c]) => {
+    const div = document.createElement('div');
+    div.className = 'ratio-stat';
+    div.innerHTML = '<div class="rs-label">'+l+'</div><div class="rs-value">'+v+'</div>' +
+      '<div class="rs-change '+(c>=0?'up':'down')+'">'+(c>=0?'&#9650;':'&#9660;')+' '+Math.abs(c).toFixed(2)+'% over period</div>';
+    statRow.appendChild(div);
+  });
+
+  const labels = aligned.map(x => x.date.toLocaleDateString('en-IN',{day:'2-digit',month:'short'}));
+  if (stockChart) { stockChart.destroy(); stockChart = null; }
+  stockChart = new Chart(document.getElementById('stockChart'), lineChartConfig(labels, [
+    { label: name+' / Nifty 50', data: aligned.map(x=>x.ratio), borderColor:'#7b3f9d', borderWidth:2, pointRadius:0, tension:0.3, fill: {target:'origin', above:'rgba(123,63,157,0.05)'} },
+  ], 5));
+}
+
+/* ===================== TAB 4: CUSTOM ===================== */
+async function findSymbol() {
+  const q = document.getElementById('company-search').value.trim();
+  const box = document.getElementById('search-results');
+  const errBox = document.getElementById('custom-error');
+  errBox.style.display = 'none';
+  if (!q) { errBox.textContent = 'Type a company name first, e.g., Mazagon Dock'; errBox.style.display = 'block'; return; }
+  box.innerHTML = '<span class="control-label"><span class="spin">&#8635;</span> Searching...</span>';
+  try {
+    const r = await fetch(BACKEND + '?search=' + encodeURIComponent(q));
+    const j = await r.json();
+    const quotes = (j.quotes || []).filter(x => x.symbol &&
+      (x.symbol.endsWith('.NS') || x.symbol.endsWith('.BO')));
+    if (!quotes.length) {
+      box.innerHTML = '<span class="control-label">No NSE/BSE match. Try a shorter name (e.g., just "Mazagon").</span>';
+      return;
+    }
+    box.innerHTML = '';
+    const seen = new Set();
+    quotes.slice(0, 8).forEach(qt => {
+      const clean = qt.symbol.replace('.NS','').replace('.BO','');
+      if (seen.has(clean)) return;
+      seen.add(clean);
+      const chip = document.createElement('div');
+      chip.className = 'pill';
+      chip.innerHTML = '<b>' + clean + '</b> &middot; ' + (qt.shortname || qt.longname || qt.symbol);
+      chip.title = 'Click to use this symbol';
+      chip.onclick = () => {
+        document.getElementById('custom-symbol').value = clean;
+        box.innerHTML = '';
+        runCustomAnalysis();
+      };
+      box.appendChild(chip);
+    });
+  } catch(e) {
+    box.innerHTML = '<span class="control-label">Search unavailable. Type the NSE symbol directly below.</span>';
+  }
+}
+
+async function runCustomAnalysis() {
+  const raw = document.getElementById('custom-symbol').value.trim().toUpperCase();
+  const sector = document.getElementById('custom-sector').value;
+  const sectorName = document.getElementById('custom-sector').selectedOptions[0].text;
+  const per = document.getElementById('custom-period').value;
+  const errBox = document.getElementById('custom-error');
+  const statRow = document.getElementById('custom-stats');
+  errBox.style.display = 'none';
+  if (!raw) { errBox.textContent = 'Please enter or search for a stock symbol first.'; errBox.style.display = 'block'; return; }
+  const sym = raw.endsWith('.NS') ? raw : raw + '.NS';
+  statRow.innerHTML = '<div class="ratio-stat"><div class="rs-label">Loading</div><div class="rs-value"><span class="spin">&#8635;</span></div></div>';
+
+  const [stockD, sectorD, niftyD] = await Promise.all([fetchSym(sym), fetchSym(sector), fetchSym('^NSEI')]);
+  if (!stockD) {
+    statRow.innerHTML = '';
+    errBox.textContent = 'Symbol "' + raw + '" not found on NSE. Use the Find symbol search above.';
+    errBox.style.display = 'block';
+    return;
+  }
+  const cut = periodCutoff(per);
+  const stockSlice = stockD.filter(x => x.date >= cut);
+
+  /* ---- Chart 1: stock price ---- */
+  const sFirst = stockSlice[0], sLast = stockSlice[stockSlice.length-1];
+  const stockChg = (sLast.close - sFirst.close)/sFirst.close*100;
+
+  document.getElementById('custom-title0').style.display = 'block';
+  const lbl0 = stockSlice.map(x => x.date.toLocaleDateString('en-IN',{day:'2-digit',month:'short'}));
+  if (cChart0) { cChart0.destroy(); cChart0 = null; }
+  cChart0 = new Chart(document.getElementById('customChart0'), lineChartConfig(lbl0, [
+    { label: raw + ' price', data: stockSlice.map(x=>x.close), borderColor:'#1a2744', borderWidth:2, pointRadius:0, tension:0.3, fill: {target:'origin', above:'rgba(26,39,68,0.05)'} },
+    { label: '20 DMA', data: sma(stockSlice,20), borderColor:'#2e75b6', borderWidth:1.2, borderDash:[4,3], pointRadius:0, tension:0.3 },
+  ], 2));
+
+  /* ---- Chart 2: stock / sector ---- */
+  let r1 = null, a1 = [];
+  if (sectorD) {
+    a1 = alignSeries(stockD, sectorD).filter(x => x.date >= cut);
+    if (a1.length > 1) {
+      r1 = (a1[a1.length-1].ratio - a1[0].ratio)/a1[0].ratio*100;
+      document.getElementById('custom-title1').style.display = 'block';
+      const lbl1 = a1.map(x => x.date.toLocaleDateString('en-IN',{day:'2-digit',month:'short'}));
+      if (cChart1) { cChart1.destroy(); cChart1 = null; }
+      cChart1 = new Chart(document.getElementById('customChart1'), lineChartConfig(lbl1, [
+        { label: raw + ' / ' + sectorName, data: a1.map(x=>x.ratio), borderColor:'#1a6e54', borderWidth:2, pointRadius:0, tension:0.3, fill: {target:'origin', above:'rgba(26,110,84,0.05)'} },
+      ], 5));
+    }
+  }
+
+  /* ---- Chart 3: sector / Nifty 50 ---- */
+  let r2 = null, a2 = [];
+  if (sectorD && niftyD) {
+    a2 = alignSeries(sectorD, niftyD).filter(x => x.date >= cut);
+    if (a2.length > 1) {
+      r2 = (a2[a2.length-1].ratio - a2[0].ratio)/a2[0].ratio*100;
+      document.getElementById('custom-title2').style.display = 'block';
+      const lbl2 = a2.map(x => x.date.toLocaleDateString('en-IN',{day:'2-digit',month:'short'}));
+      if (cChart2) { cChart2.destroy(); cChart2 = null; }
+      cChart2 = new Chart(document.getElementById('customChart2'), lineChartConfig(lbl2, [
+        { label: sectorName + ' / Nifty 50', data: a2.map(x=>x.ratio), borderColor:'#b06a1f', borderWidth:2, pointRadius:0, tension:0.3, fill: {target:'origin', above:'rgba(176,106,31,0.05)'} },
+      ], 4));
+    }
+  }
+
+  /* ---- Stats row ---- */
+  statRow.innerHTML = '';
+  const stats = [
+    [raw + ' price', '\u20B9' + fmtN(sLast.close, 2), stockChg, per + ' return'],
+  ];
+  if (r1 != null) stats.push([raw + ' vs ' + sectorName, fmtN(a1[a1.length-1].ratio, 5), r1, r1 >= 0 ? 'Beating sector' : 'Lagging sector']);
+  if (r2 != null) stats.push([sectorName + ' vs Nifty 50', fmtN(a2[a2.length-1].ratio, 4), r2, r2 >= 0 ? 'Sector beating market' : 'Sector lagging market']);
+  if (!sectorD) {
+    errBox.textContent = 'Note: sector index "' + sectorName + '" data unavailable — showing stock chart only. Try another sector index.';
+    errBox.style.display = 'block';
+  }
+  stats.forEach(([l, v, c, verdict]) => {
+    const div = document.createElement('div');
+    div.className = 'ratio-stat';
+    div.innerHTML = '<div class="rs-label">' + l + '</div><div class="rs-value">' + v + '</div>' +
+      '<div class="rs-change ' + (c >= 0 ? 'up' : 'down') + '">' + (c >= 0 ? '&#9650;' : '&#9660;') + ' ' +
+      Math.abs(c).toFixed(2) + '% &middot; ' + verdict + '</div>';
+    statRow.appendChild(div);
+  });
+}
+
+/* ===================== REFRESH LOOP ===================== */
+function renderKPIsBackend(live, change) {
+  const grid = document.getElementById('kpi-grid');
+  grid.innerHTML = '';
+  const order = [
+    ['Nifty 50', 0], ['Nifty Bank', 0], ['Nifty Midcap', 0],
+    ['Nifty Next 50', 0], ['Sensex', 0], ['USD/INR', 2]
+  ];
+  order.forEach(([k, dec]) => {
+    const v = live[k];
+    if (v == null || isNaN(v)) return;
+    const c = (change && change[k] != null && !isNaN(change[k])) ? Number(change[k]) : 0;
+    addKPI(grid, k, fmtN(v, dec), c, '');
+  });
+  const g = live['Gold INR 10g'];
+  if (g != null && !isNaN(g)) {
+    const gc = (change && change['Gold INR 10g'] != null) ? Number(change['Gold INR 10g']) : 0;
+    addKPI(grid, 'Gold (10g)', '\u20B9' + fmtN(g, 0), gc, 'COMEX &times; USD/INR');
+  }
+}
+
+async function loadBackendCore() {
+  try {
+    const r = await fetch(BACKEND);
+    if (!r.ok) return false;
+    const j = await r.json();
+    if (!j || !j.live) return false;
+    const daily = (j.niftyDaily || []).map(x => ({ date: new Date(x.d), close: Number(x.c) }))
+      .filter(x => !isNaN(x.close));
+    if (daily.length) { DATA['Nifty 50'] = daily; CACHE['^NSEI_1y_1d'] = daily; }
+    renderKPIsBackend(j.live, j.change || {});
+    if (daily.length) { renderTrend(currentPeriod); renderSignals(); }
+    document.getElementById('last-update').textContent =
+      'NSE/BSE data \u00b7 Updated ' + new Date().toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit'}) + ' IST';
+    if (document.getElementById('tab-ratios').classList.contains('active')) renderIndexRatio();
+    if (document.getElementById('tab-stocks').classList.contains('active')) renderStockRatio();
+    return true;
+  } catch(e) { return false; }
+}
+
+async function loadCore() {
+  document.getElementById('last-update').innerHTML = '<span class="spin">&#8635;</span> Fetching...';
+
+  const backendOk = await loadBackendCore();
+  if (backendOk) { countdownLeft = REFRESH_MS/1000; return; }
+
+  const entries = Object.entries(CORE_TICKERS);
+  const results = await Promise.all(entries.map(async ([label, cfg]) => {
+    let d = await fetchSym(cfg.sym);
+    if (!d && cfg.alt) d = await fetchSym(cfg.alt);
+    return [label, d];
+  }));
+  let any = false;
+  results.forEach(([label, d]) => { if (d && d.length) { DATA[label] = d; any = true; } });
+
+  if (any) {
+    renderKPIs();
+    renderTrend(currentPeriod);
+    renderSignals();
+    document.getElementById('last-update').textContent =
+      'Updated ' + new Date().toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit'}) + ' IST';
+    if (document.getElementById('tab-ratios').classList.contains('active')) renderIndexRatio();
+    if (document.getElementById('tab-stocks').classList.contains('active')) renderStockRatio();
+  } else {
+    loadDemo();
+    document.getElementById('last-update').textContent = 'Demo mode — network blocking live data';
+  }
+  countdownLeft = REFRESH_MS/1000;
+}
+
+function loadDemo() {
+  const n = 260;
+  const dates = Array.from({length:n},(_,i)=>{ const d=new Date(); d.setDate(d.getDate()-(n-i)); return d; });
+  function gbm(s0,vol) { let v=s0; return dates.map(date=>{ v*=(1+(Math.random()-0.49)*(vol||0.015)); return {date,close:v}; }); }
+  DATA = {
+    'Nifty 50': gbm(22000), 'Nifty Bank': gbm(47000), 'Nifty Midcap': gbm(12000),
+    'Nifty Next 50': gbm(65000), 'Sensex': gbm(73000), 'Nifty IT': gbm(35000),
+    'USD/INR': gbm(83.5, 0.004), 'Gold (USD/oz)': gbm(2300, 0.01),
+  };
+  CACHE['^NSEI_1y_1d'] = DATA['Nifty 50'];
+  CACHE['^NSEBANK_1y_1d'] = DATA['Nifty Bank'];
+  CACHE['^NSMIDCP50_1y_1d'] = DATA['Nifty Midcap'];
+  CACHE['^NSEMDCP50_1y_1d'] = DATA['Nifty Next 50'];
+  CACHE['^BSESN_1y_1d'] = DATA['Sensex'];
+  CACHE['^CNXIT_1y_1d'] = DATA['Nifty IT'];
+  renderKPIs(); renderTrend('1M'); renderSignals();
+}
+
+setInterval(() => {
+  countdownLeft--;
+  if (countdownLeft <= 0) { loadCore(); return; }
+  const m = Math.floor(countdownLeft/60), s = countdownLeft%60;
+  document.getElementById('countdown').textContent = m + ':' + String(s).padStart(2,'0');
+}, 1000);
+
+document.getElementById('custom-symbol').addEventListener('keydown', e => {
+  if (e.key === 'Enter') runCustomAnalysis();
+});
+document.getElementById('company-search').addEventListener('keydown', e => {
+  if (e.key === 'Enter') findSymbol();
+});
+
+loadCore();
+</script>
+</body>
+</html>
