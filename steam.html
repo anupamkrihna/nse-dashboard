@@ -828,12 +828,23 @@ async function loadStock(stock) {
 
   try {
     // Single GAS call returns both chart and summary in one round trip
-    const gasData   = await fetchStockFromGAS(stock.yf);
+    const gasData = await fetchStockFromGAS(stock.yf);
+
+    // Debug: surface exactly what came back if structure is unexpected
+    if (!gasData) throw new Error('GAS returned empty response');
+    if (gasData.error) throw new Error('GAS error: ' + gasData.error);
+    if (!gasData.summary) throw new Error('GAS response missing summary field. Keys received: ' + Object.keys(gasData).join(', '));
+
     const chartData   = gasData.chart;
     const summaryData = gasData.summary;
     renderStockData(stock, chartData, summaryData);
   } catch(e) {
-    document.getElementById('steamLoading').innerHTML = `<div style="display:flex;flex-direction:column;gap:10px"><span style="color:var(--red)">⚠ All data sources failed for ${stock.sym}.</span><span style="color:var(--muted);font-size:12px">The GAS backend is unreachable. Check your Apps Script deployment is set to 'Anyone' access.</span><button onclick="loadStock(currentStock)" style="background:var(--surface2);border:1px solid var(--border2);color:var(--accent);border-radius:var(--radius);padding:7px 16px;cursor:pointer;font-size:13px;width:fit-content">↻ Retry now</button></div>`;
+    document.getElementById('steamLoading').innerHTML = `<div style="display:flex;flex-direction:column;gap:10px">
+      <span style="color:var(--red)">⚠ Failed to load data for ${stock.sym}</span>
+      <span style="color:var(--amber);font-size:12px;font-family:monospace">${e.message}</span>
+      <span style="color:var(--muted);font-size:11px">Check: GAS deployed as "Anyone"? New version selected?</span>
+      <button onclick="loadStock(currentStock)" style="background:var(--surface2);border:1px solid var(--border2);color:var(--accent);border-radius:var(--radius);padding:7px 16px;cursor:pointer;font-size:13px;width:fit-content">↻ Retry</button>
+    </div>`;
   }
 }
 
