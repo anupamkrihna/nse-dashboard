@@ -182,7 +182,7 @@
   </div>
   <div class="header-right">
     <div class="live-dot"></div>
-    <span class="live-label">Yahoo Finance · 4-proxy chain</span>
+    <span class="live-label">Yahoo Finance · GAS backend</span>
   </div>
 </header>
 
@@ -750,87 +750,43 @@ document.querySelectorAll('.tab').forEach(tab => {
 });
 
 // ─────────────────────────────────────────────
-// PROXY FALLBACK CHAIN — 4 proxies, tried in order
-// Each wraps the Yahoo Finance URL differently.
-// If one is rate-limited or down, the next is tried.
+// GAS BACKEND — routes through your existing
+// Google Apps Script backend (same one used by
+// dashboard.html). Runs on Google's servers so
+// Yahoo Finance never rate-limits it.
 // ─────────────────────────────────────────────
-const PROXIES = [
-  {
-    name: 'allorigins',
-    wrap: url => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
-    parse: async r => { const j = await r.json(); return JSON.parse(j.contents); }
-  },
-  {
-    name: 'corsproxy.io',
-    wrap: url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
-    parse: async r => r.json()
-  },
-  {
-    name: 'thingproxy',
-    wrap: url => `https://thingproxy.freeboard.io/fetch/${url}`,
-    parse: async r => r.json()
-  },
-  {
-    name: 'allorigins-raw',
-    wrap: url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-    parse: async r => r.json()
-  }
-];
-
-let lastWorkingProxyIdx = 0; // remember which proxy worked last
+const BACKEND = 'https://script.google.com/macros/s/AKfycbxbqcip3QPPRP5YUxngoWecv5nN2eKk5h9T2WYL2_vmTs3ix6Tjt_KTfKq2MDptrmPMcw/exec';
 
 function setProxyStatus(name, status) {
   const el = document.getElementById('proxyStatus');
   if (!el) return;
   const colors = { trying: '#f6c05c', ok: '#3ecf8e', fail: '#f56565' };
-  el.textContent = status === 'ok' ? `via ${name}` : status === 'trying' ? `trying ${name}…` : `${name} failed`;
+  el.textContent = status === 'ok' ? `via ${name}` : status === 'trying' ? `${name}…` : `${name} failed`;
   el.style.color = colors[status] || '#7a7f94';
 }
 
-async function fetchWithFallback(url) {
-  // Start from last working proxy for speed, then try others on failure
-  const order = [];
-  for (let i = 0; i < PROXIES.length; i++) {
-    order.push((lastWorkingProxyIdx + i) % PROXIES.length);
-  }
-
-  let lastErr = null;
-  for (const idx of order) {
-    const proxy = PROXIES[idx];
-    setProxyStatus(proxy.name, 'trying');
-    try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 8000); // 8s timeout per proxy
-      const r = await fetch(proxy.wrap(url), { signal: controller.signal });
-      clearTimeout(timeout);
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      const data = await proxy.parse(r);
-      if (!data) throw new Error('Empty response');
-      // Check Yahoo returned actual data, not an error page
-      if (data.chart?.error || data.quoteSummary?.error) {
-        throw new Error(data.chart?.error?.description || data.quoteSummary?.error?.description || 'Yahoo error');
-      }
-      lastWorkingProxyIdx = idx;
-      setProxyStatus(proxy.name, 'ok');
-      return data;
-    } catch(e) {
-      setProxyStatus(proxy.name, 'fail');
-      lastErr = e;
-      // Small delay before trying next proxy
-      await new Promise(res => setTimeout(res, 300));
-    }
-  }
-  throw new Error(`All proxies failed. Last error: ${lastErr?.message}`);
+// Single call to GAS backend — returns { summary, chart } for a symbol
+async function fetchStockFromGAS(sym) {
+  const clean = sym.replace('.NS', '').replace('.BO', '').toUpperCase();
+  setProxyStatus('GAS backend', 'trying');
+  const url = `${BACKEND}?action=stock&symbol=${encodeURIComponent(clean)}`;
+  const r   = await fetch(url);
+  if (!r.ok) throw new Error(`GAS returned HTTP ${r.status}`);
+  const data = await r.json();
+  if (data.error) throw new Error(data.error);
+  setProxyStatus('GAS backend', 'ok');
+  return data; // { symbol, summary, chart, ts }
 }
 
+// Wrappers matching the call signatures used in loadStock()
 async function fetchYF(yfSym) {
-  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yfSym)}?interval=1d&range=1y`;
-  return fetchWithFallback(url);
+  const data = await fetchStockFromGAS(yfSym);
+  return data.chart;
 }
 
 async function fetchYFSummary(yfSym) {
-  const url = `https://query1.finance.yahoo.com/v10/finance/quoteSummary/${encodeURIComponent(yfSym)}?modules=summaryDetail,defaultKeyStatistics,financialData,price,assetProfile`;
-  return fetchWithFallback(url);
+  const data = await fetchStockFromGAS(yfSym);
+  return data.summary;
 }
 
 // ─────────────────────────────────────────────
@@ -869,13 +825,13 @@ async function loadStock(stock) {
   document.getElementById('tab-steam').classList.add('active');
 
   try {
-    const [chartData, summaryData] = await Promise.all([
-      fetchYF(stock.yf),
-      fetchYFSummary(stock.yf)
-    ]);
+    // Single GAS call returns both chart and summary in one round trip
+    const gasData   = await fetchStockFromGAS(stock.yf);
+    const chartData   = gasData.chart;
+    const summaryData = gasData.summary;
     renderStockData(stock, chartData, summaryData);
   } catch(e) {
-    document.getElementById('steamLoading').innerHTML = `<div style="display:flex;flex-direction:column;gap:10px"><span style="color:var(--red)">⚠ All data sources failed for ${stock.sym}.</span><span style="color:var(--muted);font-size:12px">Tried 4 proxies — all rate-limited or timed out. This is temporary.</span><button onclick="loadStock(currentStock)" style="background:var(--surface2);border:1px solid var(--border2);color:var(--accent);border-radius:var(--radius);padding:7px 16px;cursor:pointer;font-size:13px;width:fit-content">↻ Retry now</button></div>`;
+    document.getElementById('steamLoading').innerHTML = `<div style="display:flex;flex-direction:column;gap:10px"><span style="color:var(--red)">⚠ All data sources failed for ${stock.sym}.</span><span style="color:var(--muted);font-size:12px">The GAS backend is unreachable. Check your Apps Script deployment is set to 'Anyone' access.</span><button onclick="loadStock(currentStock)" style="background:var(--surface2);border:1px solid var(--border2);color:var(--accent);border-radius:var(--radius);padding:7px 16px;cursor:pointer;font-size:13px;width:fit-content">↻ Retry now</button></div>`;
   }
 }
 
