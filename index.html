@@ -6,16 +6,16 @@
 <title>NSE Pro — Market Intelligence Suite</title>
 <style>
   :root {
-    --bg: #0a0c10;
-    --surface: #10131a;
-    --surface2: #161923;
-    --border: rgba(255,255,255,0.07);
-    --border2: rgba(255,255,255,0.12);
-    --text: #dde1ec;
-    --muted: #6b7080;
-    --accent: #4f8ef7;
-    --green: #3ecf8e;
-    --red: #f05454;
+    --bg: #f5f6f8;
+    --surface: #ffffff;
+    --surface2: #eef0f4;
+    --border: rgba(0,0,0,0.08);
+    --border2: rgba(0,0,0,0.13);
+    --text: #1a1d24;
+    --muted: #7a7f8e;
+    --accent: #e8b84b;        /* gold */
+    --green: #1a9e68;
+    --red: #c0392b;
     --amber: #f6c05c;
     --gold: #e8b84b;
     --font-mono: 'JetBrains Mono','Fira Code','Courier New',monospace;
@@ -165,7 +165,7 @@
     transform: translateY(-3px);
     box-shadow: 0 20px 60px rgba(0,0,0,0.5);
   }
-  .card-1:hover { border-color: rgba(79,142,247,0.5); }
+  .card-1:hover { border-color: rgba(232,184,75,0.5); }
   .card-2:hover { border-color: rgba(62,207,142,0.5); }
 
   /* Glow corner accent */
@@ -179,7 +179,7 @@
     transition: opacity 0.3s;
   }
   .card:hover::before { opacity: 0.12; }
-  .card-1::before { background: #4f8ef7; }
+  .card-1::before { background: #e8b84b; }
   .card-2::before { background: #3ecf8e; }
 
   .card-eyebrow {
@@ -226,7 +226,7 @@
     border-radius: 5px;
     font-weight: 500;
   }
-  .card-1 .feat-tag { background: rgba(79,142,247,0.1); color: #7eb3ff; }
+  .card-1 .feat-tag { background: rgba(232,184,75,0.1); color: #f0cc7a; }
   .card-2 .feat-tag { background: rgba(62,207,142,0.1); color: #6de8b0; }
 
   .card-cta {
@@ -241,7 +241,7 @@
     transition: gap 0.2s;
   }
   .card:hover .card-cta { gap: 12px; }
-  .card-1 .card-cta { background: rgba(79,142,247,0.12); color: var(--accent); border: 1px solid rgba(79,142,247,0.25); }
+  .card-1 .card-cta { background: rgba(232,184,75,0.12); color: var(--accent); border: 1px solid rgba(232,184,75,0.25); }
   .card-2 .card-cta { background: rgba(62,207,142,0.1); color: var(--green); border: 1px solid rgba(62,207,142,0.2); }
 
   .arrow { font-size: 16px; transition: transform 0.2s; }
