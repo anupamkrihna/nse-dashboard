@@ -779,49 +779,10 @@ async function fetchChartFromGAS(yfSym) {
 
 // ── Fetch 2: Fundamentals direct from browser to Yahoo ──
 // Browser is not IP-blocked. Tries quoteSummary then quote endpoint.
+// Fundamentals come from GAS (which has the embedded FUND table + tries Yahoo)
+// This function is kept as a no-op — all data comes via fetchStockFromGAS below
 async function fetchFundamentalsFromBrowser(yfSym) {
-  const nsSym = yfSym.includes('.') ? yfSym : yfSym + '.NS';
-
-  // Try quoteSummary with all modules
-  const urls = [
-    `https://query1.finance.yahoo.com/v10/finance/quoteSummary/${encodeURIComponent(nsSym)}?modules=summaryDetail%2CdefaultKeyStatistics%2CfinancialData`,
-    `https://query2.finance.yahoo.com/v10/finance/quoteSummary/${encodeURIComponent(nsSym)}?modules=summaryDetail%2CdefaultKeyStatistics%2CfinancialData`,
-    `https://query1.finance.yahoo.com/v10/finance/quoteSummary/${encodeURIComponent(nsSym)}?modules=price%2CdefaultKeyStatistics`,
-  ];
-
-  for (const url of urls) {
-    try {
-      const r = await fetch(url, { headers: { 'Accept': 'application/json' } });
-      if (!r.ok) continue;
-      const data = await r.json();
-      if (!data.quoteSummary || data.quoteSummary.error || !data.quoteSummary.result) continue;
-      const res = data.quoteSummary.result[0];
-      const sd  = res.summaryDetail        || {};
-      const ks  = res.defaultKeyStatistics || {};
-      const fd  = res.financialData        || {};
-      const pr  = res.price                || {};
-      const rv  = (o, k) => o[k] ? (o[k].raw !== undefined ? o[k].raw : o[k]) : null;
-
-      const fund = {
-        pe:            rv(sd,'trailingPE')  || rv(ks,'trailingPE')  || rv(pr,'trailingPE'),
-        pb:            rv(ks,'priceToBook') || rv(pr,'priceToBook'),
-        eps:           rv(ks,'trailingEps'),
-        divYield:      rv(sd,'dividendYield'),
-        beta:          rv(sd,'beta'),
-        profitMargin:  rv(fd,'profitMargins'),
-        revenueGrowth: rv(fd,'revenueGrowth'),
-        revenue:       rv(fd,'totalRevenue'),
-        netIncome:     rv(fd,'netIncomeToCommon'),
-        insiderHold:   rv(ks,'heldPercentInsiders'),
-        instHold:      rv(ks,'heldPercentInstitutions'),
-        marketCap:     rv(pr,'marketCap')
-      };
-
-      // Accept if we got at least PE or revenue
-      if (fund.pe || fund.revenue || fund.pb) return fund;
-    } catch(e) { /* try next */ }
-  }
-  return null; // all failed — chart-only mode
+  return null; // handled inside fetchStockFromGAS
 }
 
 // ─────────────────────────────────────────────
@@ -851,53 +812,22 @@ async function loadStock(stock) {
   document.getElementById('tab-steam').classList.add('active');
 
   try {
-    setProxyStatus('Fetching chart + fundamentals…', '#f6c05c');
+    setProxyStatus('Loading…', '#f6c05c');
 
-    // Fire both in parallel — chart via GAS, fundamentals direct from browser
-    const [chartData, fund] = await Promise.all([
-      fetchChartFromGAS(stock.yf),
-      fetchFundamentalsFromBrowser(stock.yf)
-    ]);
+    // Single GAS call — returns chart (Yahoo v8) + fundamentals (embedded FUND table)
+    const nsSym  = stock.yf.includes('.') ? stock.yf : stock.yf + '.NS';
+    const gasUrl = `${BACKEND}?action=stock&symbol=${encodeURIComponent(nsSym)}`;
+    const gasResp = await fetch(gasUrl);
+    if (!gasResp.ok) throw new Error(`GAS returned HTTP ${gasResp.status}`);
+    const gasData = await gasResp.json();
+    if (gasData.error) throw new Error(gasData.error);
+    if (!gasData.summary) throw new Error('No summary in GAS response');
 
-    // Build unified summary from chart meta + browser fundamentals
-    const meta    = chartData.chart.result[0].meta;
-    const q       = chartData.chart.result[0].indicators.quote[0];
-    const closes  = (q.close  || []).filter(c => c != null);
-    const volumes = (q.volume || []).filter(v => v != null);
-    const avgVol  = volumes.length ? Math.round(volumes.slice(-60).reduce((a,b)=>a+b,0) / Math.min(volumes.length,60)) : null;
-    const return1y = closes.length >= 2 ? (closes[closes.length-1] - closes[0]) / closes[0] : null;
+    const chartData   = gasData.chart;
+    const summaryData = gasData.summary;
 
-    const summaryData = {
-      // From chart meta (always available)
-      regularMarketPrice:         meta.regularMarketPrice,
-      regularMarketChangePercent: meta.regularMarketChangePercent || null,
-      regularMarketVolume:        meta.regularMarketVolume        || null,
-      fiftyTwoWeekHigh:           meta.fiftyTwoWeekHigh           || null,
-      fiftyTwoWeekLow:            meta.fiftyTwoWeekLow            || null,
-      marketCap:                  (fund && fund.marketCap) || meta.marketCap || null,
-      averageVolume:              avgVol,
-      return1y:                   return1y,
-      longName:                   meta.longName || meta.shortName || stock.sym,
-      currency:                   meta.currency  || 'INR',
-      exchangeName:               meta.exchangeName || 'NSE',
-      // From browser fundamentals fetch (available when not blocked)
-      trailingPE:                 fund ? fund.pe            : null,
-      priceToBook:                fund ? fund.pb            : null,
-      epsTrailingTwelveMonths:    fund ? fund.eps           : null,
-      dividendYield:              fund ? fund.divYield      : null,
-      beta:                       fund ? fund.beta          : (meta.beta || null),
-      profitMargins:              fund ? fund.profitMargin  : null,
-      revenueGrowth:              fund ? fund.revenueGrowth : null,
-      totalRevenue:               fund ? fund.revenue       : null,
-      netIncome:                  fund ? fund.netIncome     : null,
-      heldPercentInsiders:        fund ? fund.insiderHold   : null,
-      heldPercentInstitutions:    fund ? fund.instHold      : null,
-      nseDataLoaded:              fund !== null,
-      fundSource:                 fund ? 'browser-direct' : 'chart-only'
-    };
-
-    const fundStatus = fund ? '✓ Chart + Fundamentals' : '⚠ Chart only';
-    setProxyStatus(fundStatus, fund ? '#3ecf8e' : '#f6c05c');
+    const hasFund = summaryData.nseDataLoaded;
+    setProxyStatus(hasFund ? '✓ Chart + Fundamentals' : '⚠ Chart only (add to FUND table for full data)', hasFund ? '#1a9e68' : '#f6c05c');
 
     renderStockData(stock, chartData, summaryData);
   } catch(e) {
