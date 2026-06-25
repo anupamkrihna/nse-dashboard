@@ -306,7 +306,7 @@
         <div class="gauge-metrics">
           <div class="gauge-metric"><div class="gm-label">1Y return</div><div class="gm-val" id="g5ret1y">–</div></div>
           <div class="gauge-metric"><div class="gm-label">YTD return</div><div class="gm-val" id="g5ytd">–</div></div>
-          <div class="gauge-metric"><div class="gm-label">Insider hold</div><div class="gm-val" id="g5ins">–</div></div>
+          <div class="gauge-metric"><div class="gm-label">Promoter hold</div><div class="gm-val" id="g5ins">–</div></div>
           <div class="gauge-metric"><div class="gm-label">Inst. hold</div><div class="gm-val" id="g5inst">–</div></div>
         </div>
         <div class="gauge-analysis" id="g5analysis"></div>
@@ -1043,7 +1043,7 @@ function renderStockData(stock, chartData, summaryData) {
     document.getElementById('badge5').className = 'badge ' + scores[4].cls;
     document.getElementById('g5ret1y').textContent = return1y != null ? (return1y >= 0 ? '+' : '') + (return1y*100).toFixed(1)+'%' : '–';
     document.getElementById('g5ytd').textContent = '–';
-    document.getElementById('g5ins').textContent = insiderHold != null ? pct(insiderHold) : '–';
+    document.getElementById('g5ins').textContent = insiderHold != null ? (insiderHold*100).toFixed(1)+'%' : '–';
     document.getElementById('g5inst').textContent = instHold != null ? (instHold*100).toFixed(1)+'% del.' : '–';
     document.getElementById('g5analysis').innerHTML = `${return1y != null ? `<strong>1Y return: ${(return1y*100).toFixed(1)}% vs Nifty 50 (~15% typical).</strong> ${return1y > 0.3 ? 'Strong outperformance — institutional preference and sector momentum intact. Watch for RS score deceleration as the key warning signal.' : return1y > 0 ? 'Moderate outperformance — the stock is moving with the market but not aggressively leading.' : 'Underperformance vs market. Check if this is a temporary dip or structural derating.'}` : ''} ${instHold != null ? `Delivery-to-traded: ${(instHold*100).toFixed(1)}% — a proxy for genuine accumulation vs speculative interest.` : 'Delivery data from NSE loading.'}`;
 
@@ -1060,7 +1060,7 @@ function renderStockData(stock, chartData, summaryData) {
     // Show data source status
     const nseLoaded = s.nseDataLoaded;
     const proxyEl = document.getElementById('proxyStatus');
-    if (proxyEl) proxyEl.textContent = nseLoaded ? 'Yahoo + NSE India' : 'Yahoo only (NSE data unavailable)';
+    if (proxyEl) proxyEl.textContent = nseLoaded ? 'Yahoo + Screener.in' : 'Yahoo only (Screener unavailable)';
 
   } catch(err) {
     document.getElementById('steamLoading').innerHTML = `<span style="color:var(--amber)">⚠ Partial data loaded. Some metrics may be unavailable. <br><small style="color:var(--muted)">${err.message}</small></span>`;
