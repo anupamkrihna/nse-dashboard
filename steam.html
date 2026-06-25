@@ -6,20 +6,21 @@
 <title>NSE Stock Intelligence</title>
 <style>
   :root {
-    --bg: #0d0f14;
-    --surface: #13161e;
-    --surface2: #1a1d28;
-    --border: rgba(255,255,255,0.07);
-    --border2: rgba(255,255,255,0.13);
-    --text: #e8eaf0;
-    --muted: #7a7f94;
-    --accent: #4f8ef7;
-    --accent2: #2d5fcf;
-    --green: #3ecf8e;
-    --red: #f56565;
+    /* ── Matched to NSE Dashboard Pro colour scheme ── */
+    --bg: #f5f6f8;
+    --surface: #ffffff;
+    --surface2: #eef0f4;
+    --border: rgba(0,0,0,0.08);
+    --border2: rgba(0,0,0,0.13);
+    --text: #1a1d24;
+    --muted: #7a7f8e;
+    --accent: #e8b84b;        /* gold — same as dashboard */
+    --accent2: #c49a2e;
+    --green: #1a9e68;
+    --red: #c0392b;
     --amber: #f6c05c;
-    --tag-bg: rgba(79,142,247,0.13);
-    --tag-text: #7eb3ff;
+    --tag-bg: rgba(232,184,75,0.15);
+    --tag-text: #f0cc7a;
     --radius: 8px;
     --radius-lg: 12px;
     --font-mono: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
@@ -36,10 +37,10 @@
   .search-wrap input:focus { border-color: var(--accent); }
   .search-wrap input::placeholder { color: var(--muted); }
   .search-icon { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
-  .dropdown { position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: var(--surface2); border: 1px solid var(--border2); border-radius: var(--radius); z-index: 200; max-height: 320px; overflow-y: auto; display: none; }
+  .dropdown { position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: var(--surface); border: 1px solid var(--border2); border-radius: var(--radius); z-index: 200; box-shadow: 0 8px 24px rgba(0,0,0,0.12); max-height: 320px; overflow-y: auto; display: none; }
   .dropdown.open { display: block; }
   .dd-item { padding: 10px 14px; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: background 0.15s; }
-  .dd-item:hover { background: rgba(79,142,247,0.1); }
+  .dd-item:hover { background: rgba(232,184,75,0.08); }
   .dd-sym { font-family: var(--font-mono); font-size: 13px; font-weight: 600; color: var(--accent); min-width: 100px; }
   .dd-name { color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .dd-sector { margin-left: auto; font-size: 11px; color: var(--muted); background: var(--surface); padding: 2px 7px; border-radius: 4px; white-space: nowrap; }
@@ -81,7 +82,7 @@
   .index-membership { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 18px 20px; margin-bottom: 20px; }
   .membership-grid { display: flex; flex-wrap: wrap; gap: 8px; }
   .idx-badge { padding: 5px 12px; border-radius: 6px; font-size: 12px; font-weight: 500; border: 1px solid; }
-  .idx-badge.broad { background: rgba(79,142,247,0.1); border-color: rgba(79,142,247,0.3); color: var(--tag-text); }
+  .idx-badge.broad { background: rgba(232,184,75,0.1); border-color: rgba(232,184,75,0.3); color: var(--tag-text); }
   .idx-badge.sector { background: rgba(62,207,142,0.08); border-color: rgba(62,207,142,0.25); color: #6de8b0; }
   .idx-badge.size { background: rgba(246,192,92,0.08); border-color: rgba(246,192,92,0.25); color: #f6c05c; }
   .no-membership { color: var(--muted); font-size: 13px; font-style: italic; }
@@ -100,12 +101,12 @@
   .gauge-title { font-size: 14px; font-weight: 600; color: var(--text); }
   .gauge-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
   .badge { font-size: 11px; font-weight: 600; padding: 4px 11px; border-radius: 5px; white-space: nowrap; }
-  .badge-green { background: rgba(62,207,142,0.12); color: #3ecf8e; }
-  .badge-amber { background: rgba(246,192,92,0.12); color: #f6c05c; }
-  .badge-red { background: rgba(245,101,101,0.12); color: #f56565; }
-  .badge-gray { background: rgba(122,127,148,0.15); color: var(--muted); }
+  .badge-green { background: rgba(62,207,142,0.15); color: #1a9e68; }
+  .badge-amber { background: rgba(246,192,92,0.18); color: #b87d10; }
+  .badge-red { background: rgba(245,101,101,0.15); color: #c0392b; }
+  .badge-gray { background: rgba(122,127,148,0.12); color: var(--muted); }
   .gauge-metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 12px; margin-bottom: 14px; }
-  .gauge-metric { background: var(--bg); border-radius: var(--radius); padding: 10px 12px; }
+  .gauge-metric { background: var(--surface2); border-radius: var(--radius); padding: 10px 12px; }
   .gm-label { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
   .gm-val { font-family: var(--font-mono); font-size: 16px; font-weight: 600; color: var(--text); }
   .gauge-analysis { font-size: 12px; color: var(--muted); line-height: 1.7; border-top: 1px solid var(--border); padding-top: 12px; }
@@ -136,14 +137,14 @@
   .peer-name { font-size: 13px; color: var(--text); flex: 1; }
   .peer-sym { font-family: var(--font-mono); font-size: 11px; color: var(--muted); }
   .peer-pe { font-family: var(--font-mono); font-size: 13px; font-weight: 500; color: var(--text); min-width: 50px; text-align: right; }
-  .peer-highlight { background: rgba(79,142,247,0.07); border-radius: var(--radius); padding: 0 8px; }
+  .peer-highlight { background: rgba(232,184,75,0.07); border-radius: var(--radius); padding: 0 8px; }
 
   /* ── Indices overview ── */
   .indices-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
   .idx-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px; }
   .idx-card-name { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 8px; }
   .idx-stock-count { font-size: 12px; color: var(--muted); }
-  .idx-found { font-size: 12px; color: var(--green); font-family: var(--font-mono); margin-top: 4px; }
+  .idx-found { font-size: 12px; color: var(--accent); font-family: var(--font-mono); margin-top: 4px; }
 
   /* ── Loading ── */
   .loading { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 13px; padding: 20px 0; }
@@ -671,7 +672,7 @@ function buildIndicesGrid(selectedSym) {
   document.getElementById('totalStocks').textContent = allStocks.size.toLocaleString();
   for (const [name, idx] of Object.entries(INDICES)) {
     const found = selectedSym && idx.stocks.includes(selectedSym);
-    html += `<div class="idx-card" style="${found ? 'border-color:rgba(79,142,247,0.4);' : ''}">
+    html += `<div class="idx-card" style="${found ? 'border-color:rgba(232,184,75,0.4);' : ''}">
       <div class="idx-card-name">${name}</div>
       <div class="idx-stock-count">${idx.stocks.length} stocks tracked</div>
       ${found ? `<div class="idx-found">✓ ${selectedSym} is here</div>` : ''}
@@ -750,45 +751,77 @@ document.querySelectorAll('.tab').forEach(tab => {
 });
 
 // ─────────────────────────────────────────────
-// GAS BACKEND — routes through your existing
-// Google Apps Script backend (same one used by
-// dashboard.html). Runs on Google's servers so
-// Yahoo Finance never rate-limits it.
+// DATA FETCHING — DUAL SOURCE ARCHITECTURE
+//
+// Chart data  → GAS backend (bypasses CORS/firewall)
+// Fundamentals → direct browser fetch to Yahoo
+//   (browser is never blocked; only GAS server IPs are)
 // ─────────────────────────────────────────────
 const BACKEND = 'https://script.google.com/macros/s/AKfycbxbqcip3QPPRP5YUxngoWecv5nN2eKk5h9T2WYL2_vmTs3ix6Tjt_KTfKq2MDptrmPMcw/exec';
 
-function setProxyStatus(name, status) {
+function setProxyStatus(msg, color) {
   const el = document.getElementById('proxyStatus');
   if (!el) return;
-  const colors = { trying: '#f6c05c', ok: '#3ecf8e', fail: '#f56565' };
-  el.textContent = status === 'ok' ? `via ${name}` : status === 'trying' ? `${name}…` : `${name} failed`;
-  el.style.color = colors[status] || '#7a7f94';
+  el.textContent = msg;
+  el.style.color = color || '#6b7080';
 }
 
-// Single call to GAS backend — returns { summary, chart } for a symbol
-async function fetchStockFromGAS(sym) {
-  // Always send with .NS suffix — GAS will add it if missing
-  // Never strip it here — HAL without .NS fetches Halliburton (NYSE)!
-  const nsSym = sym.includes('.') ? sym : sym + '.NS';
-  setProxyStatus('GAS backend', 'trying');
-  const url = `${BACKEND}?action=stock&symbol=${encodeURIComponent(nsSym)}`;
-  const r   = await fetch(url);
-  if (!r.ok) throw new Error(`GAS returned HTTP ${r.status}`);
-  const data = await r.json();
-  if (data.error) throw new Error(data.error);
-  setProxyStatus('GAS backend', 'ok');
-  return data; // { symbol, summary, chart, ts }
+// ── Fetch 1: Chart data via GAS (bypasses CORS) ──
+async function fetchChartFromGAS(yfSym) {
+  const nsSym = yfSym.includes('.') ? yfSym : yfSym + '.NS';
+  const url   = `${BACKEND}?symbol=${encodeURIComponent(nsSym)}&range=1y&interval=1d`;
+  const r     = await fetch(url);
+  if (!r.ok) throw new Error(`GAS chart HTTP ${r.status}`);
+  const data  = await r.json();
+  if (data.chart && data.chart.error) throw new Error(data.chart.error.description || 'Chart error');
+  return data;
 }
 
-// Wrappers matching the call signatures used in loadStock()
-async function fetchYF(yfSym) {
-  const data = await fetchStockFromGAS(yfSym);
-  return data.chart;
-}
+// ── Fetch 2: Fundamentals direct from browser to Yahoo ──
+// Browser is not IP-blocked. Tries quoteSummary then quote endpoint.
+async function fetchFundamentalsFromBrowser(yfSym) {
+  const nsSym = yfSym.includes('.') ? yfSym : yfSym + '.NS';
 
-async function fetchYFSummary(yfSym) {
-  const data = await fetchStockFromGAS(yfSym);
-  return data.summary;
+  // Try quoteSummary with all modules
+  const urls = [
+    `https://query1.finance.yahoo.com/v10/finance/quoteSummary/${encodeURIComponent(nsSym)}?modules=summaryDetail%2CdefaultKeyStatistics%2CfinancialData`,
+    `https://query2.finance.yahoo.com/v10/finance/quoteSummary/${encodeURIComponent(nsSym)}?modules=summaryDetail%2CdefaultKeyStatistics%2CfinancialData`,
+    `https://query1.finance.yahoo.com/v10/finance/quoteSummary/${encodeURIComponent(nsSym)}?modules=price%2CdefaultKeyStatistics`,
+  ];
+
+  for (const url of urls) {
+    try {
+      const r = await fetch(url, { headers: { 'Accept': 'application/json' } });
+      if (!r.ok) continue;
+      const data = await r.json();
+      if (!data.quoteSummary || data.quoteSummary.error || !data.quoteSummary.result) continue;
+      const res = data.quoteSummary.result[0];
+      const sd  = res.summaryDetail        || {};
+      const ks  = res.defaultKeyStatistics || {};
+      const fd  = res.financialData        || {};
+      const pr  = res.price                || {};
+      const rv  = (o, k) => o[k] ? (o[k].raw !== undefined ? o[k].raw : o[k]) : null;
+
+      const fund = {
+        pe:            rv(sd,'trailingPE')  || rv(ks,'trailingPE')  || rv(pr,'trailingPE'),
+        pb:            rv(ks,'priceToBook') || rv(pr,'priceToBook'),
+        eps:           rv(ks,'trailingEps'),
+        divYield:      rv(sd,'dividendYield'),
+        beta:          rv(sd,'beta'),
+        profitMargin:  rv(fd,'profitMargins'),
+        revenueGrowth: rv(fd,'revenueGrowth'),
+        revenue:       rv(fd,'totalRevenue'),
+        netIncome:     rv(fd,'netIncomeToCommon'),
+        insiderHold:   rv(ks,'heldPercentInsiders'),
+        instHold:      rv(ks,'heldPercentInstitutions'),
+        marketCap:     rv(pr,'marketCap')
+      };
+
+      // Accept if we got at least PE or revenue
+      if (fund.pe || fund.revenue || fund.pb) return fund;
+    } catch(e) { /* try next */ }
+  }
+  return null; // all failed — chart-only mode
 }
 
 // ─────────────────────────────────────────────
@@ -799,7 +832,6 @@ async function loadStock(stock) {
   document.getElementById('landing').style.display = 'none';
   document.getElementById('mainDash').classList.add('show');
 
-  // Header placeholders
   document.getElementById('hSym').textContent = stock.sym;
   document.getElementById('hName').textContent = stock.name;
   document.getElementById('hSector').textContent = stock.sector;
@@ -807,42 +839,71 @@ async function loadStock(stock) {
   document.getElementById('hChange').textContent = '';
   ['hMcap','hPE','h52H','h52L','hEPS','hPB'].forEach(id => document.getElementById(id).textContent = '…');
 
-  // Membership
   renderMembership(stock.sym);
-
-  // Indices grid
   buildIndicesGrid(stock.sym);
-
-  // Sector peers
   renderPeers(stock);
 
-  // Steam gauge
   document.getElementById('steamLoading').style.display = 'flex';
   document.getElementById('steamContent').style.display = 'none';
-
-  // Reset tabs to steam
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   document.querySelector('[data-tab="steam"]').classList.add('active');
   document.getElementById('tab-steam').classList.add('active');
 
   try {
-    // Single GAS call returns both chart and summary in one round trip
-    const gasData = await fetchStockFromGAS(stock.yf);
+    setProxyStatus('Fetching chart + fundamentals…', '#f6c05c');
 
-    // Debug: surface exactly what came back if structure is unexpected
-    if (!gasData) throw new Error('GAS returned empty response');
-    if (gasData.error) throw new Error('GAS error: ' + gasData.error);
-    if (!gasData.summary) throw new Error('GAS response missing summary field. Keys received: ' + Object.keys(gasData).join(', '));
+    // Fire both in parallel — chart via GAS, fundamentals direct from browser
+    const [chartData, fund] = await Promise.all([
+      fetchChartFromGAS(stock.yf),
+      fetchFundamentalsFromBrowser(stock.yf)
+    ]);
 
-    const chartData   = gasData.chart;
-    const summaryData = gasData.summary;
+    // Build unified summary from chart meta + browser fundamentals
+    const meta    = chartData.chart.result[0].meta;
+    const q       = chartData.chart.result[0].indicators.quote[0];
+    const closes  = (q.close  || []).filter(c => c != null);
+    const volumes = (q.volume || []).filter(v => v != null);
+    const avgVol  = volumes.length ? Math.round(volumes.slice(-60).reduce((a,b)=>a+b,0) / Math.min(volumes.length,60)) : null;
+    const return1y = closes.length >= 2 ? (closes[closes.length-1] - closes[0]) / closes[0] : null;
+
+    const summaryData = {
+      // From chart meta (always available)
+      regularMarketPrice:         meta.regularMarketPrice,
+      regularMarketChangePercent: meta.regularMarketChangePercent || null,
+      regularMarketVolume:        meta.regularMarketVolume        || null,
+      fiftyTwoWeekHigh:           meta.fiftyTwoWeekHigh           || null,
+      fiftyTwoWeekLow:            meta.fiftyTwoWeekLow            || null,
+      marketCap:                  (fund && fund.marketCap) || meta.marketCap || null,
+      averageVolume:              avgVol,
+      return1y:                   return1y,
+      longName:                   meta.longName || meta.shortName || stock.sym,
+      currency:                   meta.currency  || 'INR',
+      exchangeName:               meta.exchangeName || 'NSE',
+      // From browser fundamentals fetch (available when not blocked)
+      trailingPE:                 fund ? fund.pe            : null,
+      priceToBook:                fund ? fund.pb            : null,
+      epsTrailingTwelveMonths:    fund ? fund.eps           : null,
+      dividendYield:              fund ? fund.divYield      : null,
+      beta:                       fund ? fund.beta          : (meta.beta || null),
+      profitMargins:              fund ? fund.profitMargin  : null,
+      revenueGrowth:              fund ? fund.revenueGrowth : null,
+      totalRevenue:               fund ? fund.revenue       : null,
+      netIncome:                  fund ? fund.netIncome     : null,
+      heldPercentInsiders:        fund ? fund.insiderHold   : null,
+      heldPercentInstitutions:    fund ? fund.instHold      : null,
+      nseDataLoaded:              fund !== null,
+      fundSource:                 fund ? 'browser-direct' : 'chart-only'
+    };
+
+    const fundStatus = fund ? '✓ Chart + Fundamentals' : '⚠ Chart only';
+    setProxyStatus(fundStatus, fund ? '#3ecf8e' : '#f6c05c');
+
     renderStockData(stock, chartData, summaryData);
   } catch(e) {
     document.getElementById('steamLoading').innerHTML = `<div style="display:flex;flex-direction:column;gap:10px">
       <span style="color:var(--red)">⚠ Failed to load data for ${stock.sym}</span>
       <span style="color:var(--amber);font-size:12px;font-family:monospace">${e.message}</span>
-      <span style="color:var(--muted);font-size:11px">Check: GAS deployed as "Anyone"? New version selected?</span>
       <button onclick="loadStock(currentStock)" style="background:var(--surface2);border:1px solid var(--border2);color:var(--accent);border-radius:var(--radius);padding:7px 16px;cursor:pointer;font-size:13px;width:fit-content">↻ Retry</button>
     </div>`;
   }
@@ -1089,12 +1150,7 @@ function renderPeers(stock) {
 buildAllIndexChips();
 buildIndicesGrid(null);
 
-// Auto-search KIRLOSENG on load as demo
-input.value = 'KIRLOSENG';
-const demoStock = STOCK_MASTER.find(s => s.sym === 'KIRLOSENG');
-if (demoStock) {
-  setTimeout(() => loadStock(demoStock), 400);
-}
+// Search bar starts blank — type any NSE stock symbol to begin
 </script>
 </body>
 </html>
