@@ -914,44 +914,43 @@ function verdictFromScores(scores, stockName, pe, extension52w, revenueGrowth, r
 
 function renderStockData(stock, chartData, summaryData) {
   try {
-    const price = summaryData?.quoteSummary?.result?.[0];
-    if (!price) throw new Error('No data');
+    // summaryData is now a flat object built from chart meta in Code.gs
+    // All fields are direct properties — no nested .raw wrappers
+    const s = summaryData;
+    if (!s || !s.regularMarketPrice) throw new Error('No price data returned from backend');
 
-    const sd = price.summaryDetail || {};
-    const ks = price.defaultKeyStatistics || {};
-    const fd = price.financialData || {};
-    const pr = price.price || {};
+    const cmp        = s.regularMarketPrice;
+    const change     = s.regularMarketChangePercent;
+    const high52     = s.fiftyTwoWeekHigh;
+    const low52      = s.fiftyTwoWeekLow;
+    const mcap       = s.marketCap;
+    const pe         = s.trailingPE;
+    const pb         = s.priceToBook;
+    const eps        = s.epsTrailingTwelveMonths;
+    const divYield   = s.dividendYield;
+    const beta       = s.beta;
+    const avgVol     = s.averageVolume;
+    const insiderHold  = s.heldPercentInsiders;
+    const instHold     = s.heldPercentInstitutions;
+    const profitMargin = s.profitMargins;
+    const revGrowth    = s.revenueGrowth;
+    const revenue      = s.totalRevenue;
+    const netIncome    = s.netIncome;
 
-    const cmp = pr.regularMarketPrice?.raw;
-    const change = pr.regularMarketChangePercent?.raw;
-    const high52 = sd.fiftyTwoWeekHigh?.raw;
-    const low52 = sd.fiftyTwoWeekLow?.raw;
-    const mcap = pr.marketCap?.raw;
-    const pe = sd.trailingPE?.raw || ks.trailingPE?.raw;
-    const pb = ks.priceToBook?.raw;
-    const eps = ks.trailingEps?.raw;
-    const divYield = sd.dividendYield?.raw;
-    const beta = sd.beta?.raw;
-    const avgVol = sd.averageVolume?.raw;
-    const insiderHold = ks.heldPercentInsiders?.raw;
-    const instHold = ks.heldPercentInstitutions?.raw;
-    const profitMargin = fd.profitMargins?.raw;
-    const revGrowth = fd.revenueGrowth?.raw;
-    const revenue = fd.totalRevenue?.raw;
-    const netIncome = fd.netIncomeToCommon?.raw || fd.netIncome?.raw;
+    // 1Y return — use pre-computed value from backend, fallback to chart calc
+    let return1y = s.return1y;
+    if (return1y == null) {
+      try {
+        const closes = chartData?.chart?.result?.[0]?.indicators?.quote?.[0]?.close;
+        if (closes && closes.length > 1) {
+          const first = closes.find(c => c != null);
+          const last  = closes[closes.length - 1];
+          return1y = (last - first) / first;
+        }
+      } catch(e){}
+    }
 
-    // Calculate 1Y return from chart
-    let return1y = null;
-    try {
-      const closes = chartData?.chart?.result?.[0]?.indicators?.quote?.[0]?.close;
-      if (closes && closes.length > 1) {
-        const first = closes.find(c => c != null);
-        const last = closes[closes.length - 1];
-        return1y = (last - first) / first;
-      }
-    } catch(e){}
-
-    // Extension from 52w range
+    // Extension from 52W range
     const extension52w = (high52 && low52 && cmp) ? (cmp - low52) / (high52 - low52) : null;
 
     // Header
@@ -1022,7 +1021,7 @@ function renderStockData(stock, chartData, summaryData) {
     document.getElementById('g4rg').textContent = revGrowth != null ? (revGrowth >= 0 ? '+' : '') + (revGrowth*100).toFixed(1)+'% YoY' : '–';
     document.getElementById('g4analysis').innerHTML = revGrowth != null
       ? `<strong>Revenue growing at ${(revGrowth*100).toFixed(1)}% YoY${revGrowth > 0.2 ? ' — strong double-digit growth.' : revGrowth > 0.08 ? ' — healthy but not exceptional.' : revGrowth > 0 ? ' — slowing, watch for acceleration.' : ' — declining revenue, a serious concern.'}</strong> Profit margin of ${profitMargin != null ? (profitMargin*100).toFixed(1)+'%' : '–'} ${profitMargin > 0.15 ? 'is healthy and suggests pricing power.' : profitMargin > 0.05 ? 'is moderate. Operating leverage will determine EPS growth rate.' : 'is thin — small revenue misses can hit earnings disproportionately.'}`
-      : '<strong>Financial data loading.</strong> Revenue growth and margin data require quoteSummary.';
+      : '<strong>Financial data loading.</strong> Revenue growth and margin data not available from chart endpoint — check next earnings report.';
 
     // Gauge 5 - RS / institutional
     document.getElementById('badge5').textContent = scores[4].label;
