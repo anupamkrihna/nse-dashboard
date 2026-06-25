@@ -277,7 +277,7 @@
         <div class="gauge-metrics">
           <div class="gauge-metric"><div class="gm-label">Avg volume (3M)</div><div class="gm-val" id="g3avg">–</div></div>
           <div class="gauge-metric"><div class="gm-label">Beta</div><div class="gm-val" id="g3beta">–</div></div>
-          <div class="gauge-metric"><div class="gm-label">Float %</div><div class="gm-val" id="g3float">–</div></div>
+          <div class="gauge-metric"><div class="gm-label">Delivery %</div><div class="gm-val" id="g3float">–</div></div>
         </div>
         <div class="gauge-analysis" id="g3analysis"></div>
       </div>
@@ -1021,9 +1021,11 @@ function renderStockData(stock, chartData, summaryData) {
     document.getElementById('g3avg').textContent = fmtVol(avgVol);
     document.getElementById('g3beta').textContent = beta ? beta.toFixed(2) : '–';
     document.getElementById('g3float').textContent = instHold ? pct(instHold) + ' inst.' : '–';
-    document.getElementById('g3analysis').innerHTML = beta != null
-      ? `<strong>Beta of ${beta.toFixed(2)}${beta > 1.5 ? ' — high volatility stock.' : beta > 0.8 ? ' — moves broadly with the market.' : ' — defensive / low correlation to Nifty.'}</strong> ${avgVol ? `Average daily volume of ${fmtVol(avgVol)} shares gives a sense of liquidity. High volume on breakout days is a healthy sign; watch for volume to fade on down-moves.` : 'Volume data unavailable.'}`
-      : '<strong>Beta / volume data unavailable for this period.</strong>';
+    // Gauge 3 — use delivery % as institutional interest proxy if beta unavailable
+    const deliveryPct = instHold; // delivery-to-traded % from NSE, stored in instHold field
+    document.getElementById('g3analysis').innerHTML = avgVol != null
+      ? `<strong>Avg daily volume: ${fmtVol(avgVol)} shares.</strong> ${deliveryPct != null ? `Delivery-to-traded ratio: <strong>${(deliveryPct*100).toFixed(1)}%</strong> — ${deliveryPct > 0.5 ? 'high delivery indicates genuine accumulation, not intraday speculation.' : deliveryPct > 0.3 ? 'moderate delivery — mix of investment and trading interest.' : 'low delivery — predominantly intraday/speculative activity, watch for sustainability.'} ` : ''}High volume on breakout days is a healthy sign; watch for volume to fade on down-moves.`
+      : '<strong>Volume data unavailable for this period.</strong>';
 
     // Gauge 4 - Earnings
     document.getElementById('badge4').textContent = scores[3].label;
@@ -1042,8 +1044,8 @@ function renderStockData(stock, chartData, summaryData) {
     document.getElementById('g5ret1y').textContent = return1y != null ? (return1y >= 0 ? '+' : '') + (return1y*100).toFixed(1)+'%' : '–';
     document.getElementById('g5ytd').textContent = '–';
     document.getElementById('g5ins').textContent = insiderHold != null ? pct(insiderHold) : '–';
-    document.getElementById('g5inst').textContent = instHold != null ? pct(instHold) : '–';
-    document.getElementById('g5analysis').innerHTML = `<strong>${instHold != null ? 'Institutional holding: '+pct(instHold)+'.' : ''}</strong> ${return1y != null ? `1Y relative performance of ${(return1y*100).toFixed(1)}% vs Nifty 50 (~15% 1Y typical). ${return1y > 0.3 ? 'Strong outperformance indicates institutional preference and sector momentum. Watch for any slowdown in this RS score.' : return1y > 0 ? 'Moderate outperformance — the stock is moving with the market but not aggressively leading.' : 'Underperformance vs market. Check if this is a temporary dip or structural derating.'}` : ''}`;
+    document.getElementById('g5inst').textContent = instHold != null ? (instHold*100).toFixed(1)+'% del.' : '–';
+    document.getElementById('g5analysis').innerHTML = `${return1y != null ? `<strong>1Y return: ${(return1y*100).toFixed(1)}% vs Nifty 50 (~15% typical).</strong> ${return1y > 0.3 ? 'Strong outperformance — institutional preference and sector momentum intact. Watch for RS score deceleration as the key warning signal.' : return1y > 0 ? 'Moderate outperformance — the stock is moving with the market but not aggressively leading.' : 'Underperformance vs market. Check if this is a temporary dip or structural derating.'}` : ''} ${instHold != null ? `Delivery-to-traded: ${(instHold*100).toFixed(1)}% — a proxy for genuine accumulation vs speculative interest.` : 'Delivery data from NSE loading.'}`;
 
     // Verdict badges
     scores.forEach((s, i) => {
@@ -1055,6 +1057,10 @@ function renderStockData(stock, chartData, summaryData) {
 
     document.getElementById('steamLoading').style.display = 'none';
     document.getElementById('steamContent').style.display = 'block';
+    // Show data source status
+    const nseLoaded = s.nseDataLoaded;
+    const proxyEl = document.getElementById('proxyStatus');
+    if (proxyEl) proxyEl.textContent = nseLoaded ? 'Yahoo + NSE India' : 'Yahoo only (NSE data unavailable)';
 
   } catch(err) {
     document.getElementById('steamLoading').innerHTML = `<span style="color:var(--amber)">⚠ Partial data loaded. Some metrics may be unavailable. <br><small style="color:var(--muted)">${err.message}</small></span>`;
