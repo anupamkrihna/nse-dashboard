@@ -95,6 +95,85 @@
     .kpi-value { font-size: 16px; }
     .main-tab { font-size: 11px; padding: 10px 4px; }
   }
+
+  /* ---- Tab 6: Signal Lab ---- */
+  .sl-header { padding: 14px 16px 0; }
+  .sl-header h2 { font-size: 16px; font-weight: 600; color: #1a2744; margin-bottom: 3px; font-family: Arial, sans-serif; }
+  .sl-header p { font-size: 12px; color: #888; font-family: Arial, sans-serif; margin-bottom: 12px; }
+  .sl-badge { font-size: 11px; padding: 2px 9px; background: #d4edda; color: #155724; border-radius: 20px; margin-left: 6px; vertical-align: middle; font-weight: 600; font-family: Arial, sans-serif; }
+
+  .sl-search-wrap { position: relative; margin: 0 16px 12px; }
+  .sl-search-box { display: flex; align-items: center; border: 1.5px solid #ccc; border-radius: 8px; background: white; overflow: hidden; transition: border-color .2s; }
+  .sl-search-box:focus-within { border-color: #2e75b6; }
+  .sl-search-icon { padding: 0 10px; font-size: 15px; color: #aaa; flex-shrink: 0; }
+  .sl-search-input { flex: 1; padding: 10px 4px; font-size: 13px; border: none; outline: none; font-family: Arial, sans-serif; color: #333; background: transparent; }
+  .sl-search-clear { padding: 0 12px; font-size: 20px; color: #bbb; cursor: pointer; background: none; border: none; line-height: 1; flex-shrink: 0; }
+  .sl-search-clear:hover { color: #888; }
+  .sl-dropdown { display: none; position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ccc; border-top: none; border-radius: 0 0 8px 8px; max-height: 260px; overflow-y: auto; z-index: 999; box-shadow: 0 6px 20px rgba(0,0,0,.12); }
+  .sl-dd-item { padding: 9px 14px; cursor: pointer; border-bottom: 1px solid #f0ede6; display: flex; align-items: center; justify-content: space-between; font-size: 13px; font-family: Arial, sans-serif; }
+  .sl-dd-item:hover { background: #fdf6e3; }
+  .sl-dd-item .sl-dd-name { color: #1a2744; font-weight: 500; }
+  .sl-dd-item .sl-dd-sym { color: #888; font-family: 'Courier New', monospace; font-size: 11px; margin-left: 8px; }
+  .sl-dd-tags { display: flex; gap: 3px; flex-shrink: 0; }
+  .sl-tag { font-size: 10px; padding: 1px 5px; border-radius: 3px; background: #eef3fa; color: #2e75b6; font-family: Arial, sans-serif; }
+  .sl-tag.def { background: #d4edda; color: #155724; }
+  .sl-tag.psu { background: #fff3cd; color: #856404; }
+  .sl-tag.bank { background: #cce5ff; color: #004085; }
+
+  .sl-selected-badge { display: none; margin: 0 16px 10px; }
+  .sl-selected-inner { display: inline-flex; align-items: center; gap: 8px; background: #eef3fa; border: 1px solid #2e75b6; border-radius: 6px; padding: 5px 12px; }
+  .sl-sel-name { font-size: 13px; font-weight: 600; color: #1a2744; font-family: Arial, sans-serif; }
+  .sl-sel-sym { font-size: 11px; color: #2e75b6; font-family: 'Courier New', monospace; }
+
+  .sl-controls { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; padding: 0 16px 12px; }
+  .sl-ctrl { display: flex; flex-direction: column; gap: 3px; }
+  .sl-ctrl label { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: .4px; font-family: Arial, sans-serif; }
+  .sl-run-btn { padding: 9px 20px; background: #1a2744; color: #f0e6c8; border: none; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: Arial, sans-serif; opacity: .4; pointer-events: none; transition: opacity .2s; }
+  .sl-run-btn.ready { opacity: 1; pointer-events: auto; }
+  .sl-run-btn:hover { background: #2a3d63; }
+
+  .sl-status { font-size: 12px; color: #888; font-family: Arial, sans-serif; padding: 0 16px 8px; min-height: 18px; }
+
+  .sl-signal-card { margin: 0 16px 12px; border-radius: 8px; overflow: hidden; border: 1px solid #ddd; }
+  .sl-card-hdr { padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px; }
+  .sl-card-hdr.buy { background: #d4edda; border-bottom: 1px solid #b8dfc4; }
+  .sl-card-hdr.sell { background: #f8d7da; border-bottom: 1px solid #f1b0b7; }
+  .sl-card-hdr.none { background: #f7f5f0; border-bottom: 1px solid #e8e0d0; }
+  .sl-card-title { font-size: 15px; font-weight: 700; font-family: Arial, sans-serif; }
+  .sl-card-title.buy { color: #155724; }
+  .sl-card-title.sell { color: #721c24; }
+  .sl-card-title.none { color: #6b5b2e; }
+  .sl-conf-dots { display: flex; gap: 4px; align-items: center; }
+  .sl-dot { width: 11px; height: 11px; border-radius: 50%; background: #ddd; }
+  .sl-dot.on.buy { background: #2d7a4f; }
+  .sl-dot.on.sell { background: #c0392b; }
+
+  .sl-card-body { padding: 12px 14px; background: white; }
+  .sl-price-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 10px; }
+  .sl-pf label { font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: .3px; font-family: Arial, sans-serif; display: block; margin-bottom: 2px; }
+  .sl-pf .sl-pval { font-size: 17px; font-weight: 600; font-family: 'Courier New', monospace; color: #1a2744; }
+  .sl-pf .sl-pval.sl-sl { color: #c0392b; }
+  .sl-pf .sl-pval.sl-tgt { color: #2d7a4f; }
+  .sl-meta-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+  .sl-meta-chip { font-size: 11px; padding: 3px 9px; border-radius: 20px; background: #f7f5f0; border: 1px solid #e8e0d0; color: #555; font-family: Arial, sans-serif; }
+  .sl-alpha-chip { font-size: 11px; padding: 3px 9px; border-radius: 6px; background: #eef3fa; color: #2e75b6; font-family: Arial, sans-serif; }
+  .sl-ind-section { border-top: 1px solid #eee; padding-top: 8px; margin-top: 6px; }
+  .sl-ind-label { font-size: 10px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: .5px; font-family: Arial, sans-serif; margin-bottom: 5px; }
+  .sl-ind-row { display: flex; gap: 7px; padding: 3px 0; font-size: 12px; font-family: Arial, sans-serif; color: #444; line-height: 1.4; }
+  .sl-ind-ic { width: 16px; height: 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; flex-shrink: 0; margin-top: 1px; }
+  .ic-ok { background: #d4edda; color: #155724; }
+  .ic-neutral { background: #f7f5f0; color: #888; }
+  .sl-risk-box { margin-top: 8px; padding: 8px 12px; background: #fff3cd; border-radius: 6px; font-size: 12px; color: #856404; font-family: Arial, sans-serif; }
+
+  .sl-meters { margin: 0 16px 10px; background: #f7f5f0; border-radius: 8px; padding: 12px 14px; }
+  .sl-meter-row { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; }
+  .sl-meter-lbl { font-size: 11px; color: #888; width: 100px; flex-shrink: 0; font-family: Arial, sans-serif; }
+  .sl-meter-bar { flex: 1; height: 5px; background: #ddd; border-radius: 3px; overflow: hidden; }
+  .sl-meter-fill { height: 100%; border-radius: 3px; }
+  .sl-meter-val { font-size: 11px; font-weight: 600; width: 48px; text-align: right; font-family: 'Courier New', monospace; flex-shrink: 0; }
+  .sl-log { margin: 0 16px 12px; }
+  .sl-log summary { font-size: 11px; color: #aaa; cursor: pointer; font-family: Arial, sans-serif; padding: 3px 0; }
+  .sl-log pre { font-size: 11px; color: #999; background: #f7f5f0; border-radius: 6px; padding: 10px; margin-top: 4px; max-height: 260px; overflow-y: auto; white-space: pre-wrap; line-height: 1.5; font-family: 'Courier New', monospace; }
 </style>
 </head>
 <body>
@@ -112,6 +191,7 @@
     <div class="main-tab" onclick="showTab('stocks', this)">&#128201; Stock vs Nifty</div>
     <div class="main-tab" onclick="showTab('custom', this)">&#11088; Custom Analysis</div>
     <div class="main-tab" onclick="showTab('idxstocks', this)">&#127942; Index Stocks</div>
+    <div class="main-tab" onclick="showTab('signallab', this)">&#9889; Signal Lab</div>
   </div>
 
   <!-- ============ TAB 1: OVERVIEW ============ -->
@@ -330,7 +410,76 @@
     </div>
   </div>
 
-  <div class="bottom-bar">
+  <!-- ============ TAB 6: SIGNAL LAB ============ -->
+  <div class="tab-content" id="tab-signallab">
+
+    <div class="sl-header">
+      <h2>&#9889; Signal Lab <span class="sl-badge">CTAE · 10 Indicators</span></h2>
+      <p>Search any stock &mdash; the engine validates 3&ndash;5 confirming indicators before issuing a signal. Nifty 50 · Next 50 · Midcap · Defence · PSU · Sectors.</p>
+    </div>
+
+    <!-- Search -->
+    <div class="sl-search-wrap">
+      <div class="sl-search-box">
+        <span class="sl-search-icon">&#128269;</span>
+        <input id="sl-search" class="sl-search-input" type="text"
+          placeholder="Search company or symbol&hellip;  e.g. Reliance, INFY, BEL, Mazagon, HAL, ONGC"
+          autocomplete="off" spellcheck="false"
+          oninput="slSearch(this.value)"
+          onfocus="document.querySelector('.sl-search-box').style.borderColor='#2e75b6'"
+          onblur="setTimeout(function(){document.querySelector('.sl-search-box').style.borderColor='';slHideDD();},200)">
+        <button class="sl-search-clear" onclick="slClear()" title="Clear">&times;</button>
+      </div>
+      <div id="sl-dropdown" class="sl-dropdown"></div>
+    </div>
+
+    <!-- Selected badge -->
+    <div id="sl-badge-wrap" class="sl-selected-badge">
+      <div class="sl-selected-inner">
+        <span id="sl-badge-name" class="sl-sel-name"></span>
+        <span id="sl-badge-sym" class="sl-sel-sym"></span>
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="sl-controls">
+      <div class="sl-ctrl">
+        <label>Period</label>
+        <select id="sl-period">
+          <option value="1M">1 Month</option>
+          <option value="3M" selected>3 Months</option>
+          <option value="6M">6 Months</option>
+          <option value="1Y">1 Year</option>
+          <option value="5Y">5 Years</option>
+        </select>
+      </div>
+      <div class="sl-ctrl">
+        <label>Benchmark</label>
+        <select id="sl-bm">
+          <option value="^NSEI">Nifty 50</option>
+          <option value="^NSEBANK">Nifty Bank</option>
+          <option value="^CNXIT">Nifty IT</option>
+          <option value="^CNXPHARMA">Nifty Pharma</option>
+          <option value="^CNXAUTO">Nifty Auto</option>
+          <option value="^CNXMETAL">Nifty Metal</option>
+          <option value="^CNXENERGY">Nifty Energy</option>
+          <option value="^CNXPSUBANK">Nifty PSU Bank</option>
+          <option value="^CNXFMCG">Nifty FMCG</option>
+        </select>
+      </div>
+      <div class="sl-ctrl">
+        <label>&nbsp;</label>
+        <button id="sl-run-btn" class="sl-run-btn" onclick="slRun()">&#9654; Analyse</button>
+      </div>
+    </div>
+
+    <div id="sl-status" class="sl-status"></div>
+    <div id="sl-output"></div>
+    <div id="sl-meters"></div>
+    <details class="sl-log"><summary>&#9654; Raw computation log</summary><pre id="sl-log"></pre></details>
+
+  </div>
+  <!-- END SIGNAL LAB -->
     <span>Source: NSE/BSE via Google Finance backend | Auto-refresh every 5 min | Quotes may be delayed by exchange rules</span>
     <span>Personal research only — not financial advice</span>
   </div>
@@ -456,6 +605,7 @@ function showTab(name, el) {
   if (name === 'ratios' && !ratioChart) renderIndexRatio();
   if (name === 'stocks' && !stockChart) renderStockRatio();
   if (name === 'idxstocks') initIdxStocks();
+  if (name === 'signallab') slInit();
 }
 
 /* ===================== TAB 1: OVERVIEW ===================== */
@@ -1275,6 +1425,431 @@ function isSort(k) {
 initStockTab();
 
 loadCore();
+
+/* =====================================================================
+   SIGNAL LAB — CTAE ENGINE
+   Uses existing fetchSym() and BACKEND — no new backend needed.
+   ===================================================================== */
+
+/* ---- Symbol universe ---- */
+var SL_SYMS = [
+  // Nifty 50
+  ["Adani Enterprises","ADANIENT.NS","N50"],["Adani Ports","ADANIPORTS.NS","N50"],
+  ["Apollo Hospitals","APOLLOHOSP.NS","N50,PHARMA"],["Asian Paints","ASIANPAINT.NS","N50"],
+  ["Axis Bank","AXISBANK.NS","N50,BANK"],["Bajaj Auto","BAJAJ-AUTO.NS","N50,AUTO"],
+  ["Bajaj Finance","BAJFINANCE.NS","N50"],["Bajaj Finserv","BAJAJFINSV.NS","N50"],
+  ["BEL","BEL.NS","N50,DEFENCE"],["Bharti Airtel","BHARTIARTL.NS","N50"],
+  ["BPCL","BPCL.NS","N50,ENERGY"],["Britannia","BRITANNIA.NS","N50,FMCG"],
+  ["Cipla","CIPLA.NS","N50,PHARMA"],["Coal India","COALINDIA.NS","N50,ENERGY"],
+  ["Dr Reddy's","DRREDDY.NS","N50,PHARMA"],["Eicher Motors","EICHERMOT.NS","N50,AUTO"],
+  ["Eternal (Zomato)","ETERNAL.NS","N50"],["Grasim","GRASIM.NS","N50"],
+  ["HCL Technologies","HCLTECH.NS","N50,IT"],["HDFC Bank","HDFCBANK.NS","N50,BANK"],
+  ["HDFC Life","HDFCLIFE.NS","N50"],["Hero MotoCorp","HEROMOTOCO.NS","N50,AUTO"],
+  ["Hindalco","HINDALCO.NS","N50,METAL"],["HUL","HINDUNILVR.NS","N50,FMCG"],
+  ["ICICI Bank","ICICIBANK.NS","N50,BANK"],["IndusInd Bank","INDUSINDBK.NS","N50,BANK"],
+  ["Infosys","INFY.NS","N50,IT"],["ITC","ITC.NS","N50,FMCG"],
+  ["Jio Financial","JIOFIN.NS","N50"],["JSW Steel","JSWSTEEL.NS","N50,METAL"],
+  ["Kotak Bank","KOTAKBANK.NS","N50,BANK"],["L&T","LT.NS","N50,INFRA"],
+  ["M&M","M&M.NS","N50,AUTO"],["Maruti Suzuki","MARUTI.NS","N50,AUTO"],
+  ["Nestle India","NESTLEIND.NS","N50,FMCG"],["NTPC","NTPC.NS","N50,ENERGY,PSU"],
+  ["ONGC","ONGC.NS","N50,ENERGY,PSU"],["Power Grid","POWERGRID.NS","N50,ENERGY,PSU"],
+  ["Reliance","RELIANCE.NS","N50,ENERGY"],["SBI","SBIN.NS","N50,BANK,PSU"],
+  ["SBI Life","SBILIFE.NS","N50"],["Shriram Finance","SHRIRAMFIN.NS","N50"],
+  ["Sun Pharma","SUNPHARMA.NS","N50,PHARMA"],["Tata Consumer","TATACONSUM.NS","N50,FMCG"],
+  ["Tata Motors","TATAMOTORS.NS","N50,AUTO"],["Tata Steel","TATASTEEL.NS","N50,METAL"],
+  ["TCS","TCS.NS","N50,IT"],["Tech Mahindra","TECHM.NS","N50,IT"],
+  ["Titan","TITAN.NS","N50"],["Trent","TRENT.NS","N50"],
+  ["UltraTech Cement","ULTRACEMCO.NS","N50"],["Wipro","WIPRO.NS","N50,IT"],
+  // Nifty Next 50
+  ["ABB India","ABB.NS","NN50"],["Adani Green","ADANIGREEN.NS","NN50,ENERGY"],
+  ["Adani Power","ADANIPOWER.NS","NN50,ENERGY"],["Amara Raja","AMARAJABAT.NS","NN50,AUTO"],
+  ["Avenue Supermarts","DMART.NS","NN50"],["Berger Paints","BERGEPAINT.NS","NN50"],
+  ["Cholamandalam","CHOLAFIN.NS","NN50"],["Colgate","COLPAL.NS","NN50,FMCG"],
+  ["Cummins India","CUMMINSIND.NS","NN50"],["Dabur","DABUR.NS","NN50,FMCG"],
+  ["DLF","DLF.NS","NN50,REALTY"],["GAIL","GAIL.NS","NN50,ENERGY,PSU"],
+  ["Godrej Consumer","GODREJCP.NS","NN50,FMCG"],["Godrej Properties","GODREJPROP.NS","NN50,REALTY"],
+  ["HAL","HAL.NS","NN50,DEFENCE,PSU"],["HAVELLS India","HAVELLS.NS","NN50"],
+  ["Indian Hotels","INDHOTEL.NS","NN50"],["IndiGo","INDIGO.NS","NN50"],
+  ["Info Edge","NAUKRI.NS","NN50,IT"],["IOC","IOC.NS","NN50,ENERGY,PSU"],
+  ["Jubilant FoodWorks","JUBLFOOD.NS","NN50"],["L&T Finance","LTF.NS","NN50"],
+  ["Lodha","LODHA.NS","NN50,REALTY"],["Lupin","LUPIN.NS","NN50,PHARMA"],
+  ["Max Healthcare","MAXHEALTH.NS","NN50,PHARMA"],["Muthoot Finance","MUTHOOTFIN.NS","NN50"],
+  ["NHPC","NHPC.NS","NN50,ENERGY,PSU"],["Pidilite","PIDILITIND.NS","NN50"],
+  ["PI Industries","PIIND.NS","NN50"],["Power Finance Corp","PFC.NS","NN50,PSU"],
+  ["REC","RECLTD.NS","NN50,PSU"],["Samvardhana Motherson","MOTHERSON.NS","NN50,AUTO"],
+  ["SBI Cards","SBICARD.NS","NN50"],["Shree Cement","SHREECEM.NS","NN50"],
+  ["Siemens","SIEMENS.NS","NN50"],["SRF","SRF.NS","NN50"],
+  ["Tata Power","TATAPOWER.NS","NN50,ENERGY"],["Torrent Pharma","TORNTPHARM.NS","NN50,PHARMA"],
+  ["TVS Motor","TVSMOTOR.NS","NN50,AUTO"],["Varun Beverages","VBL.NS","NN50,FMCG"],
+  ["Vedanta","VEDL.NS","NN50,METAL"],["Zydus Life","ZYDUSLIFE.NS","NN50,PHARMA"],
+  // Midcap 150 key names
+  ["AU Small Finance","AUBANK.NS","MID150,BANK"],["Auropharma","AUROPHARMA.NS","MID150,PHARMA"],
+  ["Balkrishna Ind","BALKRISIND.NS","MID150,AUTO"],["Bank of Baroda","BANKBARODA.NS","MID150,BANK,PSU"],
+  ["CDSL","CDSL.NS","MID150"],["Coforge","COFORGE.NS","MID150,IT"],
+  ["Data Patterns","DATAPATTNS.NS","MID150,DEFENCE"],["Dixon Technologies","DIXON.NS","MID150"],
+  ["Escorts Kubota","ESCORTS.NS","MID150,AUTO"],["Federal Bank","FEDERALBNK.NS","MID150,BANK"],
+  ["Fortis Healthcare","FORTIS.NS","MID150,PHARMA"],["IDFC First Bank","IDFCFIRSTB.NS","MID150,BANK"],
+  ["Indian Bank","INDIANB.NS","MID150,BANK,PSU"],["Indraprastha Gas","IGL.NS","MID150,ENERGY"],
+  ["JSW Energy","JSWENERGY.NS","MID150,ENERGY"],["Kaynes Technology","KAYNES.NS","MID150"],
+  ["Mankind Pharma","MANKIND.NS","MID150,PHARMA"],["Marico","MARICO.NS","MID150,FMCG"],
+  ["MCX India","MCX.NS","MID150"],["Mphasis","MPHASIS.NS","MID150,IT"],
+  ["NMDC","NMDC.NS","MID150,METAL,PSU"],["Oil India","OIL.NS","MID150,ENERGY,PSU"],
+  ["Persistent Systems","PERSISTENT.NS","MID150,IT"],["Phoenix Mills","PHOENIXLTD.NS","MID150,REALTY"],
+  ["PNB","PNB.NS","MID150,BANK,PSU"],["PolicyBazaar","POLICYBZR.NS","MID150"],
+  ["Sona BLW","SONACOMS.NS","MID150,AUTO"],["Tata Elxsi","TATAELXSI.NS","MID150,IT"],
+  ["Thermax","THERMAX.NS","MID150"],["Torrent Power","TORNTPOWER.NS","MID150,ENERGY"],
+  ["Tube Investments","TIINDIA.NS","MID150,AUTO"],["Union Bank","UNIONBANK.NS","MID150,BANK,PSU"],
+  // Defence
+  ["BDL","BDL.NS","DEFENCE,PSU"],["Cochin Shipyard","COCHINSHIP.NS","DEFENCE,PSU"],
+  ["GRSE","GRSE.NS","DEFENCE,PSU"],["MTAR Technologies","MTARTECH.NS","DEFENCE"],
+  ["Mazagon Dock","MAZDOCK.NS","DEFENCE,PSU"],["Paras Defence","PARAS.NS","DEFENCE"],
+  ["Solar Industries","SOLARINDS.NS","DEFENCE"],["Zen Technologies","ZENTEC.NS","DEFENCE"],
+  ["ideaForge","IDEAFORGE.NS","DEFENCE"],
+  // PSU Banks
+  ["Bank of India","BANKINDIA.NS","BANK,PSU"],["Canara Bank","CANBK.NS","BANK,PSU"],
+  ["Central Bank","CENTRALBK.NS","BANK,PSU"],["Indian Overseas Bank","IOB.NS","BANK,PSU"],
+  // Oil & Gas
+  ["Gujarat State Petro","GSPL.NS","ENERGY"],["HPCL","HINDPETRO.NS","ENERGY,PSU"],
+  ["Petronet LNG","PETRONET.NS","ENERGY"]
+];
+
+var slSymSelected = null;
+var slInitDone = false;
+
+function slInit() {
+  // Only need to init once; nothing to auto-load
+  slInitDone = true;
+}
+
+/* ---- Search ---- */
+function slSearch(q) {
+  var dd = document.getElementById('sl-dropdown');
+  q = q.trim().toLowerCase();
+  if (!q) { dd.style.display = 'none'; return; }
+  var matches = SL_SYMS.filter(function(s) {
+    return s[0].toLowerCase().indexOf(q) !== -1 ||
+           s[1].toLowerCase().replace('.ns','').indexOf(q) !== -1 ||
+           s[2].toLowerCase().indexOf(q) !== -1;
+  }).slice(0, 18);
+
+  var tagColors = { N50:'#2d7a4f', NN50:'#2e75b6', MID150:'#7b3fa6', DEFENCE:'#155724',
+                    BANK:'#004085', IT:'#1a5276', PHARMA:'#186a3b', ENERGY:'#784212',
+                    PSU:'#856404', AUTO:'#512e5f', FMCG:'#1b4f72', METAL:'#424949',
+                    INFRA:'#1a5276', REALTY:'#784212' };
+
+  if (!matches.length) {
+    dd.innerHTML = '<div class="sl-dd-item" style="color:#aaa">No local match — try the Custom Analysis tab search</div>';
+    dd.style.display = 'block';
+    return;
+  }
+  dd.innerHTML = matches.map(function(s) {
+    var tags = s[2].split(',').map(function(t) {
+      var c = tagColors[t] || '#888';
+      var cls = t==='DEFENCE'?'def':t==='PSU'?'psu':t==='BANK'?'bank':'';
+      return '<span class="sl-tag '+cls+'" style="background:'+c+'1a;color:'+c+'">'+t+'</span>';
+    }).join('');
+    var nameEsc = s[0].replace(/'/g, "\\'");
+    var symEsc  = s[1].replace(/'/g, "\\'");
+    return '<div class="sl-dd-item" onclick="slSelect(\''+nameEsc+'\',\''+symEsc+'\')">' +
+           '<span><span class="sl-dd-name">'+s[0]+'</span><span class="sl-dd-sym">'+s[1].replace('.NS','')+'</span></span>' +
+           '<div class="sl-dd-tags">'+tags+'</div></div>';
+  }).join('');
+  dd.style.display = 'block';
+}
+
+function slHideDD() {
+  var dd = document.getElementById('sl-dropdown');
+  if (dd) dd.style.display = 'none';
+}
+
+function slSelect(name, sym) {
+  document.getElementById('sl-search').value = name;
+  slHideDD();
+  document.getElementById('sl-badge-name').textContent = name;
+  document.getElementById('sl-badge-sym').textContent = sym.replace('.NS','') + ' · NSE';
+  document.getElementById('sl-badge-wrap').style.display = 'block';
+  slSymSelected = sym;
+  var btn = document.getElementById('sl-run-btn');
+  btn.classList.add('ready');
+  slRun();
+}
+
+function slClear() {
+  document.getElementById('sl-search').value = '';
+  slHideDD();
+  document.getElementById('sl-badge-wrap').style.display = 'none';
+  document.getElementById('sl-run-btn').classList.remove('ready');
+  document.getElementById('sl-output').innerHTML = '';
+  document.getElementById('sl-meters').innerHTML = '';
+  document.getElementById('sl-status').textContent = '';
+  document.getElementById('sl-log').textContent = '';
+  slSymSelected = null;
+}
+
+/* ---- Fetch + dispatch ---- */
+async function slRun() {
+  var sym    = slSymSelected;
+  var period = document.getElementById('sl-period').value;
+  var bm     = document.getElementById('sl-bm').value;
+  var status = document.getElementById('sl-status');
+  var out    = document.getElementById('sl-output');
+  var logEl  = document.getElementById('sl-log');
+  var meters = document.getElementById('sl-meters');
+  var btn    = document.getElementById('sl-run-btn');
+  if (!sym) { status.textContent = 'Select a stock first.'; return; }
+
+  status.innerHTML = '<span class="spin">&#8635;</span> Fetching data from backend\u2026';
+  out.innerHTML = ''; meters.innerHTML = ''; logEl.textContent = '';
+  btn.textContent = '\u2026';
+
+  var pm = PERIODS[period] || PERIODS['3M'];
+  try {
+    var rawData = await fetchSym(sym, pm.range, pm.interval);
+    if (!rawData || rawData.length < 10) {
+      status.textContent = '\u26a0 Only ' + (rawData ? rawData.length : 0) + ' data points returned. Try a longer period.';
+      btn.textContent = '\u25b6 Analyse'; return;
+    }
+    // Convert to OHLCV-compatible objects (fetchSym gives {date, close})
+    var candles = rawData.map(function(d) {
+      return { date: d.date.toISOString().slice(0,10), open: d.close, high: d.close, low: d.close, close: d.close, volume: 0, oi: 0 };
+    });
+    var oldest = candles[0], latest = candles[candles.length-1];
+    var pctRet = (latest.close - oldest.close) / oldest.close * 100;
+
+    // Fetch benchmark
+    var bmData = await fetchSym(bm, pm.range, pm.interval);
+    var bmRet = 0;
+    if (bmData && bmData.length >= 2) bmRet = (bmData[bmData.length-1].close - bmData[0].close) / bmData[0].close * 100;
+
+    status.textContent = 'Running CTAE engine on ' + candles.length + ' data points\u2026';
+    slProcess(sym, period, candles, pctRet, bm, bmRet, logEl, out, meters, status);
+  } catch(e) {
+    status.textContent = '\u26a0 Error: ' + e.message;
+  }
+  btn.textContent = '\u25b6 Analyse';
+}
+
+/* ---- CTAE Indicator Math ---- */
+function slEMAArr(arr, n) {
+  if (arr.length < n) return [];
+  var k = 2/(n+1), res = [], e = arr.slice(0,n).reduce(function(a,b){return a+b;})/n;
+  for (var i=0; i<n-1; i++) res.push(null); res.push(e);
+  for (var i=n; i<arr.length; i++) { e = arr[i]*k + e*(1-k); res.push(e); }
+  return res;
+}
+function slRSI(closes, n) {
+  n = n||14; if (closes.length < n+1) return null;
+  var g=[], l=[];
+  for (var i=1; i<closes.length; i++) { var d=closes[i]-closes[i-1]; g.push(d>0?d:0); l.push(d<0?-d:0); }
+  var ag=g.slice(0,n).reduce(function(a,b){return a+b;})/n, al=l.slice(0,n).reduce(function(a,b){return a+b;})/n;
+  for (var i=n; i<g.length; i++) { ag=(ag*(n-1)+g[i])/n; al=(al*(n-1)+l[i])/n; }
+  return al===0?100:100-(100/(1+ag/al));
+}
+function slRSIArr(closes, n) {
+  var res=[]; n=n||14;
+  for (var i=0; i<closes.length; i++) { if(i<n){res.push(null);continue;} res.push(slRSI(closes.slice(0,i+1),n)); }
+  return res;
+}
+function slBB(closes, n, k) {
+  n=n||20; k=k||2; if (closes.length<n) return null;
+  var sl=closes.slice(closes.length-n), m=sl.reduce(function(a,b){return a+b;})/n;
+  var sd=Math.sqrt(sl.reduce(function(a,b){return a+Math.pow(b-m,2);},0)/n);
+  return {mid:m, upper:m+k*sd, lower:m-k*sd, bw:(2*k*sd)/m*100};
+}
+function slMACD(closes) {
+  var e12=slEMAArr(closes,12), e26=slEMAArr(closes,26), ml=[];
+  for (var i=0; i<closes.length; i++) ml.push(e12[i]!==null&&e26[i]!==null?e12[i]-e26[i]:null);
+  var valid=ml.filter(function(x){return x!==null;}), sig=slEMAArr(valid,9);
+  var last=valid[valid.length-1], lsig=sig[sig.length-1];
+  var prev=valid[valid.length-2]||null, psig=sig[sig.length-2]||null;
+  return {macd:last, signal:lsig, bullCross:prev!==null&&psig!==null&&prev<psig&&last>lsig, bearCross:prev!==null&&psig!==null&&prev>psig&&last<lsig};
+}
+function slFib(lo, hi) {
+  var r=hi-lo; return {r236:hi-0.236*r, r382:hi-0.382*r, r500:hi-0.5*r, r618:hi-0.618*r, r786:hi-0.786*r};
+}
+function slRSIDiv(closes, rsiArr) {
+  var n=closes.length; if(n<6) return {bull:false,bear:false};
+  return {
+    bull: Math.min(closes[n-2],closes[n-1]) < Math.min(closes[n-4],closes[n-5]) &&
+          Math.min(rsiArr[n-2]||50,rsiArr[n-1]||50) > Math.min(rsiArr[n-4]||50,rsiArr[n-5]||50),
+    bear: Math.max(closes[n-2],closes[n-1]) > Math.max(closes[n-4],closes[n-5]) &&
+          Math.max(rsiArr[n-2]||50,rsiArr[n-1]||50) < Math.max(rsiArr[n-4]||50,rsiArr[n-5]||50)
+  };
+}
+function slSR(closes) {
+  var maxH=Math.max.apply(null,closes), minL=Math.min.apply(null,closes), last=closes[closes.length-1];
+  return {support:minL, resistance:maxH, nearSupport:Math.abs(last-minL)/last<0.03, nearResist:Math.abs(last-maxH)/last<0.03, breakout:last>maxH*0.995};
+}
+
+/* ---- Scoring ---- */
+function slScore(candles) {
+  var closes = candles.map(function(c){return c.close;});
+  var f2 = function(n){return parseFloat(n).toFixed(2);};
+  var bb=slBB(closes,20,2), rsi=slRSI(closes,14), rsiArr=slRSIArr(closes,14);
+  var macd=slMACD(closes), fib=slFib(Math.min.apply(null,closes),Math.max.apply(null,closes));
+  var div=slRSIDiv(closes,rsiArr), sr=slSR(closes), last=closes[closes.length-1];
+  // Momentum proxy (rising last 5 candles)
+  var trend5 = closes.slice(-5);
+  var rising = trend5[trend5.length-1] > trend5[0];
+  var bull=[], bear=[], neutral=[], bs=0, ss=0;
+
+  // BB
+  if(bb){if(last<bb.lower){bull.push('Bollinger Bands: Below lower band ('+f2(bb.lower)+') — oversold');bs++;}
+         else if(last>bb.upper){bear.push('Bollinger Bands: Above upper band ('+f2(bb.upper)+') — extended');ss++;}
+         else if(bb.bw<4){bull.push('Bollinger Bands: Squeeze (BW '+f2(bb.bw)+'%) — breakout imminent');bear.push('BB Squeeze — direction TBD');bs+=0.5;ss+=0.5;}
+         else neutral.push('Bollinger Bands: Within bands, BW '+f2(bb.bw)+'%');}
+  else neutral.push('Bollinger Bands: Need 20+ data points');
+
+  // RSI
+  if(rsi!==null){if(rsi<30){bull.push('RSI: '+f2(rsi)+' — Oversold (<30)');bs++;}
+                 else if(rsi>70){bear.push('RSI: '+f2(rsi)+' — Overbought (>70)');ss++;}
+                 else if(rsi>=55){bull.push('RSI: '+f2(rsi)+' — Bullish momentum zone');bs+=0.5;}
+                 else if(rsi<45){bear.push('RSI: '+f2(rsi)+' — Below midline, bearish bias');ss+=0.5;}
+                 else neutral.push('RSI: '+f2(rsi)+' — Neutral zone');}
+  else neutral.push('RSI: Insufficient data');
+
+  // RSI Divergence
+  if(div.bull){bull.push('RSI Divergence: Bullish — price lows falling, RSI lows rising');bs++;}
+  else if(div.bear){bear.push('RSI Divergence: Bearish — price highs rising, RSI highs falling');ss++;}
+  else neutral.push('RSI Divergence: None detected');
+
+  // MACD (lagging, half-weight)
+  if(macd.macd!==null){if(macd.bullCross){bull.push('MACD: Bullish crossover (lagging — supporting only)');bs+=0.5;}
+                        else if(macd.bearCross){bear.push('MACD: Bearish crossover (lagging — supporting only)');ss+=0.5;}
+                        else if(macd.macd>0){bull.push('MACD: Positive ('+f2(macd.macd)+', lagging)');bs+=0.3;}
+                        else{bear.push('MACD: Negative ('+f2(macd.macd)+', lagging)');ss+=0.3;}}
+  else neutral.push('MACD: Insufficient data');
+
+  // Fibonacci
+  var fibLevs=[{v:fib.r236,n:'23.6%'},{v:fib.r382,n:'38.2%'},{v:fib.r500,n:'50%'},{v:fib.r618,n:'61.8%'},{v:fib.r786,n:'78.6%'}];
+  var fh=false;
+  fibLevs.forEach(function(fl){if(!fh&&Math.abs(last-fl.v)/last<0.015){fh=true;
+    if(rising){bull.push('Fibonacci: At '+fl.n+' retracement ('+f2(fl.v)+') — support zone');bs++;}
+    else{bear.push('Fibonacci: At '+fl.n+' retracement ('+f2(fl.v)+') — resistance zone');ss++;}}});
+  if(!fh) neutral.push('Fibonacci: Not near a key retracement level');
+
+  // Trend momentum (replaces volume — we only have close prices)
+  if(rising){bull.push('Price Momentum: Rising trend over last 5 periods');bs+=0.5;}
+  else{bear.push('Price Momentum: Falling trend over last 5 periods');ss+=0.5;}
+
+  // MA comparison (20 vs 50)
+  var ma20arr=slEMAArr(closes,20), ma50arr=slEMAArr(closes,50);
+  var ma20=ma20arr[ma20arr.length-1], ma50=ma50arr[ma50arr.length-1];
+  if(ma20&&ma50){if(last>ma20&&ma20>ma50){bull.push('Moving Averages: Price > 20MA > 50MA — bullish alignment');bs++;}
+                  else if(last<ma20&&ma20<ma50){bear.push('Moving Averages: Price < 20MA < 50MA — bearish alignment');ss++;}
+                  else neutral.push('Moving Averages: Mixed alignment (20MA: '+f2(ma20)+', 50MA: '+f2(ma50)+')');}
+  else neutral.push('Moving Averages: Insufficient data for 50MA');
+
+  // S/R
+  if(sr.breakout&&rising){bull.push('Resistance Breakout: Price at/above period high ('+f2(sr.resistance)+')');bs++;}
+  else if(sr.nearSupport){bull.push('Support: Price near period low ('+f2(sr.support)+') — bounce zone');bs+=0.5;}
+  else if(sr.nearResist){bear.push('Resistance: Price near period high ('+f2(sr.resistance)+') — rejection risk');ss+=0.5;}
+  else neutral.push('S/R: Between key levels (Low: '+f2(sr.support)+' High: '+f2(sr.resistance)+')');
+
+  // RSI divergence already counted; add OI placeholder
+  neutral.push('Open Interest: No live OI in this view — check NSE derivatives for confirmation');
+
+  return {bull:bull, bear:bear, neutral:neutral, bs:bs, ss:ss, bb:bb, rsi:rsi, macd:macd, ma20:ma20, ma50:ma50};
+}
+
+/* ---- Render ---- */
+function slProcess(sym, period, candles, pctRet, bm, bmRet, logEl, outEl, metersEl, statusEl) {
+  var f2=function(n){return parseFloat(n).toFixed(2);};
+  var esc=function(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');};
+  var sc=slScore(candles), bs=sc.bs, ss=sc.ss, last=candles[candles.length-1].close;
+  var alpha=pctRet-bmRet;
+
+  var dir=null, conf=0, confirmed=[], neutral=sc.neutral;
+  if(bs>=ss+1&&bs>=3){dir='buy';conf=Math.min(5,Math.round(bs));confirmed=sc.bull;}
+  else if(ss>=bs+1&&ss>=3){dir='sell';conf=Math.min(5,Math.round(ss));confirmed=sc.bear;}
+  else{confirmed=bs>ss?sc.bull:sc.bear;}
+
+  var entry=last, sl, target;
+  if(dir==='buy'){sl=sc.bb?Math.min(sc.bb.lower,last*0.97):last*0.97; target=entry+(entry-sl)*2.5;}
+  if(dir==='sell'){sl=sc.bb?Math.max(sc.bb.upper,last*1.03):last*1.03; target=entry-(sl-entry)*2.5;}
+
+  // Log
+  var name = document.getElementById('sl-badge-name').textContent || sym;
+  var lines=[
+    'CTAE Signal Lab — '+name+' ('+sym+') | '+period+' | '+new Date().toLocaleString('en-IN'),
+    'Data points: '+candles.length+' | Latest close: \u20b9'+f2(last),
+    'Period return: '+f2(pctRet)+'% | Benchmark return: '+f2(bmRet)+'% | Alpha: '+f2(alpha)+'%',
+    'Bull score: '+f2(bs)+' | Bear score: '+f2(ss)+' | Signal: '+(dir||'NO_SIGNAL'),
+    'RSI: '+(sc.rsi?f2(sc.rsi):'N/A')+' | BB BW: '+(sc.bb?f2(sc.bb.bw)+'%':'N/A')+
+    ' | MACD: '+(sc.macd.macd?f2(sc.macd.macd):'N/A'),
+    '20MA: '+(sc.ma20?f2(sc.ma20):'N/A')+' | 50MA: '+(sc.ma50?f2(sc.ma50):'N/A')
+  ];
+  if(dir) lines.push('Entry: \u20b9'+f2(entry)+' | SL: \u20b9'+f2(sl)+' | Target: \u20b9'+f2(target)+' | R:R 1:2.5');
+  logEl.textContent = lines.join('\n');
+
+  // Meters
+  var mh='<div class="sl-meters"><div class="sl-ind-label" style="margin-bottom:8px">Indicator Readings</div>';
+  function mtr(label,val,mn,mx,color){
+    var pct=Math.min(100,Math.max(0,((val-mn)/(mx-mn))*100));
+    return '<div class="sl-meter-row"><span class="sl-meter-lbl">'+label+'</span>'+
+      '<div class="sl-meter-bar"><div class="sl-meter-fill" style="width:'+pct.toFixed(0)+'%;background:'+color+'"></div></div>'+
+      '<span class="sl-meter-val" style="color:'+color+'">'+f2(val)+'</span></div>';
+  }
+  if(sc.rsi!==null) mh+=mtr('RSI (14)',sc.rsi,0,100,sc.rsi<30?'#2d7a4f':sc.rsi>70?'#c0392b':'#888');
+  if(sc.bb) mh+=mtr('BB Width %',sc.bb.bw,0,20,sc.bb.bw<4?'#e8b94a':'#888');
+  if(sc.macd.macd!==null) mh+=mtr('MACD',sc.macd.macd,-5,5,sc.macd.macd>0?'#2d7a4f':'#c0392b');
+  mh+=mtr('Bull Score',bs,0,5,'#2d7a4f')+mtr('Bear Score',ss,0,5,'#c0392b')+'</div>';
+  metersEl.innerHTML=mh;
+
+  var alphaStr=(alpha>=0?'+':'')+f2(alpha)+'% alpha vs '+bm.replace('^','');
+
+  if(!dir){
+    outEl.innerHTML='<div class="sl-signal-card"><div class="sl-card-hdr none">'+
+      '<span class="sl-card-title none">\u2298 NO_SIGNAL_DETECTED \u2014 '+esc(name)+'</span>'+
+      '<span class="sl-meta-chip">'+period+'</span></div>'+
+      '<div class="sl-card-body">'+
+      '<div style="font-size:13px;color:#888;font-family:Arial,sans-serif;margin-bottom:8px">'+
+        confirmed.length+' partial signal'+(confirmed.length!==1?'s':'')+' detected. Need 3+ confirming indicators to issue a trade signal.</div>'+
+      (confirmed.length?'<div class="sl-ind-section"><div class="sl-ind-label">Partial Confirmations</div>'+
+        confirmed.map(function(x){return'<div class="sl-ind-row"><span class="sl-ind-ic ic-neutral">~</span>'+esc(x)+'</div>';}).join('')+'</div>':'')+
+      neutral.slice(0,4).map(function(x){return'<div class="sl-ind-row" style="color:#bbb"><span style="width:16px;flex-shrink:0">\u25e6</span>'+esc(x)+'</div>';}).join('')+
+      '<div style="margin-top:8px"><span class="sl-alpha-chip">'+esc(alphaStr)+'</span></div>'+
+      '</div></div>';
+    statusEl.textContent = 'Analysis complete — threshold not met (Bull: '+f2(bs)+' / Bear: '+f2(ss)+')';
+    return;
+  }
+
+  var isBuy=dir==='buy', cls=isBuy?'buy':'sell';
+  var arrow=isBuy?'\u2191 BUY':'\u2193 SELL';
+  var dots='';
+  for(var d=1;d<=5;d++) {
+    var on=d<=conf?' on '+cls:'';
+    dots+='<span class="sl-dot'+on+'"></span>';
+  }
+  var riskMsg=isBuy?'SL breach below \u20b9'+f2(sl)+' invalidates the setup. Monitor 20MA support on any pullback.':
+                    'Failed breakdown below \u20b9'+f2(target)+' on low volume would signal bull trap.';
+
+  outEl.innerHTML='<div class="sl-signal-card"><div class="sl-card-hdr '+cls+'">'+
+    '<span class="sl-card-title '+cls+'">'+arrow+' \u2014 '+esc(name)+'</span>'+
+    '<div class="sl-conf-dots">'+dots+'<span style="font-size:11px;color:'+(isBuy?'#155724':'#721c24');
+  outEl.innerHTML += ';font-family:Arial,sans-serif;margin-left:4px">'+conf+'/5</span></div></div>'+
+    '<div class="sl-card-body">'+
+    '<div class="sl-price-grid">'+
+      '<div class="sl-pf"><label>Entry Price</label><div class="sl-pval">\u20b9'+f2(entry)+'</div></div>'+
+      '<div class="sl-pf"><label>Stop-loss</label><div class="sl-pval sl-sl">\u20b9'+f2(sl)+'</div></div>'+
+      '<div class="sl-pf"><label>Price Target</label><div class="sl-pval sl-tgt">\u20b9'+f2(target)+'</div></div>'+
+    '</div>'+
+    '<div class="sl-meta-row">'+
+      '<span class="sl-meta-chip">'+period+' \u00b7 R:R 1:2.5 \u00b7 Conf '+conf+'/5</span>'+
+      '<span class="sl-alpha-chip">'+esc(alphaStr)+'</span>'+
+    '</div>'+
+    '<div class="sl-ind-section"><div class="sl-ind-label">Confirmed Indicators ('+conf+'/5)</div>'+
+      confirmed.map(function(x){return'<div class="sl-ind-row"><span class="sl-ind-ic ic-ok">\u2713</span>'+esc(x)+'</div>';}).join('')+
+    '</div>'+
+    (neutral.length?'<div class="sl-ind-section"><div class="sl-ind-label">Neutral / Not Confirming</div>'+
+      neutral.map(function(x){return'<div class="sl-ind-row" style="color:#bbb"><span style="width:16px;flex-shrink:0">\u25e6</span>'+esc(x)+'</div>';}).join('')+'</div>':'')+
+    '<div class="sl-risk-box">\u26a0 '+esc(riskMsg)+'</div>'+
+    '</div></div>';
+
+  statusEl.textContent = '\u2713 Analysis complete \u2014 '+conf+'/5 indicators confirmed.';
+}
+
+/* END SIGNAL LAB */
 </script>
 </body>
 </html>
