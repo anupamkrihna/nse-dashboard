@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NSE Pro — Market Intelligence Suite</title>
+<style>
+  :root {
+    --bg: #0a0c10;
+    --surface: #10131a;
+    --surface2: #161923;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #dde1ec;
+    --muted: #6b7080;
+    --accent: #4f8ef7;
+    --green: #3ecf8e;
+    --red: #f05454;
+    --amber: #f6c05c;
+    --gold: #e8b84b;
+    --font-mono: 'JetBrains Mono','Fira Code','Courier New',monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 14px;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── Ticker strip ── */
+  .ticker-bar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0;
+    height: 34px;
+    overflow: hidden;
+    position: relative;
+    flex-shrink: 0;
+  }
+  .ticker-bar::before, .ticker-bar::after {
+    content: '';
+    position: absolute;
+    top: 0; bottom: 0;
+    width: 60px;
+    z-index: 2;
+    pointer-events: none;
+  }
+  .ticker-bar::before { left: 0; background: linear-gradient(to right, var(--surface), transparent); }
+  .ticker-bar::after  { right: 0; background: linear-gradient(to left, var(--surface), transparent); }
+  .ticker-track {
+    display: flex;
+    align-items: center;
+    height: 34px;
+    white-space: nowrap;
+    animation: ticker 40s linear infinite;
+    width: max-content;
+  }
+  @keyframes ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+  .ticker-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 24px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    border-right: 1px solid var(--border);
+  }
+  .ticker-label { color: var(--muted); letter-spacing: 0.3px; }
+  .ticker-val { font-weight: 600; color: var(--text); }
+  .ticker-chg.up { color: var(--green); }
+  .ticker-chg.dn { color: var(--red); }
+
+  /* ── Header ── */
+  .header {
+    padding: 22px 40px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .brand {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+  .brand-name {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    color: var(--text);
+  }
+  .brand-name span { color: var(--accent); }
+  .brand-tagline {
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 0.5px;
+  }
+  .header-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--muted);
+    font-family: var(--font-mono);
+  }
+  .live-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--green);
+    animation: blink 2s ease-in-out infinite;
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  /* ── Main ── */
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px 40px 40px;
+    gap: 32px;
+  }
+
+  .suite-label {
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-align: center;
+  }
+
+  /* ── Cards ── */
+  .cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    width: 100%;
+    max-width: 860px;
+  }
+
+  .card {
+    position: relative;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 16px;
+    padding: 36px 32px 32px;
+    cursor: pointer;
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    overflow: hidden;
+    transition: border-color 0.25s, transform 0.2s, box-shadow 0.25s;
+    min-height: 280px;
+  }
+  .card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+  .card-1:hover { border-color: rgba(79,142,247,0.5); }
+  .card-2:hover { border-color: rgba(62,207,142,0.5); }
+
+  /* Glow corner accent */
+  .card::before {
+    content: '';
+    position: absolute;
+    top: -40px; right: -40px;
+    width: 140px; height: 140px;
+    border-radius: 50%;
+    opacity: 0.06;
+    transition: opacity 0.3s;
+  }
+  .card:hover::before { opacity: 0.12; }
+  .card-1::before { background: #4f8ef7; }
+  .card-2::before { background: #3ecf8e; }
+
+  .card-eyebrow {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1.8px;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  .card-1 .card-eyebrow { color: var(--accent); }
+  .card-2 .card-eyebrow { color: var(--green); }
+
+  .card-icon {
+    font-size: 36px;
+    margin-bottom: 14px;
+    line-height: 1;
+  }
+
+  .card-title {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+    margin-bottom: 10px;
+    line-height: 1.2;
+  }
+
+  .card-desc {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.7;
+    flex: 1;
+    margin-bottom: 24px;
+  }
+
+  .card-features {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 24px;
+  }
+  .feat-tag {
+    font-size: 11px;
+    padding: 3px 9px;
+    border-radius: 5px;
+    font-weight: 500;
+  }
+  .card-1 .feat-tag { background: rgba(79,142,247,0.1); color: #7eb3ff; }
+  .card-2 .feat-tag { background: rgba(62,207,142,0.1); color: #6de8b0; }
+
+  .card-cta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 11px 18px;
+    border-radius: 9px;
+    width: fit-content;
+    transition: gap 0.2s;
+  }
+  .card:hover .card-cta { gap: 12px; }
+  .card-1 .card-cta { background: rgba(79,142,247,0.12); color: var(--accent); border: 1px solid rgba(79,142,247,0.25); }
+  .card-2 .card-cta { background: rgba(62,207,142,0.1); color: var(--green); border: 1px solid rgba(62,207,142,0.2); }
+
+  .arrow { font-size: 16px; transition: transform 0.2s; }
+  .card:hover .arrow { transform: translateX(4px); }
+
+  /* ── Divider between cards ── */
+  .card-divider {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  .card-divider::before {
+    content: 'OR';
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 1px;
+    background: var(--bg);
+    padding: 6px 8px;
+    border-radius: 50%;
+    border: 1px solid var(--border2);
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ── Footer strip ── */
+  .footer {
+    padding: 16px 40px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .footer-left {
+    font-size: 11px;
+    color: var(--muted);
+    font-family: var(--font-mono);
+  }
+  .footer-right {
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .footer-right a {
+    color: var(--muted);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  .footer-right a:hover { color: var(--accent); }
+
+  /* ── Scan line ambient effect ── */
+  body::after {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(255,255,255,0.012) 2px,
+      rgba(255,255,255,0.012) 4px
+    );
+    pointer-events: none;
+    z-index: 0;
+  }
+  .ticker-bar, .header, .main, .footer { position: relative; z-index: 1; }
+
+  /* ── Responsive ── */
+  @media (max-width: 640px) {
+    .header { padding: 16px 20px; }
+    .main { padding: 16px 16px 32px; gap: 20px; }
+    .cards { grid-template-columns: 1fr; max-width: 420px; }
+    .card-divider { display: none; }
+    .card { min-height: auto; padding: 28px 24px 24px; }
+    .footer { padding: 14px 20px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- TICKER STRIP -->
+<div class="ticker-bar">
+  <div class="ticker-track" id="tickerTrack">
+    <!-- filled by JS, duplicated for seamless loop -->
+  </div>
+</div>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="brand">
+    <div class="brand-name">NSE <span>Pro</span></div>
+    <div class="brand-tagline">Market Intelligence Suite</div>
+  </div>
+  <div class="header-meta">
+    <div class="live-dot"></div>
+    <span id="liveTime">–</span>
+    &nbsp;·&nbsp; IST
+  </div>
+</header>
+
+<!-- MAIN -->
+<main class="main">
+
+  <div class="suite-label">Select your tool</div>
+
+  <div class="cards">
+
+    <!-- Card 1: NSE Dashboard Pro -->
+    <a class="card card-1" href="dashboard.html">
+      <div class="card-eyebrow">Module 01</div>
+      <div class="card-icon">📊</div>
+      <div class="card-title">NSE Dashboard Pro</div>
+      <div class="card-desc">Live index KPIs, moving averages, index ratio analysis, stock vs Nifty performance, and the custom analysis Signal Lab. Powered by your Google Apps Script backend.</div>
+      <div class="card-features">
+        <span class="feat-tag">Nifty 50</span>
+        <span class="feat-tag">Index Ratios</span>
+        <span class="feat-tag">Moving Averages</span>
+        <span class="feat-tag">Signal Lab</span>
+        <span class="feat-tag">Stock vs Nifty</span>
+      </div>
+      <div class="card-cta">
+        Open Dashboard <span class="arrow">→</span>
+      </div>
+    </a>
+
+    <!-- Card 2: Steam Gauge -->
+    <a class="card card-2" href="steam.html">
+      <div class="card-eyebrow">Module 02</div>
+      <div class="card-icon">🔥</div>
+      <div class="card-title">Steam Gauge</div>
+      <div class="card-desc">Search any NSE stock, see which indices it belongs to, and run a 5-point momentum exhaustion analysis — Valuation, Price Extension, Volume Quality, Earnings Momentum, and RS Rank.</div>
+      <div class="card-features">
+        <span class="feat-tag">20+ Indices</span>
+        <span class="feat-tag">5-Point Gauge</span>
+        <span class="feat-tag">Index Membership</span>
+        <span class="feat-tag">Sector Peers</span>
+        <span class="feat-tag">Live Data</span>
+      </div>
+      <div class="card-cta">
+        Open Steam Gauge <span class="arrow">→</span>
+      </div>
+    </a>
+
+  </div>
+
+  <!-- Back link hint -->
+  <div style="font-size:12px;color:var(--muted);text-align:center;margin-top:4px">
+    Both tools use a 4-proxy Yahoo Finance chain — no login required
+  </div>
+
+</main>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="footer-left" id="footerDate">–</div>
+  <div class="footer-right">
+    <a href="dashboard.html">Dashboard Pro</a>
+    &nbsp;·&nbsp;
+    <a href="steam.html">Steam Gauge</a>
+  </div>
+</footer>
+
+<script>
+// ── Ticker data (static seed — NSE reference values) ──
+const TICKERS = [
+  { label: 'NIFTY 50',    val: '24,833',  chg: '+0.61%', up: true  },
+  { label: 'BANK NIFTY',  val: '53,412',  chg: '+0.44%', up: true  },
+  { label: 'NIFTY IT',    val: '36,218',  chg: '-0.23%', up: false },
+  { label: 'NIFTY METAL', val: '8,912',   chg: '+1.12%', up: true  },
+  { label: 'NIFTY MIDCAP',val: '57,334',  chg: '+0.78%', up: true  },
+  { label: 'NIFTY SMCAP', val: '18,441',  chg: '+0.55%', up: true  },
+  { label: 'NIFTY DEFENCE',val: '6,784',  chg: '+2.34%', up: true  },
+  { label: 'NIFTY PHARMA',val: '21,560',  chg: '-0.18%', up: false },
+  { label: 'NIFTY AUTO',  val: '23,190',  chg: '+0.91%', up: true  },
+  { label: 'NIFTY FMCG',  val: '56,780',  chg: '+0.12%', up: true  },
+  { label: 'SENSEX',      val: '81,752',  chg: '+0.58%', up: true  },
+  { label: 'USD/INR',     val: '83.42',   chg: '-0.04%', up: false },
+  { label: 'GOLD/10g',    val: '₹73,240', chg: '+0.22%', up: true  },
+];
+
+function buildTicker() {
+  const items = [...TICKERS, ...TICKERS]; // duplicate for seamless loop
+  const track = document.getElementById('tickerTrack');
+  track.innerHTML = items.map(t => `
+    <span class="ticker-item">
+      <span class="ticker-label">${t.label}</span>
+      <span class="ticker-val">${t.val}</span>
+      <span class="ticker-chg ${t.up ? 'up' : 'dn'}">${t.chg}</span>
+    </span>
+  `).join('');
+}
+
+// ── Live clock ──
+function updateTime() {
+  const now = new Date();
+  const opts = { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
+  document.getElementById('liveTime').textContent = now.toLocaleTimeString('en-IN', opts);
+  const dopts = { timeZone: 'Asia/Kolkata', weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' };
+  document.getElementById('footerDate').textContent = now.toLocaleDateString('en-IN', dopts);
+}
+
+buildTicker();
+updateTime();
+setInterval(updateTime, 1000);
+</script>
+</body>
+</html>

@@ -1,0 +1,1126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NSE Stock Intelligence</title>
+<style>
+  :root {
+    --bg: #0d0f14;
+    --surface: #13161e;
+    --surface2: #1a1d28;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.13);
+    --text: #e8eaf0;
+    --muted: #7a7f94;
+    --accent: #4f8ef7;
+    --accent2: #2d5fcf;
+    --green: #3ecf8e;
+    --red: #f56565;
+    --amber: #f6c05c;
+    --tag-bg: rgba(79,142,247,0.13);
+    --tag-text: #7eb3ff;
+    --radius: 8px;
+    --radius-lg: 12px;
+    --font-mono: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 14px; line-height: 1.5; min-height: 100vh; }
+
+  /* ── Header ── */
+  .header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 14px 24px; display: flex; align-items: center; gap: 20px; position: sticky; top: 0; z-index: 100; }
+  .logo { font-size: 15px; font-weight: 600; letter-spacing: 0.5px; color: var(--text); white-space: nowrap; }
+  .logo span { color: var(--accent); }
+  .search-wrap { flex: 1; max-width: 520px; position: relative; }
+  .search-wrap input { width: 100%; background: var(--bg); border: 1px solid var(--border2); border-radius: var(--radius); padding: 9px 40px 9px 14px; color: var(--text); font-size: 14px; outline: none; transition: border 0.2s; font-family: inherit; }
+  .search-wrap input:focus { border-color: var(--accent); }
+  .search-wrap input::placeholder { color: var(--muted); }
+  .search-icon { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
+  .dropdown { position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: var(--surface2); border: 1px solid var(--border2); border-radius: var(--radius); z-index: 200; max-height: 320px; overflow-y: auto; display: none; }
+  .dropdown.open { display: block; }
+  .dd-item { padding: 10px 14px; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: background 0.15s; }
+  .dd-item:hover { background: rgba(79,142,247,0.1); }
+  .dd-sym { font-family: var(--font-mono); font-size: 13px; font-weight: 600; color: var(--accent); min-width: 100px; }
+  .dd-name { color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .dd-sector { margin-left: auto; font-size: 11px; color: var(--muted); background: var(--surface); padding: 2px 7px; border-radius: 4px; white-space: nowrap; }
+  .header-right { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+  .live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+  .live-label { font-size: 11px; color: var(--muted); }
+
+  /* ── Landing ── */
+  .landing { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: calc(100vh - 57px); padding: 40px 24px; text-align: center; }
+  .landing-title { font-size: 32px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 10px; }
+  .landing-title span { color: var(--accent); }
+  .landing-sub { color: var(--muted); font-size: 15px; max-width: 480px; margin-bottom: 36px; }
+  .index-chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; max-width: 620px; }
+  .chip { background: var(--surface); border: 1px solid var(--border2); border-radius: 20px; padding: 5px 13px; font-size: 12px; color: var(--muted); }
+
+  /* ── Main layout ── */
+  .main { display: none; padding: 24px; max-width: 1200px; margin: 0 auto; }
+  .main.show { display: block; }
+
+  /* ── Stock header ── */
+  .stock-header { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px 24px; margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start; }
+  .stock-name-block { flex: 1; min-width: 200px; }
+  .stock-sym { font-family: var(--font-mono); font-size: 22px; font-weight: 700; color: var(--accent); letter-spacing: 1px; }
+  .stock-full { font-size: 15px; color: var(--text); margin-top: 3px; }
+  .stock-sector { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .price-block { text-align: right; }
+  .price-main { font-family: var(--font-mono); font-size: 28px; font-weight: 700; color: var(--text); }
+  .price-change { font-size: 13px; margin-top: 4px; font-family: var(--font-mono); }
+  .price-change.up { color: var(--green); }
+  .price-change.down { color: var(--red); }
+  .kv-grid { display: flex; flex-wrap: wrap; gap: 16px; width: 100%; margin-top: 4px; }
+  .kv { display: flex; flex-direction: column; }
+  .kv-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .kv-val { font-family: var(--font-mono); font-size: 14px; color: var(--text); font-weight: 500; margin-top: 2px; }
+
+  /* ── Index membership ── */
+  .section-title { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 12px; }
+  .index-membership { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 18px 20px; margin-bottom: 20px; }
+  .membership-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+  .idx-badge { padding: 5px 12px; border-radius: 6px; font-size: 12px; font-weight: 500; border: 1px solid; }
+  .idx-badge.broad { background: rgba(79,142,247,0.1); border-color: rgba(79,142,247,0.3); color: var(--tag-text); }
+  .idx-badge.sector { background: rgba(62,207,142,0.08); border-color: rgba(62,207,142,0.25); color: #6de8b0; }
+  .idx-badge.size { background: rgba(246,192,92,0.08); border-color: rgba(246,192,92,0.25); color: #f6c05c; }
+  .no-membership { color: var(--muted); font-size: 13px; font-style: italic; }
+
+  /* ── Tabs ── */
+  .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
+  .tab { padding: 10px 18px; font-size: 13px; font-weight: 500; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.2s; white-space: nowrap; }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── Steam Gauge ── */
+  .gauge-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 18px 20px; margin-bottom: 14px; }
+  .gauge-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; }
+  .gauge-title { font-size: 14px; font-weight: 600; color: var(--text); }
+  .gauge-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .badge { font-size: 11px; font-weight: 600; padding: 4px 11px; border-radius: 5px; white-space: nowrap; }
+  .badge-green { background: rgba(62,207,142,0.12); color: #3ecf8e; }
+  .badge-amber { background: rgba(246,192,92,0.12); color: #f6c05c; }
+  .badge-red { background: rgba(245,101,101,0.12); color: #f56565; }
+  .badge-gray { background: rgba(122,127,148,0.15); color: var(--muted); }
+  .gauge-metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 12px; margin-bottom: 14px; }
+  .gauge-metric { background: var(--bg); border-radius: var(--radius); padding: 10px 12px; }
+  .gm-label { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+  .gm-val { font-family: var(--font-mono); font-size: 16px; font-weight: 600; color: var(--text); }
+  .gauge-analysis { font-size: 12px; color: var(--muted); line-height: 1.7; border-top: 1px solid var(--border); padding-top: 12px; }
+  .gauge-analysis strong { color: var(--text); }
+
+  /* progress bar */
+  .progress-wrap { margin-bottom: 10px; }
+  .progress-labels { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-bottom: 5px; }
+  .progress-track { background: var(--bg); border-radius: 4px; height: 8px; }
+  .progress-fill { height: 8px; border-radius: 4px; }
+  .progress-sub { font-size: 11px; color: var(--muted); margin-top: 3px; }
+
+  /* Verdict */
+  .verdict-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px; }
+  .verdict-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 16px; }
+  .verdict-item { text-align: center; }
+  .verdict-badge { padding: 5px 4px; border-radius: 5px; font-size: 11px; font-weight: 600; margin-bottom: 5px; }
+  .verdict-label { font-size: 11px; color: var(--muted); }
+  .verdict-text { font-size: 13px; color: var(--muted); line-height: 1.7; border-top: 1px solid var(--border); padding-top: 14px; }
+  .verdict-text strong { color: var(--text); }
+
+  /* ── Sector tab ── */
+  .sector-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .sector-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 18px 20px; }
+  .sector-card h3 { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 14px; }
+  .peer-row { display: flex; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); gap: 8px; }
+  .peer-row:last-child { border-bottom: none; }
+  .peer-name { font-size: 13px; color: var(--text); flex: 1; }
+  .peer-sym { font-family: var(--font-mono); font-size: 11px; color: var(--muted); }
+  .peer-pe { font-family: var(--font-mono); font-size: 13px; font-weight: 500; color: var(--text); min-width: 50px; text-align: right; }
+  .peer-highlight { background: rgba(79,142,247,0.07); border-radius: var(--radius); padding: 0 8px; }
+
+  /* ── Indices overview ── */
+  .indices-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+  .idx-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px; }
+  .idx-card-name { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 8px; }
+  .idx-stock-count { font-size: 12px; color: var(--muted); }
+  .idx-found { font-size: 12px; color: var(--green); font-family: var(--font-mono); margin-top: 4px; }
+
+  /* ── Loading ── */
+  .loading { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 13px; padding: 20px 0; }
+  .spinner { width: 16px; height: 16px; border: 2px solid var(--border2); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Disclaimer ── */
+  .disclaimer { font-size: 11px; color: var(--muted); margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border); }
+
+  /* scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+  @media(max-width: 640px) {
+    .header { padding: 10px 14px; gap: 10px; }
+    .main { padding: 14px; }
+    .sector-grid { grid-template-columns: 1fr; }
+    .verdict-grid { grid-template-columns: repeat(3, 1fr); }
+    .kv-grid { gap: 10px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <a href="index.html" style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);text-decoration:none;white-space:nowrap;transition:color 0.2s" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--muted)'">
+    <span style="font-size:15px">←</span> NSE Pro
+  </a>
+  <div class="logo">🔥 <span>Steam Gauge</span></div>
+  <div class="search-wrap">
+    <input type="text" id="searchInput" placeholder="Search stock — KOEL, TCS, RELIANCE, HDFCBANK…" autocomplete="off">
+    <svg class="search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <div class="dropdown" id="dropdown"></div>
+  </div>
+  <div class="header-right">
+    <div class="live-dot"></div>
+    <span class="live-label">Yahoo Finance · 4-proxy chain</span>
+  </div>
+</header>
+
+<!-- LANDING -->
+<div class="landing" id="landing">
+  <div class="landing-title">Find a stock.<br><span>Understand its place.</span> Gauge the steam.</div>
+  <div class="landing-sub">Search any NSE-listed stock to see which indices it belongs to, how it stacks up against peers, and whether the move still has legs.</div>
+  <div class="index-chips" id="allIndexChips"></div>
+</div>
+
+<!-- MAIN DASHBOARD -->
+<div class="main" id="mainDash">
+
+  <!-- Stock header -->
+  <div class="stock-header" id="stockHeader">
+    <div class="stock-name-block">
+      <div class="stock-sym" id="hSym">–</div>
+      <div class="stock-full" id="hName">–</div>
+      <div class="stock-sector" id="hSector">–</div>
+    </div>
+    <div class="price-block">
+      <div class="price-main" id="hPrice">–</div>
+      <div class="price-change" id="hChange">–</div>
+    </div>
+    <div class="kv-grid">
+      <div class="kv"><div class="kv-label">Market cap</div><div class="kv-val" id="hMcap">–</div></div>
+      <div class="kv"><div class="kv-label">PE (TTM)</div><div class="kv-val" id="hPE">–</div></div>
+      <div class="kv"><div class="kv-label">52W High</div><div class="kv-val" id="h52H">–</div></div>
+      <div class="kv"><div class="kv-label">52W Low</div><div class="kv-val" id="h52L">–</div></div>
+      <div class="kv"><div class="kv-label">EPS (TTM)</div><div class="kv-val" id="hEPS">–</div></div>
+      <div class="kv"><div class="kv-label">PB Ratio</div><div class="kv-val" id="hPB">–</div></div>
+    </div>
+  </div>
+
+  <!-- Index Membership -->
+  <div class="index-membership" id="indexMembership">
+    <div class="section-title">Index Membership</div>
+    <div class="membership-grid" id="membershipGrid">
+      <span class="no-membership">Search a stock to see its index memberships.</span>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <div class="tab active" data-tab="steam">🔥 Steam Gauge</div>
+    <div class="tab" data-tab="sector">📊 Sector Context</div>
+    <div class="tab" data-tab="indices">🗂 All Indices</div>
+  </div>
+
+  <!-- Tab: Steam Gauge -->
+  <div class="tab-panel active" id="tab-steam">
+    <div id="steamLoading" class="loading"><div class="spinner"></div><span>Fetching live data…</span><span id="proxyStatus" style="font-size:11px;color:var(--muted);margin-left:6px"></span></div>
+    <div id="steamContent" style="display:none">
+
+      <!-- 1 Valuation -->
+      <div class="gauge-card">
+        <div class="gauge-header">
+          <div><div class="gauge-title">1 · Valuation stretch</div><div class="gauge-sub">PE vs sector & own history</div></div>
+          <span class="badge" id="badge1">–</span>
+        </div>
+        <div class="gauge-metrics">
+          <div class="gauge-metric"><div class="gm-label">TTM PE</div><div class="gm-val" id="g1pe">–</div></div>
+          <div class="gauge-metric"><div class="gm-label">PB Ratio</div><div class="gm-val" id="g1pb">–</div></div>
+          <div class="gauge-metric"><div class="gm-label">EPS (TTM)</div><div class="gm-val" id="g1eps">–</div></div>
+          <div class="gauge-metric"><div class="gm-label">Div yield</div><div class="gm-val" id="g1dy">–</div></div>
+        </div>
+        <div class="gauge-analysis" id="g1analysis"></div>
+      </div>
+
+      <!-- 2 Price Extension -->
+      <div class="gauge-card">
+        <div class="gauge-header">
+          <div><div class="gauge-title">2 · Price extension</div><div class="gauge-sub">% move from 52W low to high</div></div>
+          <span class="badge" id="badge2">–</span>
+        </div>
+        <div class="progress-wrap">
+          <div class="progress-labels">
+            <span id="g2low">–</span><span id="g2cur">CMP</span><span id="g2high">–</span>
+          </div>
+          <div class="progress-track"><div class="progress-fill" id="g2bar" style="width:50%"></div></div>
+          <div class="progress-sub" id="g2sub"></div>
+        </div>
+        <div class="gauge-analysis" id="g2analysis"></div>
+      </div>
+
+      <!-- 3 Volume -->
+      <div class="gauge-card">
+        <div class="gauge-header">
+          <div><div class="gauge-title">3 · Volume quality</div><div class="gauge-sub">Recent vs average volume</div></div>
+          <span class="badge" id="badge3">–</span>
+        </div>
+        <div class="gauge-metrics">
+          <div class="gauge-metric"><div class="gm-label">Avg volume (3M)</div><div class="gm-val" id="g3avg">–</div></div>
+          <div class="gauge-metric"><div class="gm-label">Beta</div><div class="gm-val" id="g3beta">–</div></div>
+          <div class="gauge-metric"><div class="gm-label">Float %</div><div class="gm-val" id="g3float">–</div></div>
+        </div>
+        <div class="gauge-analysis" id="g3analysis"></div>
+      </div>
+
+      <!-- 4 Earnings momentum -->
+      <div class="gauge-card">
+        <div class="gauge-header">
+          <div><div class="gauge-title">4 · Earnings revision momentum</div><div class="gauge-sub">Revenue & profit trajectory</div></div>
+          <span class="badge" id="badge4">–</span>
+        </div>
+        <div class="gauge-metrics">
+          <div class="gauge-metric"><div class="gm-label">Revenue (TTM)</div><div class="gm-val" id="g4rev">–</div></div>
+          <div class="gauge-metric"><div class="gm-label">Net income</div><div class="gm-val" id="g4ni">–</div></div>
+          <div class="gauge-metric"><div class="gm-label">Profit margin</div><div class="gm-val" id="g4pm">–</div></div>
+          <div class="gauge-metric"><div class="gm-label">Revenue growth</div><div class="gm-val" id="g4rg">–</div></div>
+        </div>
+        <div class="gauge-analysis" id="g4analysis"></div>
+      </div>
+
+      <!-- 5 RS / Institutional -->
+      <div class="gauge-card">
+        <div class="gauge-header">
+          <div><div class="gauge-title">5 · Relative strength & smart money</div><div class="gauge-sub">Performance vs market + institutional holding</div></div>
+          <span class="badge" id="badge5">–</span>
+        </div>
+        <div class="gauge-metrics">
+          <div class="gauge-metric"><div class="gm-label">1Y return</div><div class="gm-val" id="g5ret1y">–</div></div>
+          <div class="gauge-metric"><div class="gm-label">YTD return</div><div class="gm-val" id="g5ytd">–</div></div>
+          <div class="gauge-metric"><div class="gm-label">Insider hold</div><div class="gm-val" id="g5ins">–</div></div>
+          <div class="gauge-metric"><div class="gm-label">Inst. hold</div><div class="gm-val" id="g5inst">–</div></div>
+        </div>
+        <div class="gauge-analysis" id="g5analysis"></div>
+      </div>
+
+      <!-- Verdict -->
+      <div class="verdict-card">
+        <div class="section-title">Overall steam gauge verdict</div>
+        <div class="verdict-grid">
+          <div class="verdict-item"><div class="verdict-badge" id="v1b">–</div><div class="verdict-label">Valuation</div></div>
+          <div class="verdict-item"><div class="verdict-badge" id="v2b">–</div><div class="verdict-label">Price</div></div>
+          <div class="verdict-item"><div class="verdict-badge" id="v3b">–</div><div class="verdict-label">Volume</div></div>
+          <div class="verdict-item"><div class="verdict-badge" id="v4b">–</div><div class="verdict-label">Earnings</div></div>
+          <div class="verdict-item"><div class="verdict-badge" id="v5b">–</div><div class="verdict-label">RS / Flow</div></div>
+        </div>
+        <div class="verdict-text" id="verdictText">–</div>
+      </div>
+
+      <div class="disclaimer">Data sourced from Yahoo Finance. Scores are algorithmic estimates, not investment advice. Always do your own research. Past performance is not indicative of future results.</div>
+    </div>
+  </div>
+
+  <!-- Tab: Sector Context -->
+  <div class="tab-panel" id="tab-sector">
+    <div class="sector-grid">
+      <div class="sector-card">
+        <h3>Sector peers (same NSE sector)</h3>
+        <div id="peerList"><span style="color:var(--muted);font-size:13px">Search a stock to see sector peers.</span></div>
+      </div>
+      <div class="sector-card">
+        <h3>Key valuation benchmarks</h3>
+        <div id="benchmarkList">
+          <div class="peer-row"><div class="peer-name">Industrial Machinery avg PE</div><div class="peer-pe" style="color:var(--muted)">~55x</div></div>
+          <div class="peer-row"><div class="peer-name">Nifty 50 avg PE</div><div class="peer-pe" style="color:var(--muted)">~22x</div></div>
+          <div class="peer-row"><div class="peer-name">Nifty Midcap avg PE</div><div class="peer-pe" style="color:var(--muted)">~35x</div></div>
+          <div class="peer-row"><div class="peer-name">Nifty Smallcap avg PE</div><div class="peer-pe" style="color:var(--muted)">~28x</div></div>
+        </div>
+      </div>
+      <div class="sector-card" style="grid-column: 1/-1;">
+        <h3>Steam left? — when to consider entry vs exit</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:4px">
+          <div>
+            <div style="font-size:12px;color:var(--green);font-weight:600;margin-bottom:8px">🟢 Steam remaining — signals</div>
+            <div style="font-size:12px;color:var(--muted);line-height:1.8">• Earnings upgrades still arriving<br>• Price consolidating, not rolling over<br>• Volume on up-days &gt; down-days<br>• FII/DII still accumulating<br>• Sector macro tailwind active<br>• RS rank vs Nifty still climbing</div>
+          </div>
+          <div>
+            <div style="font-size:12px;color:var(--red);font-weight:600;margin-bottom:8px">🔴 Steam exhausting — signals</div>
+            <div style="font-size:12px;color:var(--muted);line-height:1.8">• Volume declining on up-days<br>• Gap-ups not sustaining<br>• Analyst target floods (late-cycle)<br>• PE &gt; 2x sector average<br>• FII selling visible in shareholding<br>• Stock near ATH with falling RS</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab: All Indices -->
+  <div class="tab-panel" id="tab-indices">
+    <div class="section-title" style="margin-bottom:14px">All tracked NSE indices — <span id="totalIndices">0</span> indices, <span id="totalStocks">0</span> unique stocks</div>
+    <div class="indices-grid" id="indicesGrid"></div>
+  </div>
+
+</div>
+
+<script>
+// ─────────────────────────────────────────────
+// NSE INDEX CONSTITUENTS DATA
+// ─────────────────────────────────────────────
+const INDICES = {
+  // BROAD
+  "Nifty 50": {
+    type:"broad",
+    stocks:["RELIANCE","TCS","HDFCBANK","BHARTIARTL","ICICIBANK","SBIN","INFY","LICI","ITC","HINDUNILVR","LT","BAJFINANCE","HCLTECH","MARUTI","SUNPHARMA","KOTAKBANK","AXISBANK","TITAN","ADANIENT","ONGC","NTPC","ULTRACEMCO","COALINDIA","JSWSTEEL","BAJAJ-AUTO","WIPRO","POWERGRID","NESTLEIND","TATAMOTORS","M&M","TATASTEEL","ADANIPORTS","TECHM","ASIANPAINT","HINDALCO","DRREDDY","CIPLA","DIVISLAB","GRASIM","SBILIFE","BAJAJFINSV","HDFCLIFE","APOLLOHOSP","EICHERMOT","BRITANNIA","TATACONSUM","BPCL","INDUSINDBK","HEROMOTOCO","SHRIRAMFIN"]
+  },
+  "Nifty Next 50": {
+    type:"broad",
+    stocks:["ADANIGREEN","ADANIPOWER","ATGL","AMBUJACEM","BANKBARODA","BEL","BHEL","BOSCHLTD","CANBK","CHOLAFIN","DABUR","DLF","GAIL","GODREJCP","HAVELLS","INDIGO","IOC","IRCTC","IRFC","LUPIN","MUTHOOTFIN","OBEROIRLTY","OFSS","PIIND","PNB","RECLTD","SBICARD","SHREECEM","SIEMENS","TATAPOWER","TORNTPHARM","TRENT","UNITDSPR","UPL","VBL","VEDL","ZOMATO","HDFCAMC","ICICIPRULI","INDUSTOWER","MANKIND","MARICO","MOTHERSON","NAUKRI","PAGEIND","PAYTM","POLYCAB","PERSISTENT","TIINDIA","ZYDUSLIFE"]
+  },
+  "Nifty 100": {
+    type:"broad",
+    stocks:["RELIANCE","TCS","HDFCBANK","BHARTIARTL","ICICIBANK","SBIN","INFY","LICI","ITC","HINDUNILVR","LT","BAJFINANCE","HCLTECH","MARUTI","SUNPHARMA","KOTAKBANK","AXISBANK","TITAN","ADANIENT","ONGC","NTPC","ULTRACEMCO","COALINDIA","JSWSTEEL","BAJAJ-AUTO","WIPRO","POWERGRID","NESTLEIND","TATAMOTORS","M&M","TATASTEEL","ADANIPORTS","TECHM","ASIANPAINT","HINDALCO","DRREDDY","CIPLA","DIVISLAB","GRASIM","SBILIFE","BAJAJFINSV","HDFCLIFE","APOLLOHOSP","EICHERMOT","BRITANNIA","TATACONSUM","BPCL","INDUSINDBK","HEROMOTOCO","SHRIRAMFIN","ADANIGREEN","ADANIPOWER","ATGL","AMBUJACEM","BANKBARODA","BEL","BHEL","BOSCHLTD","CANBK","CHOLAFIN","DABUR","DLF","GAIL","GODREJCP","HAVELLS","INDIGO","IOC","IRCTC","IRFC","LUPIN","MUTHOOTFIN","OBEROIRLTY","OFSS","PIIND","PNB","RECLTD","SBICARD","SHREECEM","SIEMENS","TATAPOWER","TORNTPHARM","TRENT","UNITDSPR","UPL","VBL","VEDL","ZOMATO","HDFCAMC","ICICIPRULI","INDUSTOWER","MANKIND","MARICO","MOTHERSON","NAUKRI","PAGEIND","POLYCAB","PERSISTENT","TIINDIA","ZYDUSLIFE"]
+  },
+  "Nifty 200": {
+    type:"broad",
+    stocks:["RELIANCE","TCS","HDFCBANK","BHARTIARTL","ICICIBANK","SBIN","INFY","LICI","ITC","HINDUNILVR","LT","BAJFINANCE","HCLTECH","MARUTI","SUNPHARMA","KOTAKBANK","AXISBANK","TITAN","ADANIENT","ONGC","NTPC","ULTRACEMCO","COALINDIA","JSWSTEEL","BAJAJ-AUTO","WIPRO","POWERGRID","NESTLEIND","TATAMOTORS","M&M","TATASTEEL","ADANIPORTS","TECHM","ASIANPAINT","HINDALCO","DRREDDY","CIPLA","DIVISLAB","GRASIM","SBILIFE","BAJAJFINSV","HDFCLIFE","APOLLOHOSP","EICHERMOT","BRITANNIA","TATACONSUM","BPCL","INDUSINDBK","HEROMOTOCO","SHRIRAMFIN","ADANIGREEN","ADANIPOWER","ATGL","AMBUJACEM","BANKBARODA","BEL","BHEL","BOSCHLTD","CANBK","CHOLAFIN","DABUR","DLF","GAIL","GODREJCP","HAVELLS","INDIGO","IOC","IRCTC","IRFC","LUPIN","MUTHOOTFIN","OBEROIRLTY","OFSS","PIIND","PNB","RECLTD","SBICARD","SHREECEM","SIEMENS","TATAPOWER","TORNTPHARM","TRENT","UNITDSPR","UPL","VBL","VEDL","ZOMATO","HDFCAMC","ICICIPRULI","INDUSTOWER","MANKIND","MARICO","MOTHERSON","NAUKRI","PAGEIND","POLYCAB","PERSISTENT","TIINDIA","ZYDUSLIFE","ABB","ACC","APLAPOLLO","ASTRAL","AUROPHARMA","BSOFT","CANFINHOME","COFORGE","CUB","DIXON","ESCORTS","FEDERALBNK","GLENMARK","GMRINFRA","GODREJPROP","GRINDWELL","GSPL","HINDPETRO","HONAUT","IDFCFIRSTB","INDHOTEL","JSL","KALYANKJIL","KPITTECH","LALPATHLAB","LAURUSLABS","LTIM","LTTS","MAXHEALTH","MCX","MFSL","NHPC","NLC","NMDC","NYKAA","PETRONET","POLICYBZR","POONAWALLA","PRESTIGE","PRICOL","RELAXO","RVNL","SJVN","SUNDARMFIN","SUPREMEIND","SYNGENE","TATACOMM","THERMAX","TORNTPOWER","TTML","UCOBANK","UNIONBANK","UNOMINDA","VOLTAS","WHIRLPOOL","YESBANK","ZEEL","ZENTEC"]
+  },
+  "Nifty 500": {
+    type:"broad",
+    stocks:["RELIANCE","TCS","HDFCBANK","BHARTIARTL","ICICIBANK","SBIN","INFY","LT","ITC","HINDUNILVR","BAJFINANCE","HCLTECH","MARUTI","SUNPHARMA","KOTAKBANK","AXISBANK","TITAN","ADANIENT","ONGC","NTPC","COALINDIA","JSWSTEEL","BAJAJ-AUTO","WIPRO","TATAMOTORS","M&M","TATASTEEL","ADANIPORTS","TECHM","HINDALCO","DRREDDY","CIPLA","BEL","IRFC","IRCTC","RVNL","KIRLOSENG","MAZAGON","HAL","COCHINSHIP","GRSE","BHEL","BEML","ASTRAZEN","ABBOTINDIA","ALKEM","BIOCON","CADILAHC","GLAND","IPCALAB","LALPATHLAB","LAURUSLABS","LUPIN","NATCOPHARM","SANOFI","SUNPHARMA","TORNTPHARM","ZYDUSLIFE","INFY","TCS","WIPRO","HCLTECH","TECHM","LTIM","LTTS","PERSISTENT","COFORGE","MPHASIS","OFSS","KPITTECH","TATAELXSI","ZENSARTECH","FIRSTSOURCE"]
+  },
+  // SIZE
+  "Nifty Midcap 50": {
+    type:"size",
+    stocks:["ABCAPITAL","AIAENG","APOLLOTYRE","ASHOKLEY","ASTRAL","ATHL","AUROPHARMA","AVANTIFEED","BAJAJHFL","BATAINDIA","BFDL","BRIGADE","BSE","CANFINHOME","CDSL","CESC","CGPOWER","CHOLAFIN","COFORGE","CONCOR","CRISIL","DEEPAKFERT","DIXON","ERIS","ESCORTS","EXIDEIND","FEDERALBNK","FORTIS","FSL","GNFC","GODREJPROP","GUJGASLTD","HFCL","HINDPETRO","HUDCO","IIFL","INDUSTOWER","IDFCFIRSTB","IREDA","JSL","JSWENERGY","KAJARIACER","KALPATPOWR","KAYNES","KIMS","KIRLOSENG","KNRCON","KPITTECH","KPRMILL","LALPATHLAB"]
+  },
+  "Nifty Midcap 100": {
+    type:"size",
+    stocks:["ABCAPITAL","AIAENG","APOLLOTYRE","ASHOKLEY","ASTRAL","AUROPHARMA","BAJAJHFL","BATAINDIA","BSE","CANFINHOME","CDSL","CESC","CGPOWER","CHOLAFIN","COFORGE","CONCOR","CRISIL","DEEPAKFERT","DIXON","ESCORTS","EXIDEIND","FEDERALBNK","FORTIS","GNFC","GODREJPROP","GUJGASLTD","HFCL","HINDPETRO","HUDCO","IIFL","INDUSTOWER","IDFCFIRSTB","IREDA","JSL","JSWENERGY","KAJARIACER","KAYNES","KIMS","KIRLOSENG","KPITTECH","KPRMILL","LALPATHLAB","LAURUSLABS","LICHSGFIN","LTTS","MAXHEALTH","MCX","MFSL","MOTHERSON","MPHASIS","NAUKRI","NHPC","NLC","NMDC","NYKAA","OBEROIRLTY","PATANJALI","PERSISTENT","PETRONET","PIIND","POLICYBZR","POLYCAB","POONAWALLA","PRESTIGE","RECLTD","RVNL","SJVN","SONACOMS","SUNDARMFIN","SUPREMEIND","SYNGENE","TATACOMM","THERMAX","TIINDIA","TORNTPOWER","TTML","UNIONBANK","UNOMINDA","VARUNBEV","VOLTAS","YESBANK","ZEEL","ZENTEC","ZOMATO","JUBLFOOD","KALYANKJIL","NUVOCO","RAINBOW","DOMS","JYOTHYLAB","MEDANTA","OLECTRA","PGHH","SAFARI","SENCO","SIGNATURE","VIJAYA","WELSPUNLIV"]
+  },
+  "Nifty Midcap 150": {
+    type:"size",
+    stocks:["ABCAPITAL","AIAENG","APOLLOTYRE","ASHOKLEY","ASTRAL","AUROPHARMA","BAJAJHFL","BATAINDIA","BSE","CANFINHOME","CDSL","CESC","CGPOWER","CHOLAFIN","COFORGE","CONCOR","CRISIL","DEEPAKFERT","DIXON","ESCORTS","EXIDEIND","FEDERALBNK","FORTIS","GNFC","GODREJPROP","GUJGASLTD","HFCL","HINDPETRO","HUDCO","IIFL","INDUSTOWER","IDFCFIRSTB","IREDA","JSL","JSWENERGY","KAJARIACER","KAYNES","KIMS","KIRLOSENG","KPITTECH","KPRMILL","LALPATHLAB","LAURUSLABS","LICHSGFIN","LTTS","MAXHEALTH","MCX","MFSL","MOTHERSON","MPHASIS","NAUKRI","NHPC","NLC","NMDC","NYKAA","OBEROIRLTY","PERSISTENT","PETRONET","PIIND","POLICYBZR","POLYCAB","POONAWALLA","PRESTIGE","RECLTD","RVNL","SJVN","SONACOMS","SUNDARMFIN","SUPREMEIND","SYNGENE","TATACOMM","THERMAX","TIINDIA","TORNTPOWER","UNIONBANK","UNOMINDA","VOLTAS","ZOMATO","JUBLFOOD","KALYANKJIL","OLECTRA","SAFARI","WELSPUNLIV","ABFRL","ANGELONE","APTUS","BALRAMCHIN","BIKAJI","BLUESTARCO","CARTRADE","CENTURYTEX","CHALET","DELHIVERY","EASEMYTRIP","EICHERMOT","ELGIEQUIP","EMCURE","FIVESTAR","GODREJIND","GRINDWELL","GSPL","HAPPSTMNDS","HONAUT","IEXINDIA","INDHOTEL","JKCEMENT","JUSTDIAL","KESORAMIND","KSAI","LICI","LLOYDSME","MANAPPURAM","MEDPLUS","METROPOLIS","MIDHANI","MINDA","NAVINFLUOR","NESCO","NOCIL","ORIENTELEC","PAISALO","PCBL","PENNANT","PNCINFRA","PRINCEPIPE","RADICO","RAJESHEXPO","RAMCOCEM","RATEGAIN","REDINGTON","ROUTE","RPGLIFE","SAREGAMA","SATIN","SCHAEFFLER","SENCO","SHOPERSTOP","SPARC","SUVENPHAR","TECHNOE","TIMKEN","TRIDENT","VGUARD","VINDHYATEL","VSTIND","WELCORP","WHIRLPOOL","ZFCVINDIA"]
+  },
+  "Nifty Smallcap 50": {
+    type:"size",
+    stocks:["AARTIIND","ABSLAMC","AEGISCHEM","AJANTPHARM","AMDIND","ANANTRAJ","ANDHRSUGAR","APARINDS","APTUS","ARVINDFASN","AWHCL","BAJAJCON","BANARISUG","BANCOINDIA","BASF","BEPL","BHEL","BIRLACORPN","CAMS","CAPLIPOINT","CEATLTD","CENTURYPLY","COCHINSHIP","CONFIPET","COSMOFILMS","CPSEETF","DALMIASUG","DCMSHRIRAM","EDELWEISS","ELECTCAST","ENGINERSIN","EPIGRAL","EQUITAS","ESTER","EXCELINDUS","FINCABLES","FINEORG","GANESHHOUC","GARFIBRES","GESHIP","GPPL","GRAPHITE","GRSE","GUJALKALI"]
+  },
+  "Nifty Smallcap 100": {
+    type:"size",
+    stocks:["AARTIIND","ABSLAMC","AEGISCHEM","AJANTPHARM","ANANTRAJ","APARINDS","APTUS","BAJAJCON","CAMS","CEATLTD","CENTURYPLY","COCHINSHIP","CONFIPET","EDELWEISS","EQUITAS","FINCABLES","FINEORG","GPPL","GRAPHITE","GRSE","KIRLOSENG","MAZAGON","HAL","CDSL","IREDA","SJVN","JSWENERGY","TATAPOWER","NHPC","RECLTD","HUDCO","RVNL","IRFC","CESC","THERMAX","TIINDIA","KNRCON","KAYNES","SONACOMS","SAFARI","OLECTRA","DELHIVERY","ROUTE","RATEGAIN","JUSTDIAL","METRO","IEXINDIA","EQUITASBNK","UJJIVANSFB","SURYAROSNI","VADILALIND","WELSPUNLIV","CENTURYPLY","PRINCEPIPE","VGUARD","GRINDWELL","NESCO","PAISALO","BLUESTARCO","HAPPSTMNDS","NAVINFLUOR","TECHNOCRAFT","PCBL","ORIENTELEC","TRIDENT","RADICO","VSTIND","SUPRAJIT","MAHSEAMLES","GARFIBRES","TEAMLEASE","TANLA","MASTEK","CYIENT","INTELLECT","MPHASIS","LTTS","WHIRLPOOL","SHOPERSTOP","SAREGAMA","MEDPLUS","METROPOLIS","EMCURE","RPGLIFE","SPARC","SUVENPHAR","VIJAYA","CHALET","EASEMYTRIP","KSAI","BIKAJI","CARTRADE","APTUS","FIVESTAR"]
+  },
+  "Nifty Smallcap 250": {
+    type:"size",
+    stocks:["KIRLOSENG","MAZAGON","HAL","COCHINSHIP","GRSE","BHEL","BEML","CDSL","IREDA","SJVN","JSWENERGY","TATAPOWER","NHPC","RECLTD","HUDCO","RVNL","IRFC","THERMAX","TIINDIA","KAYNES","OLECTRA","DELHIVERY","ROUTE","JUSTDIAL","IEXINDIA","EQUITASBNK","SURYAROSNI","WELSPUNLIV","CENTURYPLY","VGUARD","GRINDWELL","NESCO","NAVINFLUOR","PCBL","ORIENTELEC","TRIDENT","RADICO","BLUESTARCO","HAPPSTMNDS","MASTEK","CYIENT","INTELLECT","MPHASIS","WHIRLPOOL","SHOPERSTOP","SAREGAMA","MEDPLUS","METROPOLIS","EMCURE","RPGLIFE","SPARC","CHALET","EASEMYTRIP","BIKAJI","CARTRADE","FIVESTAR","ANANTRAJ","EQUITAS","CAMS","FINCABLES","FINEORG","GPPL","GRAPHITE","AARTIIND","ABSLAMC","AJANTPHARM","APARINDS","BAJAJCON","CEATLTD","CENTURYPLY","CONFIPET","EDELWEISS","TEAMLEASE","TANLA","MANAPPURAM","MEDANTA","NUVOCO","RAINBOW","SIGNATURE","SENCO","DOMS","JYOTHYLAB","LLOYDSENGG","PGHH","PAISALO","SATIN","SJVN","PRINCEPIPE","VSTIND","TECHNOCRAFT","SUPRAJIT","GARFIBRES","MAHSEAMLES","SUDCHEMIN","VAIBHAVGBL","KAMOPAINTS","NOCIL","APCOTEXIND","ASHAPURMIN","BAJAJCON","BASF"]
+  },
+  "Nifty SMID 250": {
+    type:"size",
+    stocks:["KIRLOSENG","MAZAGON","HAL","COCHINSHIP","GRSE","BHEL","BEML","BEL","CDSL","IREDA","SJVN","JSWENERGY","TATAPOWER","NHPC","RECLTD","HUDCO","RVNL","IRFC","THERMAX","TIINDIA","KAYNES","OLECTRA","DELHIVERY","ROUTE","JUSTDIAL","IEXINDIA","EQUITASBNK","SURYAROSNI","WELSPUNLIV","CENTURYPLY","VGUARD","GRINDWELL","NESCO","NAVINFLUOR","PCBL","TRIDENT","BLUESTARCO","HAPPSTMNDS","MASTEK","CYIENT","INTELLECT","MPHASIS","SHOPERSTOP","SAREGAMA","MEDPLUS","METROPOLIS","EMCURE","RPGLIFE","SPARC","CHALET","BIKAJI","CARTRADE","FIVESTAR","ANANTRAJ","CHOLAFIN","COFORGE","GODREJPROP","HFCL","HINDPETRO","HUDCO","IIFL","IDFCFIRSTB","JSL","LALPATHLAB","LAURUSLABS","LICHSGFIN","LTTS","MAXHEALTH","MCX","MFSL","MOTHERSON","PERSISTENT","PETRONET","POLYCAB","POONAWALLA","PRESTIGE","SUNDARMFIN","SUPREMEIND","SYNGENE","TATACOMM","TIINDIA","TORNTPOWER","UNIONBANK","UNOMINDA","VOLTAS","ZOMATO","JUBLFOOD","KALYANKJIL","SAFARI","ABFRL","ANGELONE","APTUS","BALRAMCHIN","CENTURYTEX","ELGIEQUIP","FIVESTAR","GODREJIND","GSPL","INDHOTEL","JKCEMENT","MANAPPURAM","MEDANTA","NAVINFLUOR","NUVOCO","RAINBOW","SENCO","DOMS","JYOTHYLAB","OLECTRA","PGHH","SAREGAMA","SIGNATURE","VIJAYA","WELSPUNLIV","TRIDENT","VSTIND","PAISALO"]
+  },
+  // SECTOR
+  "Nifty Bank": {
+    type:"sector",
+    stocks:["HDFCBANK","ICICIBANK","KOTAKBANK","SBIN","AXISBANK","INDUSINDBK","BANKBARODA","FEDERALBNK","IDFCFIRSTB","PNB","BANDHANBNK","AUBANK","CUB","CANBK","UNIONBANK"]
+  },
+  "Nifty IT": {
+    type:"sector",
+    stocks:["TCS","INFY","HCLTECH","WIPRO","TECHM","LTIM","LTTS","PERSISTENT","COFORGE","MPHASIS","OFSS","KPITTECH","TATAELXSI","ZENSARTECH","FIRSTSOURCE","NIITTECH","MASTEK","CYIENT","INTELLECT","HAPPSTMNDS"]
+  },
+  "Nifty Auto": {
+    type:"sector",
+    stocks:["MARUTI","TATAMOTORS","M&M","BAJAJ-AUTO","EICHERMOT","HEROMOTOCO","BOSCHLTD","MOTHERSON","TIINDIA","BHARATFORG","APOLLOTYRE","CEATLTD","MINDA","UNOMINDA","SONACOMS","ATULAUTO","ESCORTS","AMARARAJA","EXIDEIND","ENDURANCE"]
+  },
+  "Nifty FMCG": {
+    type:"sector",
+    stocks:["HINDUNILVR","ITC","NESTLEIND","BRITANNIA","DABUR","MARICO","GODREJCP","TATACONSUM","COLPAL","VBL","UNITDSPR","EMAMILTD","GILLETTE","PGHH","RADICO","VSTIND","JYOTHYLAB","BIKAJI","PATANJALI","VARUNBEV"]
+  },
+  "Nifty Metal": {
+    type:"sector",
+    stocks:["TATASTEEL","JSWSTEEL","HINDALCO","VEDL","COALINDIA","NMDC","SAIL","JINDALSTEL","APLAPOLLO","WELCORP","RATNAMANI","TINPLATE","MOIL","NATIONALUM","HLEGLAS","GRAVITA","CENTURYTEX"]
+  },
+  "Nifty Pharma": {
+    type:"sector",
+    stocks:["SUNPHARMA","DRREDDY","CIPLA","DIVISLAB","LUPIN","TORNTPHARM","AUROPHARMA","ZYDUSLIFE","ALKEM","IPCA","ABBOTINDIA","BIOCON","GLAND","LALPATHLAB","LAURUSLABS","NATCOPHARM","SANOFI","GLENMARK","AJANTPHARM","IPCALAB"]
+  },
+  "Nifty Realty": {
+    type:"sector",
+    stocks:["DLF","GODREJPROP","OBEROIRLTY","PRESTIGE","PHOENIXLTD","BRIGADE","SOBHA","SUNTECK","MAHLIFE","KOLTEPATIL","NUVOCO","ARVIND","CHALET","ANANTRAJ","LODHA"]
+  },
+  "Nifty Infra": {
+    type:"sector",
+    stocks:["LT","POWERGRID","NTPC","ADANIPORTS","RELIANCE","BHARTIARTL","GAIL","BPCL","IOC","HINDPETRO","TATAPOWER","ADANIGREEN","ADANIPOWER","ATGL","NHPC","SJVN","RVNL","IRFC","IRCTC","RECLTD","HUDCO","GMRINFRA","IRB","KNRCON","PNCINFRA","ASHOKA","NCC","HCC","AHLUCONT","CAPACITE","HGINFRA"]
+  },
+  "Nifty PSE": {
+    type:"sector",
+    stocks:["ONGC","COALINDIA","NTPC","POWERGRID","SBIN","BPCL","IOC","GAIL","BHEL","BEL","HAL","IRFC","IRCTC","RECLTD","NHPC","SJVN","RVNL","SAIL","NMDC","NLC","GESHIP","COCHINSHIP","GRSE","MAZAGON","BEML","MIDHANI","MOIL","HUDCO","IREDA","ENGINERSIN"]
+  },
+  "Nifty Defence": {
+    type:"sector",
+    stocks:["HAL","BEL","BHEL","MAZAGON","COCHINSHIP","GRSE","BEML","MIDHANI","PARAS","ASTRA","ELCOMPO","ZENTEC","MTAR","DCXINDIA","IDEAFORGE","BHARAT-ELEC","GARDENFERT","ASTRALPOLY","SOLARINDS","PREMIER","APOLLO-MIC"]
+  },
+  "Nifty Energy": {
+    type:"sector",
+    stocks:["RELIANCE","ONGC","NTPC","POWERGRID","ADANIGREEN","ADANIPOWER","TATAPOWER","ATGL","NHPC","SJVN","GAIL","BPCL","IOC","HINDPETRO","PETRONET","COALINDIA","TORNTPOWER","CESC","JSWENERGY","IREDA"]
+  },
+  "Nifty Financial Services": {
+    type:"sector",
+    stocks:["HDFCBANK","ICICIBANK","KOTAKBANK","SBIN","AXISBANK","BAJFINANCE","BAJAJFINSV","HDFCLIFE","SBILIFE","ICICIPRULI","MUTHOOTFIN","CHOLAFIN","SHRIRAMFIN","IIFL","LICHSGFIN","SUNDARMFIN","POONAWALLA","CANFINHOME","HDFCAMC","ANGELONE"]
+  },
+  "Nifty Healthcare": {
+    type:"sector",
+    stocks:["SUNPHARMA","DRREDDY","CIPLA","DIVISLAB","LUPIN","TORNTPHARM","AUROPHARMA","ZYDUSLIFE","ALKEM","APOLLOHOSP","MAXHEALTH","KIMS","FORTIS","MEDANTA","METROPOLIS","LALPATHLAB","IPCALAB","SYNGENE","GLAND","POLY MEDICURE"]
+  },
+  "Nifty Oil & Gas": {
+    type:"sector",
+    stocks:["RELIANCE","ONGC","GAIL","BPCL","IOC","HINDPETRO","PETRONET","ATGL","GUJGASLTD","IGL","MGL","GSPL","CHENNPETRO","MRPL","HPCL"]
+  },
+  "Nifty CPSE": {
+    type:"sector",
+    stocks:["NTPC","POWERGRID","ONGC","COALINDIA","SBIN","BEL","BHEL","HAL","RECLTD","NHPC","SJVN","IRFC","IRCTC","RVNL","SAIL","NMDC","NLC","GESHIP","COCHINSHIP","GRSE","MAZAGON","BEML","MIDHANI","MOIL","HUDCO","IREDA","ENGINERSIN","IOC","HINDPETRO","BPCL"]
+  }
+};
+
+// Stock master list for search
+const STOCK_MASTER = [
+  {sym:"KIRLOSENG",name:"Kirloskar Oil Engines Ltd",sector:"Industrial Machinery",yf:"KIRLOSENG.NS"},
+  {sym:"RELIANCE",name:"Reliance Industries Ltd",sector:"Energy",yf:"RELIANCE.NS"},
+  {sym:"TCS",name:"Tata Consultancy Services",sector:"IT",yf:"TCS.NS"},
+  {sym:"HDFCBANK",name:"HDFC Bank Ltd",sector:"Banking",yf:"HDFCBANK.NS"},
+  {sym:"ICICIBANK",name:"ICICI Bank Ltd",sector:"Banking",yf:"ICICIBANK.NS"},
+  {sym:"SBIN",name:"State Bank of India",sector:"Banking",yf:"SBIN.NS"},
+  {sym:"INFY",name:"Infosys Ltd",sector:"IT",yf:"INFY.NS"},
+  {sym:"BHARTIARTL",name:"Bharti Airtel Ltd",sector:"Telecom",yf:"BHARTIARTL.NS"},
+  {sym:"LT",name:"Larsen & Toubro Ltd",sector:"Infrastructure",yf:"LT.NS"},
+  {sym:"ITC",name:"ITC Ltd",sector:"FMCG",yf:"ITC.NS"},
+  {sym:"HINDUNILVR",name:"Hindustan Unilever Ltd",sector:"FMCG",yf:"HINDUNILVR.NS"},
+  {sym:"BAJFINANCE",name:"Bajaj Finance Ltd",sector:"NBFC",yf:"BAJFINANCE.NS"},
+  {sym:"HCLTECH",name:"HCL Technologies Ltd",sector:"IT",yf:"HCLTECH.NS"},
+  {sym:"MARUTI",name:"Maruti Suzuki India Ltd",sector:"Auto",yf:"MARUTI.NS"},
+  {sym:"SUNPHARMA",name:"Sun Pharmaceutical Industries",sector:"Pharma",yf:"SUNPHARMA.NS"},
+  {sym:"KOTAKBANK",name:"Kotak Mahindra Bank Ltd",sector:"Banking",yf:"KOTAKBANK.NS"},
+  {sym:"AXISBANK",name:"Axis Bank Ltd",sector:"Banking",yf:"AXISBANK.NS"},
+  {sym:"TITAN",name:"Titan Company Ltd",sector:"Consumer",yf:"TITAN.NS"},
+  {sym:"ADANIENT",name:"Adani Enterprises Ltd",sector:"Conglomerate",yf:"ADANIENT.NS"},
+  {sym:"ONGC",name:"Oil & Natural Gas Corporation",sector:"Oil & Gas",yf:"ONGC.NS"},
+  {sym:"NTPC",name:"NTPC Ltd",sector:"Power",yf:"NTPC.NS"},
+  {sym:"COALINDIA",name:"Coal India Ltd",sector:"Mining",yf:"COALINDIA.NS"},
+  {sym:"JSWSTEEL",name:"JSW Steel Ltd",sector:"Metal",yf:"JSWSTEEL.NS"},
+  {sym:"BAJAJ-AUTO",name:"Bajaj Auto Ltd",sector:"Auto",yf:"BAJAJ-AUTO.NS"},
+  {sym:"WIPRO",name:"Wipro Ltd",sector:"IT",yf:"WIPRO.NS"},
+  {sym:"TATAMOTORS",name:"Tata Motors Ltd",sector:"Auto",yf:"TATAMOTORS.NS"},
+  {sym:"M&M",name:"Mahindra & Mahindra Ltd",sector:"Auto",yf:"M&M.NS"},
+  {sym:"TATASTEEL",name:"Tata Steel Ltd",sector:"Metal",yf:"TATASTEEL.NS"},
+  {sym:"ADANIPORTS",name:"Adani Ports & SEZ Ltd",sector:"Infrastructure",yf:"ADANIPORTS.NS"},
+  {sym:"TECHM",name:"Tech Mahindra Ltd",sector:"IT",yf:"TECHM.NS"},
+  {sym:"ASIANPAINT",name:"Asian Paints Ltd",sector:"Consumer",yf:"ASIANPAINT.NS"},
+  {sym:"HINDALCO",name:"Hindalco Industries Ltd",sector:"Metal",yf:"HINDALCO.NS"},
+  {sym:"DRREDDY",name:"Dr. Reddy's Laboratories",sector:"Pharma",yf:"DRREDDY.NS"},
+  {sym:"CIPLA",name:"Cipla Ltd",sector:"Pharma",yf:"CIPLA.NS"},
+  {sym:"BEL",name:"Bharat Electronics Ltd",sector:"Defence",yf:"BEL.NS"},
+  {sym:"BHEL",name:"Bharat Heavy Electricals Ltd",sector:"Power/Defence",yf:"BHEL.NS"},
+  {sym:"HAL",name:"Hindustan Aeronautics Ltd",sector:"Defence",yf:"HAL.NS"},
+  {sym:"MAZAGON",name:"Mazagon Dock Shipbuilders",sector:"Defence",yf:"MAZDOCK.NS"},
+  {sym:"COCHINSHIP",name:"Cochin Shipyard Ltd",sector:"Defence",yf:"COCHINSHIP.NS"},
+  {sym:"GRSE",name:"Garden Reach Shipbuilders",sector:"Defence",yf:"GRSE.NS"},
+  {sym:"BEML",name:"BEML Ltd",sector:"Defence",yf:"BEML.NS"},
+  {sym:"IRFC",name:"Indian Railway Finance Corp",sector:"NBFC/PSU",yf:"IRFC.NS"},
+  {sym:"IRCTC",name:"Indian Railway Catering & Tourism",sector:"Services/PSU",yf:"IRCTC.NS"},
+  {sym:"RVNL",name:"Rail Vikas Nigam Ltd",sector:"Infrastructure/PSU",yf:"RVNL.NS"},
+  {sym:"RECLTD",name:"REC Ltd",sector:"NBFC/PSU",yf:"RECLTD.NS"},
+  {sym:"NHPC",name:"NHPC Ltd",sector:"Power/PSU",yf:"NHPC.NS"},
+  {sym:"SJVN",name:"SJVN Ltd",sector:"Power/PSU",yf:"SJVN.NS"},
+  {sym:"HUDCO",name:"Housing & Urban Dev Corp",sector:"NBFC/PSU",yf:"HUDCO.NS"},
+  {sym:"IREDA",name:"Indian Renewable Energy Dev Agency",sector:"NBFC/PSU",yf:"IREDA.NS"},
+  {sym:"TATAPOWER",name:"Tata Power Company Ltd",sector:"Power",yf:"TATAPOWER.NS"},
+  {sym:"ADANIGREEN",name:"Adani Green Energy Ltd",sector:"Renewable Energy",yf:"ADANIGREEN.NS"},
+  {sym:"ADANIPOWER",name:"Adani Power Ltd",sector:"Power",yf:"ADANIPOWER.NS"},
+  {sym:"DLF",name:"DLF Ltd",sector:"Realty",yf:"DLF.NS"},
+  {sym:"GODREJPROP",name:"Godrej Properties Ltd",sector:"Realty",yf:"GODREJPROP.NS"},
+  {sym:"OBEROIRLTY",name:"Oberoi Realty Ltd",sector:"Realty",yf:"OBEROIRLTY.NS"},
+  {sym:"PRESTIGE",name:"Prestige Estates Projects",sector:"Realty",yf:"PRESTIGE.NS"},
+  {sym:"ZOMATO",name:"Zomato Ltd",sector:"Consumer Tech",yf:"ZOMATO.NS"},
+  {sym:"NYKAA",name:"FSN E-Commerce Ventures (Nykaa)",sector:"Consumer Tech",yf:"NYKAA.NS"},
+  {sym:"PAYTM",name:"One97 Communications (Paytm)",sector:"Fintech",yf:"PAYTM.NS"},
+  {sym:"PERSISTENT",name:"Persistent Systems Ltd",sector:"IT",yf:"PERSISTENT.NS"},
+  {sym:"LTIM",name:"LTIMindtree Ltd",sector:"IT",yf:"LTIM.NS"},
+  {sym:"LTTS",name:"L&T Technology Services",sector:"IT",yf:"LTTS.NS"},
+  {sym:"COFORGE",name:"Coforge Ltd",sector:"IT",yf:"COFORGE.NS"},
+  {sym:"KAYNES",name:"Kaynes Technology India Ltd",sector:"Electronics",yf:"KAYNES.NS"},
+  {sym:"DIXON",name:"Dixon Technologies Ltd",sector:"Electronics",yf:"DIXON.NS"},
+  {sym:"CUMMINSIND",name:"Cummins India Ltd",sector:"Industrial Machinery",yf:"CUMMINSIND.NS"},
+  {sym:"THERMAX",name:"Thermax Ltd",sector:"Industrial",yf:"THERMAX.NS"},
+  {sym:"SIEMENS",name:"Siemens Ltd",sector:"Industrial",yf:"SIEMENS.NS"},
+  {sym:"ABB",name:"ABB India Ltd",sector:"Industrial",yf:"ABB.NS"},
+  {sym:"HDFCLIFE",name:"HDFC Life Insurance Company",sector:"Insurance",yf:"HDFCLIFE.NS"},
+  {sym:"SBILIFE",name:"SBI Life Insurance Company",sector:"Insurance",yf:"SBILIFE.NS"},
+  {sym:"ICICIPRULI",name:"ICICI Prudential Life Insurance",sector:"Insurance",yf:"ICICIPRULI.NS"},
+  {sym:"BAJAJFINSV",name:"Bajaj Finserv Ltd",sector:"Financial Services",yf:"BAJAJFINSV.NS"},
+  {sym:"APOLLOHOSP",name:"Apollo Hospitals Enterprise",sector:"Healthcare",yf:"APOLLOHOSP.NS"},
+  {sym:"MAXHEALTH",name:"Max Healthcare Institute",sector:"Healthcare",yf:"MAXHEALTH.NS"},
+  {sym:"NESTLEIND",name:"Nestle India Ltd",sector:"FMCG",yf:"NESTLEIND.NS"},
+  {sym:"BRITANNIA",name:"Britannia Industries Ltd",sector:"FMCG",yf:"BRITANNIA.NS"},
+  {sym:"TATACONSUM",name:"Tata Consumer Products",sector:"FMCG",yf:"TATACONSUM.NS"},
+  {sym:"EICHERMOT",name:"Eicher Motors Ltd",sector:"Auto",yf:"EICHERMOT.NS"},
+  {sym:"HEROMOTOCO",name:"Hero MotoCorp Ltd",sector:"Auto",yf:"HEROMOTOCO.NS"},
+  {sym:"BOSCHLTD",name:"Bosch Ltd",sector:"Auto Ancillary",yf:"BOSCHLTD.NS"},
+  {sym:"MOTHERSON",name:"Samvardhana Motherson Intl",sector:"Auto Ancillary",yf:"MOTHERSON.NS"},
+  {sym:"TIINDIA",name:"Tube Investments of India",sector:"Auto Ancillary",yf:"TIINDIA.NS"},
+  {sym:"VEDL",name:"Vedanta Ltd",sector:"Metal",yf:"VEDL.NS"},
+  {sym:"NMDC",name:"NMDC Ltd",sector:"Mining/PSU",yf:"NMDC.NS"},
+  {sym:"SAIL",name:"Steel Authority of India",sector:"Metal/PSU",yf:"SAIL.NS"},
+  {sym:"POWERGRID",name:"Power Grid Corporation of India",sector:"Power/PSU",yf:"POWERGRID.NS"},
+  {sym:"GAIL",name:"GAIL (India) Ltd",sector:"Oil & Gas/PSU",yf:"GAIL.NS"},
+  {sym:"BPCL",name:"Bharat Petroleum Corp Ltd",sector:"Oil & Gas/PSU",yf:"BPCL.NS"},
+  {sym:"IOC",name:"Indian Oil Corporation Ltd",sector:"Oil & Gas/PSU",yf:"IOC.NS"},
+  {sym:"HINDPETRO",name:"Hindustan Petroleum Corp Ltd",sector:"Oil & Gas/PSU",yf:"HINDPETRO.NS"},
+  {sym:"CHOLAFIN",name:"Cholamandalam Investment & Finance",sector:"NBFC",yf:"CHOLAFIN.NS"},
+  {sym:"MUTHOOTFIN",name:"Muthoot Finance Ltd",sector:"NBFC",yf:"MUTHOOTFIN.NS"},
+  {sym:"SHRIRAMFIN",name:"Shriram Finance Ltd",sector:"NBFC",yf:"SHRIRAMFIN.NS"},
+  {sym:"INDUSINDBK",name:"IndusInd Bank Ltd",sector:"Banking",yf:"INDUSINDBK.NS"},
+  {sym:"BANKBARODA",name:"Bank of Baroda",sector:"Banking/PSU",yf:"BANKBARODA.NS"},
+  {sym:"PNB",name:"Punjab National Bank",sector:"Banking/PSU",yf:"PNB.NS"},
+  {sym:"UNIONBANK",name:"Union Bank of India",sector:"Banking/PSU",yf:"UNIONBANK.NS"},
+  {sym:"CANBK",name:"Canara Bank",sector:"Banking/PSU",yf:"CANBK.NS"},
+  {sym:"FEDERALBNK",name:"Federal Bank Ltd",sector:"Banking",yf:"FEDERALBNK.NS"},
+  {sym:"IDFCFIRSTB",name:"IDFC First Bank Ltd",sector:"Banking",yf:"IDFCFIRSTB.NS"},
+  {sym:"CDSL",name:"Central Depository Services (India)",sector:"Financial Services",yf:"CDSL.NS"},
+  {sym:"BSE",name:"BSE Ltd",sector:"Financial Services",yf:"BSE.NS"},
+  {sym:"MCX",name:"Multi Commodity Exchange of India",sector:"Financial Services",yf:"MCX.NS"},
+  {sym:"HDFCAMC",name:"HDFC Asset Management Company",sector:"Asset Management",yf:"HDFCAMC.NS"},
+  {sym:"DIVISLAB",name:"Divi's Laboratories Ltd",sector:"Pharma",yf:"DIVISLAB.NS"},
+  {sym:"LUPIN",name:"Lupin Ltd",sector:"Pharma",yf:"LUPIN.NS"},
+  {sym:"AUROPHARMA",name:"Aurobindo Pharma Ltd",sector:"Pharma",yf:"AUROPHARMA.NS"},
+  {sym:"ZYDUSLIFE",name:"Zydus Lifesciences Ltd",sector:"Pharma",yf:"ZYDUSLIFE.NS"},
+  {sym:"TORNTPHARM",name:"Torrent Pharmaceuticals Ltd",sector:"Pharma",yf:"TORNTPHARM.NS"},
+  {sym:"POLYCAB",name:"Polycab India Ltd",sector:"Electrical",yf:"POLYCAB.NS"},
+  {sym:"HAVELLS",name:"Havells India Ltd",sector:"Electrical",yf:"HAVELLS.NS"},
+  {sym:"ULTRACEMCO",name:"UltraTech Cement Ltd",sector:"Cement",yf:"ULTRACEMCO.NS"},
+  {sym:"SHREECEM",name:"Shree Cement Ltd",sector:"Cement",yf:"SHREECEM.NS"},
+  {sym:"AMBUJACEM",name:"Ambuja Cements Ltd",sector:"Cement",yf:"AMBUJACEM.NS"},
+  {sym:"JKCEMENT",name:"JK Cement Ltd",sector:"Cement",yf:"JKCEMENT.NS"},
+  {sym:"NAUKRI",name:"Info Edge (India) Ltd",sector:"Internet",yf:"NAUKRI.NS"},
+  {sym:"JUBLFOOD",name:"Jubilant FoodWorks Ltd",sector:"Consumer",yf:"JUBLFOOD.NS"},
+  {sym:"TRENT",name:"Trent Ltd",sector:"Retail",yf:"TRENT.NS"},
+  {sym:"VBL",name:"Varun Beverages Ltd",sector:"FMCG",yf:"VBL.NS"},
+  {sym:"MARICO",name:"Marico Ltd",sector:"FMCG",yf:"MARICO.NS"},
+  {sym:"DABUR",name:"Dabur India Ltd",sector:"FMCG",yf:"DABUR.NS"},
+  {sym:"GODREJCP",name:"Godrej Consumer Products",sector:"FMCG",yf:"GODREJCP.NS"},
+  {sym:"LICI",name:"Life Insurance Corp of India",sector:"Insurance/PSU",yf:"LICI.NS"},
+  {sym:"ATGL",name:"Adani Total Gas Ltd",sector:"Gas Distribution",yf:"ATGL.NS"},
+  {sym:"DLF",name:"DLF Ltd",sector:"Realty",yf:"DLF.NS"},
+  {sym:"INDIGO",name:"InterGlobe Aviation Ltd",sector:"Aviation",yf:"INDIGO.NS"},
+  {sym:"INDHOTEL",name:"Indian Hotels Company Ltd",sector:"Hospitality",yf:"INDHOTEL.NS"},
+  {sym:"OBEROIRLTY",name:"Oberoi Realty Ltd",sector:"Realty",yf:"OBEROIRLTY.NS"},
+  {sym:"SIEMENS",name:"Siemens Ltd",sector:"Industrial",yf:"SIEMENS.NS"},
+  {sym:"OFSS",name:"Oracle Financial Services Software",sector:"IT",yf:"OFSS.NS"},
+  {sym:"MPHASIS",name:"Mphasis Ltd",sector:"IT",yf:"MPHASIS.NS"},
+  {sym:"KPITTECH",name:"KPIT Technologies Ltd",sector:"IT",yf:"KPITTECH.NS"},
+  {sym:"TATAELXSI",name:"Tata Elxsi Ltd",sector:"IT",yf:"TATAELXSI.NS"},
+  {sym:"PAGEIND",name:"Page Industries Ltd",sector:"Textile",yf:"PAGEIND.NS"},
+  {sym:"KALYANKJIL",name:"Kalyan Jewellers India Ltd",sector:"Jewellery",yf:"KALYANKJIL.NS"},
+  {sym:"PIIND",name:"PI Industries Ltd",sector:"Agrochem",yf:"PIIND.NS"},
+  {sym:"APOLLOTYRE",name:"Apollo Tyres Ltd",sector:"Auto Ancillary",yf:"APOLLOTYRE.NS"},
+  {sym:"ASHOKLEY",name:"Ashok Leyland Ltd",sector:"Auto",yf:"ASHOKLEY.NS"},
+  {sym:"GRASIM",name:"Grasim Industries Ltd",sector:"Diversified",yf:"GRASIM.NS"},
+  {sym:"UNITDSPR",name:"United Spirits Ltd",sector:"Beverages",yf:"UNITDSPR.NS"},
+  {sym:"PETRONET",name:"Petronet LNG Ltd",sector:"Oil & Gas",yf:"PETRONET.NS"},
+  {sym:"TATACOMM",name:"Tata Communications Ltd",sector:"Telecom",yf:"TATACOMM.NS"},
+  {sym:"INDUSTOWER",name:"Indus Towers Ltd",sector:"Telecom Infrastructure",yf:"INDUSTOWER.NS"},
+  {sym:"ESCORTS",name:"Escorts Kubota Ltd",sector:"Farm Equipment",yf:"ESCORTS.NS"},
+  {sym:"NMDC",name:"NMDC Ltd",sector:"Mining/PSU",yf:"NMDC.NS"},
+  {sym:"CESC",name:"CESC Ltd",sector:"Power",yf:"CESC.NS"},
+  {sym:"JSWENERGY",name:"JSW Energy Ltd",sector:"Power",yf:"JSWENERGY.NS"},
+  {sym:"TORNTPOWER",name:"Torrent Power Ltd",sector:"Power",yf:"TORNTPOWER.NS"},
+  {sym:"SYNGENE",name:"Syngene International Ltd",sector:"Pharma/CRO",yf:"SYNGENE.NS"},
+  {sym:"MAXHEALTH",name:"Max Healthcare Institute",sector:"Healthcare",yf:"MAXHEALTH.NS"},
+  {sym:"FORTIS",name:"Fortis Healthcare Ltd",sector:"Healthcare",yf:"FORTIS.NS"},
+  {sym:"METROPOLIS",name:"Metropolis Healthcare Ltd",sector:"Diagnostics",yf:"METROPOLIS.NS"},
+  {sym:"LALPATHLAB",name:"Dr Lal PathLabs Ltd",sector:"Diagnostics",yf:"LALPATHLAB.NS"},
+  {sym:"MANKIND",name:"Mankind Pharma Ltd",sector:"Pharma",yf:"MANKIND.NS"},
+  {sym:"SOLARINDS",name:"Solar Industries India Ltd",sector:"Defence/Explosive",yf:"SOLARINDS.NS"},
+  {sym:"MTAR",name:"MTAR Technologies Ltd",sector:"Defence/Space",yf:"MTAR.NS"},
+  {sym:"GODREJIND",name:"Godrej Industries Ltd",sector:"Diversified",yf:"GODREJIND.NS"},
+];
+
+// ─────────────────────────────────────────────
+// SEARCH LOGIC
+// ─────────────────────────────────────────────
+const input = document.getElementById('searchInput');
+const dropdown = document.getElementById('dropdown');
+let currentStock = null;
+
+function buildAllIndexChips() {
+  const c = document.getElementById('allIndexChips');
+  const names = Object.keys(INDICES);
+  c.innerHTML = names.map(n => `<span class="chip">${n}</span>`).join('');
+}
+
+function buildIndicesGrid(selectedSym) {
+  const g = document.getElementById('indicesGrid');
+  let html = '';
+  const allStocks = new Set();
+  Object.values(INDICES).forEach(idx => idx.stocks.forEach(s => allStocks.add(s)));
+  document.getElementById('totalIndices').textContent = Object.keys(INDICES).length;
+  document.getElementById('totalStocks').textContent = allStocks.size.toLocaleString();
+  for (const [name, idx] of Object.entries(INDICES)) {
+    const found = selectedSym && idx.stocks.includes(selectedSym);
+    html += `<div class="idx-card" style="${found ? 'border-color:rgba(79,142,247,0.4);' : ''}">
+      <div class="idx-card-name">${name}</div>
+      <div class="idx-stock-count">${idx.stocks.length} stocks tracked</div>
+      ${found ? `<div class="idx-found">✓ ${selectedSym} is here</div>` : ''}
+    </div>`;
+  }
+  g.innerHTML = html;
+}
+
+function getMembership(sym) {
+  const result = [];
+  for (const [name, idx] of Object.entries(INDICES)) {
+    if (idx.stocks.includes(sym)) result.push({name, type: idx.type});
+  }
+  return result;
+}
+
+function renderMembership(sym) {
+  const memberships = getMembership(sym);
+  const grid = document.getElementById('membershipGrid');
+  if (!memberships.length) {
+    grid.innerHTML = `<span class="no-membership">Not found in tracked indices — may be in Nifty 500 broader universe.</span>`;
+    return;
+  }
+  grid.innerHTML = memberships.map(m =>
+    `<span class="idx-badge ${m.type}">${m.name}</span>`
+  ).join('');
+}
+
+function filterStocks(q) {
+  if (!q) return [];
+  const ql = q.toLowerCase();
+  return STOCK_MASTER.filter(s =>
+    s.sym.toLowerCase().includes(ql) || s.name.toLowerCase().includes(ql)
+  ).slice(0, 10);
+}
+
+input.addEventListener('input', () => {
+  const q = input.value.trim();
+  const results = filterStocks(q);
+  if (!results.length || !q) { dropdown.classList.remove('open'); return; }
+  dropdown.innerHTML = results.map(s =>
+    `<div class="dd-item" data-sym="${s.sym}">
+      <span class="dd-sym">${s.sym}</span>
+      <span class="dd-name">${s.name}</span>
+      <span class="dd-sector">${s.sector}</span>
+    </div>`
+  ).join('');
+  dropdown.classList.add('open');
+});
+
+dropdown.addEventListener('click', e => {
+  const item = e.target.closest('.dd-item');
+  if (!item) return;
+  const sym = item.dataset.sym;
+  const stock = STOCK_MASTER.find(s => s.sym === sym);
+  if (!stock) return;
+  input.value = sym;
+  dropdown.classList.remove('open');
+  loadStock(stock);
+});
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('.search-wrap')) dropdown.classList.remove('open');
+});
+
+// ─────────────────────────────────────────────
+// TABS
+// ─────────────────────────────────────────────
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+  });
+});
+
+// ─────────────────────────────────────────────
+// PROXY FALLBACK CHAIN — 4 proxies, tried in order
+// Each wraps the Yahoo Finance URL differently.
+// If one is rate-limited or down, the next is tried.
+// ─────────────────────────────────────────────
+const PROXIES = [
+  {
+    name: 'allorigins',
+    wrap: url => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
+    parse: async r => { const j = await r.json(); return JSON.parse(j.contents); }
+  },
+  {
+    name: 'corsproxy.io',
+    wrap: url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+    parse: async r => r.json()
+  },
+  {
+    name: 'thingproxy',
+    wrap: url => `https://thingproxy.freeboard.io/fetch/${url}`,
+    parse: async r => r.json()
+  },
+  {
+    name: 'allorigins-raw',
+    wrap: url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+    parse: async r => r.json()
+  }
+];
+
+let lastWorkingProxyIdx = 0; // remember which proxy worked last
+
+function setProxyStatus(name, status) {
+  const el = document.getElementById('proxyStatus');
+  if (!el) return;
+  const colors = { trying: '#f6c05c', ok: '#3ecf8e', fail: '#f56565' };
+  el.textContent = status === 'ok' ? `via ${name}` : status === 'trying' ? `trying ${name}…` : `${name} failed`;
+  el.style.color = colors[status] || '#7a7f94';
+}
+
+async function fetchWithFallback(url) {
+  // Start from last working proxy for speed, then try others on failure
+  const order = [];
+  for (let i = 0; i < PROXIES.length; i++) {
+    order.push((lastWorkingProxyIdx + i) % PROXIES.length);
+  }
+
+  let lastErr = null;
+  for (const idx of order) {
+    const proxy = PROXIES[idx];
+    setProxyStatus(proxy.name, 'trying');
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 8000); // 8s timeout per proxy
+      const r = await fetch(proxy.wrap(url), { signal: controller.signal });
+      clearTimeout(timeout);
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const data = await proxy.parse(r);
+      if (!data) throw new Error('Empty response');
+      // Check Yahoo returned actual data, not an error page
+      if (data.chart?.error || data.quoteSummary?.error) {
+        throw new Error(data.chart?.error?.description || data.quoteSummary?.error?.description || 'Yahoo error');
+      }
+      lastWorkingProxyIdx = idx;
+      setProxyStatus(proxy.name, 'ok');
+      return data;
+    } catch(e) {
+      setProxyStatus(proxy.name, 'fail');
+      lastErr = e;
+      // Small delay before trying next proxy
+      await new Promise(res => setTimeout(res, 300));
+    }
+  }
+  throw new Error(`All proxies failed. Last error: ${lastErr?.message}`);
+}
+
+async function fetchYF(yfSym) {
+  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yfSym)}?interval=1d&range=1y`;
+  return fetchWithFallback(url);
+}
+
+async function fetchYFSummary(yfSym) {
+  const url = `https://query1.finance.yahoo.com/v10/finance/quoteSummary/${encodeURIComponent(yfSym)}?modules=summaryDetail,defaultKeyStatistics,financialData,price,assetProfile`;
+  return fetchWithFallback(url);
+}
+
+// ─────────────────────────────────────────────
+// LOAD STOCK
+// ─────────────────────────────────────────────
+async function loadStock(stock) {
+  currentStock = stock;
+  document.getElementById('landing').style.display = 'none';
+  document.getElementById('mainDash').classList.add('show');
+
+  // Header placeholders
+  document.getElementById('hSym').textContent = stock.sym;
+  document.getElementById('hName').textContent = stock.name;
+  document.getElementById('hSector').textContent = stock.sector;
+  document.getElementById('hPrice').textContent = '…';
+  document.getElementById('hChange').textContent = '';
+  ['hMcap','hPE','h52H','h52L','hEPS','hPB'].forEach(id => document.getElementById(id).textContent = '…');
+
+  // Membership
+  renderMembership(stock.sym);
+
+  // Indices grid
+  buildIndicesGrid(stock.sym);
+
+  // Sector peers
+  renderPeers(stock);
+
+  // Steam gauge
+  document.getElementById('steamLoading').style.display = 'flex';
+  document.getElementById('steamContent').style.display = 'none';
+
+  // Reset tabs to steam
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelector('[data-tab="steam"]').classList.add('active');
+  document.getElementById('tab-steam').classList.add('active');
+
+  try {
+    const [chartData, summaryData] = await Promise.all([
+      fetchYF(stock.yf),
+      fetchYFSummary(stock.yf)
+    ]);
+    renderStockData(stock, chartData, summaryData);
+  } catch(e) {
+    document.getElementById('steamLoading').innerHTML = `<div style="display:flex;flex-direction:column;gap:10px"><span style="color:var(--red)">⚠ All data sources failed for ${stock.sym}.</span><span style="color:var(--muted);font-size:12px">Tried 4 proxies — all rate-limited or timed out. This is temporary.</span><button onclick="loadStock(currentStock)" style="background:var(--surface2);border:1px solid var(--border2);color:var(--accent);border-radius:var(--radius);padding:7px 16px;cursor:pointer;font-size:13px;width:fit-content">↻ Retry now</button></div>`;
+  }
+}
+
+function fmt(n, decimals=2) {
+  if (n === null || n === undefined || isNaN(n)) return '–';
+  return n.toFixed(decimals);
+}
+function fmtCr(n) {
+  if (!n || isNaN(n)) return '–';
+  const cr = n / 1e7;
+  if (cr >= 1e5) return '₹' + (cr/1e5).toFixed(2) + 'L Cr';
+  if (cr >= 1e3) return '₹' + (cr/1e3).toFixed(2) + 'K Cr';
+  return '₹' + cr.toFixed(0) + ' Cr';
+}
+function fmtVol(n) {
+  if (!n) return '–';
+  if (n >= 1e7) return (n/1e7).toFixed(2) + 'Cr';
+  if (n >= 1e5) return (n/1e5).toFixed(2) + 'L';
+  if (n >= 1e3) return (n/1e3).toFixed(1) + 'K';
+  return n.toString();
+}
+function pct(n) { return n != null ? (n*100).toFixed(2)+'%' : '–'; }
+function colorReturn(val) {
+  if (val > 0) return `<span style="color:var(--green)">+${(val*100).toFixed(2)}%</span>`;
+  if (val < 0) return `<span style="color:var(--red)">${(val*100).toFixed(2)}%</span>`;
+  return '0.00%';
+}
+
+function scoreGauge(pe, pb, extension52w, beta, profitMargin, revenueGrowth, return1y) {
+  // Returns array of {label, badgeClass}
+  const scores = [];
+
+  // 1. Valuation
+  if (!pe || pe < 0) scores.push({s:'unknown', label:'N/A', cls:'badge-gray'});
+  else if (pe > 80) scores.push({s:'red', label:'Stretched', cls:'badge-red'});
+  else if (pe > 50) scores.push({s:'amber', label:'Caution', cls:'badge-amber'});
+  else if (pe > 25) scores.push({s:'green', label:'Moderate', cls:'badge-green'});
+  else scores.push({s:'green', label:'Cheap', cls:'badge-green'});
+
+  // 2. Price extension
+  if (extension52w > 0.9) scores.push({s:'red', label:'Extended', cls:'badge-red'});
+  else if (extension52w > 0.7) scores.push({s:'amber', label:'Caution', cls:'badge-amber'});
+  else if (extension52w > 0.4) scores.push({s:'green', label:'Healthy', cls:'badge-green'});
+  else scores.push({s:'green', label:'Low base', cls:'badge-green'});
+
+  // 3. Volume / beta
+  if (beta == null) scores.push({s:'gray', label:'N/A', cls:'badge-gray'});
+  else if (beta > 1.5) scores.push({s:'amber', label:'High vol', cls:'badge-amber'});
+  else if (beta > 0.8) scores.push({s:'green', label:'Bullish', cls:'badge-green'});
+  else scores.push({s:'amber', label:'Low beta', cls:'badge-amber'});
+
+  // 4. Earnings
+  if (revenueGrowth == null) scores.push({s:'gray', label:'N/A', cls:'badge-gray'});
+  else if (revenueGrowth > 0.2) scores.push({s:'green', label:'Strong', cls:'badge-green'});
+  else if (revenueGrowth > 0.08) scores.push({s:'green', label:'Moderate', cls:'badge-green'});
+  else if (revenueGrowth > 0) scores.push({s:'amber', label:'Slowing', cls:'badge-amber'});
+  else scores.push({s:'red', label:'Declining', cls:'badge-red'});
+
+  // 5. RS / institutional
+  if (return1y == null) scores.push({s:'gray', label:'N/A', cls:'badge-gray'});
+  else if (return1y > 0.5) scores.push({s:'green', label:'Strong RS', cls:'badge-green'});
+  else if (return1y > 0.15) scores.push({s:'green', label:'Positive', cls:'badge-green'});
+  else if (return1y > 0) scores.push({s:'amber', label:'Weak RS', cls:'badge-amber'});
+  else scores.push({s:'red', label:'Negative', cls:'badge-red'});
+
+  return scores;
+}
+
+function verdictFromScores(scores, stockName, pe, extension52w, revenueGrowth, return1y) {
+  const reds = scores.filter(s => s.s === 'red').length;
+  const greens = scores.filter(s => s.s === 'green').length;
+  const ambers = scores.filter(s => s.s === 'amber').length;
+
+  if (greens >= 4) return `<strong>Steam is very much alive.</strong> ${stockName} scores well across valuation, price action, volume, earnings, and relative strength. The move has fundamental backing and momentum. This is likely a Phase 1→2 stock. Consider building a position on dips.`;
+  if (greens >= 3 && reds === 0) return `<strong>Steam remaining, some caution needed.</strong> ${stockName} has a solid foundation with most indicators positive. ${extension52w > 0.75 ? 'Price is extended — a pullback would offer a better entry.' : 'Entry at current levels is reasonable but watch for volume confirmation.'}`;
+  if (reds >= 3) return `<strong>Steam is likely exhausted.</strong> Multiple red flags across valuation, price extension, and momentum suggest this stock may be in Phase 3 (distribution). Avoid new entries; consider trimming existing positions.`;
+  if (reds >= 2) return `<strong>Mixed signals — approach with caution.</strong> ${stockName} has ${greens} positive and ${reds} negative factors. ${extension52w > 0.8 ? 'The stock is significantly extended from its base — the easy money is made.' : 'Earnings quality will determine whether the move continues.'} Wait for clearer confirmation before adding exposure.`;
+  return `<strong>Neutral steam reading.</strong> ${stockName} shows a balanced picture with ${greens} green, ${ambers} amber, and ${reds} red signals. The stock is neither clearly in distribution nor clearly in a fresh breakout phase. Monitor FII flow and next quarterly earnings for direction.`;
+}
+
+function renderStockData(stock, chartData, summaryData) {
+  try {
+    const price = summaryData?.quoteSummary?.result?.[0];
+    if (!price) throw new Error('No data');
+
+    const sd = price.summaryDetail || {};
+    const ks = price.defaultKeyStatistics || {};
+    const fd = price.financialData || {};
+    const pr = price.price || {};
+
+    const cmp = pr.regularMarketPrice?.raw;
+    const change = pr.regularMarketChangePercent?.raw;
+    const high52 = sd.fiftyTwoWeekHigh?.raw;
+    const low52 = sd.fiftyTwoWeekLow?.raw;
+    const mcap = pr.marketCap?.raw;
+    const pe = sd.trailingPE?.raw || ks.trailingPE?.raw;
+    const pb = ks.priceToBook?.raw;
+    const eps = ks.trailingEps?.raw;
+    const divYield = sd.dividendYield?.raw;
+    const beta = sd.beta?.raw;
+    const avgVol = sd.averageVolume?.raw;
+    const insiderHold = ks.heldPercentInsiders?.raw;
+    const instHold = ks.heldPercentInstitutions?.raw;
+    const profitMargin = fd.profitMargins?.raw;
+    const revGrowth = fd.revenueGrowth?.raw;
+    const revenue = fd.totalRevenue?.raw;
+    const netIncome = fd.netIncomeToCommon?.raw || fd.netIncome?.raw;
+
+    // Calculate 1Y return from chart
+    let return1y = null;
+    try {
+      const closes = chartData?.chart?.result?.[0]?.indicators?.quote?.[0]?.close;
+      if (closes && closes.length > 1) {
+        const first = closes.find(c => c != null);
+        const last = closes[closes.length - 1];
+        return1y = (last - first) / first;
+      }
+    } catch(e){}
+
+    // Extension from 52w range
+    const extension52w = (high52 && low52 && cmp) ? (cmp - low52) / (high52 - low52) : null;
+
+    // Header
+    document.getElementById('hPrice').textContent = cmp ? `₹${cmp.toLocaleString('en-IN', {maximumFractionDigits:2})}` : '–';
+    const changeEl = document.getElementById('hChange');
+    if (change != null) {
+      changeEl.textContent = (change >= 0 ? '+' : '') + (change*100).toFixed(2) + '% today';
+      changeEl.className = 'price-change ' + (change >= 0 ? 'up' : 'down');
+    }
+    document.getElementById('hMcap').textContent = fmtCr(mcap);
+    document.getElementById('hPE').textContent = pe ? pe.toFixed(1)+'x' : '–';
+    document.getElementById('h52H').textContent = high52 ? `₹${high52.toLocaleString('en-IN')}` : '–';
+    document.getElementById('h52L').textContent = low52 ? `₹${low52.toLocaleString('en-IN')}` : '–';
+    document.getElementById('hEPS').textContent = eps ? `₹${eps.toFixed(2)}` : '–';
+    document.getElementById('hPB').textContent = pb ? pb.toFixed(2)+'x' : '–';
+
+    // Scores
+    const scores = scoreGauge(pe, pb, extension52w, beta, profitMargin, revGrowth, return1y);
+
+    // Gauge 1 - Valuation
+    document.getElementById('badge1').textContent = scores[0].label;
+    document.getElementById('badge1').className = 'badge ' + scores[0].cls;
+    document.getElementById('g1pe').textContent = pe ? pe.toFixed(1)+'x' : '–';
+    document.getElementById('g1pb').textContent = pb ? pb.toFixed(2)+'x' : '–';
+    document.getElementById('g1eps').textContent = eps ? '₹'+eps.toFixed(2) : '–';
+    document.getElementById('g1dy').textContent = divYield ? (divYield*100).toFixed(2)+'%' : '0%';
+    document.getElementById('g1analysis').innerHTML = pe > 60
+      ? `<strong>TTM PE of ${pe.toFixed(1)}x is elevated.</strong> This suggests the market is pricing in significant future growth. The key question is whether earnings growth can justify this multiple over the next 2–3 years. Check analyst estimates for EPS revision direction.`
+      : pe > 30
+      ? `<strong>PE of ${pe.toFixed(1)}x is moderate for a growth stock.</strong> Not stretched — the market is pricing in growth but not euphoria. Monitor whether earnings delivery matches expectations each quarter.`
+      : pe > 0
+      ? `<strong>PE of ${pe.toFixed(1)}x is reasonable / cheap.</strong> Either the stock is undervalued or the market is pricing in risk. Investigate why the valuation is low before concluding it is a bargain.`
+      : `<strong>PE data unavailable.</strong> Use PB ratio of ${pb ? pb.toFixed(2)+'x' : '–'} and EPS trend as alternative valuation anchors.`;
+
+    // Gauge 2 - Price extension
+    const extPct = extension52w != null ? Math.round(extension52w * 100) : 50;
+    document.getElementById('badge2').textContent = scores[1].label;
+    document.getElementById('badge2').className = 'badge ' + scores[1].cls;
+    document.getElementById('g2low').textContent = low52 ? '₹'+low52.toLocaleString('en-IN') : '–';
+    document.getElementById('g2cur').textContent = cmp ? 'CMP ₹'+cmp.toLocaleString('en-IN',{maximumFractionDigits:0}) : 'CMP';
+    document.getElementById('g2high').textContent = high52 ? '₹'+high52.toLocaleString('en-IN') : '–';
+    const barColor = extPct > 85 ? '#f56565' : extPct > 65 ? '#f6c05c' : '#3ecf8e';
+    document.getElementById('g2bar').style.width = extPct + '%';
+    document.getElementById('g2bar').style.background = barColor;
+    document.getElementById('g2sub').textContent = extension52w != null
+      ? `Stock is ${extPct}% of the way from 52W low to 52W high — ${extPct > 85 ? 'very extended' : extPct > 65 ? 'moderately extended' : 'healthy range'}`
+      : 'Price range data unavailable';
+    document.getElementById('g2analysis').innerHTML = return1y != null
+      ? `<strong>1-year return: ${(return1y*100).toFixed(1)}%.</strong> ${return1y > 0.5 ? 'The stock has made a large move. Meaningful entry was earlier. New positions need a pullback or very strong earnings catalyst to justify the entry.' : return1y > 0.15 ? 'The stock has had a healthy run. Monitor for consolidation before adding.' : 'The stock has underperformed — check if this is a value opportunity or a fundamental deterioration.'}`
+      : '<strong>1Y return data processing.</strong> Check the 52W range for context.';
+
+    // Gauge 3 - Volume
+    document.getElementById('badge3').textContent = scores[2].label;
+    document.getElementById('badge3').className = 'badge ' + scores[2].cls;
+    document.getElementById('g3avg').textContent = fmtVol(avgVol);
+    document.getElementById('g3beta').textContent = beta ? beta.toFixed(2) : '–';
+    document.getElementById('g3float').textContent = instHold ? pct(instHold) + ' inst.' : '–';
+    document.getElementById('g3analysis').innerHTML = beta != null
+      ? `<strong>Beta of ${beta.toFixed(2)}${beta > 1.5 ? ' — high volatility stock.' : beta > 0.8 ? ' — moves broadly with the market.' : ' — defensive / low correlation to Nifty.'}</strong> ${avgVol ? `Average daily volume of ${fmtVol(avgVol)} shares gives a sense of liquidity. High volume on breakout days is a healthy sign; watch for volume to fade on down-moves.` : 'Volume data unavailable.'}`
+      : '<strong>Beta / volume data unavailable for this period.</strong>';
+
+    // Gauge 4 - Earnings
+    document.getElementById('badge4').textContent = scores[3].label;
+    document.getElementById('badge4').className = 'badge ' + scores[3].cls;
+    document.getElementById('g4rev').textContent = fmtCr(revenue);
+    document.getElementById('g4ni').textContent = fmtCr(netIncome);
+    document.getElementById('g4pm').textContent = profitMargin != null ? (profitMargin*100).toFixed(1)+'%' : '–';
+    document.getElementById('g4rg').textContent = revGrowth != null ? (revGrowth >= 0 ? '+' : '') + (revGrowth*100).toFixed(1)+'% YoY' : '–';
+    document.getElementById('g4analysis').innerHTML = revGrowth != null
+      ? `<strong>Revenue growing at ${(revGrowth*100).toFixed(1)}% YoY${revGrowth > 0.2 ? ' — strong double-digit growth.' : revGrowth > 0.08 ? ' — healthy but not exceptional.' : revGrowth > 0 ? ' — slowing, watch for acceleration.' : ' — declining revenue, a serious concern.'}</strong> Profit margin of ${profitMargin != null ? (profitMargin*100).toFixed(1)+'%' : '–'} ${profitMargin > 0.15 ? 'is healthy and suggests pricing power.' : profitMargin > 0.05 ? 'is moderate. Operating leverage will determine EPS growth rate.' : 'is thin — small revenue misses can hit earnings disproportionately.'}`
+      : '<strong>Financial data loading.</strong> Revenue growth and margin data require quoteSummary.';
+
+    // Gauge 5 - RS / institutional
+    document.getElementById('badge5').textContent = scores[4].label;
+    document.getElementById('badge5').className = 'badge ' + scores[4].cls;
+    document.getElementById('g5ret1y').textContent = return1y != null ? (return1y >= 0 ? '+' : '') + (return1y*100).toFixed(1)+'%' : '–';
+    document.getElementById('g5ytd').textContent = '–';
+    document.getElementById('g5ins').textContent = insiderHold != null ? pct(insiderHold) : '–';
+    document.getElementById('g5inst').textContent = instHold != null ? pct(instHold) : '–';
+    document.getElementById('g5analysis').innerHTML = `<strong>${instHold != null ? 'Institutional holding: '+pct(instHold)+'.' : ''}</strong> ${return1y != null ? `1Y relative performance of ${(return1y*100).toFixed(1)}% vs Nifty 50 (~15% 1Y typical). ${return1y > 0.3 ? 'Strong outperformance indicates institutional preference and sector momentum. Watch for any slowdown in this RS score.' : return1y > 0 ? 'Moderate outperformance — the stock is moving with the market but not aggressively leading.' : 'Underperformance vs market. Check if this is a temporary dip or structural derating.'}` : ''}`;
+
+    // Verdict badges
+    scores.forEach((s, i) => {
+      const el = document.getElementById('v'+(i+1)+'b');
+      el.textContent = s.label;
+      el.className = 'verdict-badge ' + s.cls;
+    });
+    document.getElementById('verdictText').innerHTML = verdictFromScores(scores, stock.name, pe, extension52w, revGrowth, return1y);
+
+    document.getElementById('steamLoading').style.display = 'none';
+    document.getElementById('steamContent').style.display = 'block';
+
+  } catch(err) {
+    document.getElementById('steamLoading').innerHTML = `<span style="color:var(--amber)">⚠ Partial data loaded. Some metrics may be unavailable. <br><small style="color:var(--muted)">${err.message}</small></span>`;
+    document.getElementById('steamContent').style.display = 'block';
+  }
+}
+
+function renderPeers(stock) {
+  const sectorPeers = STOCK_MASTER.filter(s => s.sector === stock.sector && s.sym !== stock.sym).slice(0, 8);
+  const list = document.getElementById('peerList');
+  if (!sectorPeers.length) {
+    list.innerHTML = `<span style="color:var(--muted);font-size:13px">No tracked peers in ${stock.sector}.</span>`;
+    return;
+  }
+  list.innerHTML = sectorPeers.map(p =>
+    `<div class="peer-row">
+      <div><div class="peer-name">${p.name.length > 28 ? p.name.slice(0,28)+'…' : p.name}</div><div class="peer-sym">${p.sym}</div></div>
+      <div class="peer-pe" style="color:var(--muted);font-size:12px">same sector</div>
+    </div>`
+  ).join('');
+}
+
+// ─────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────
+buildAllIndexChips();
+buildIndicesGrid(null);
+
+// Auto-search KIRLOSENG on load as demo
+input.value = 'KIRLOSENG';
+const demoStock = STOCK_MASTER.find(s => s.sym === 'KIRLOSENG');
+if (demoStock) {
+  setTimeout(() => loadStock(demoStock), 400);
+}
+</script>
+</body>
+</html>
