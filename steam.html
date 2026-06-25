@@ -1060,7 +1060,7 @@ function renderStockData(stock, chartData, summaryData) {
     // Show data source status
     const nseLoaded = s.nseDataLoaded;
     const proxyEl = document.getElementById('proxyStatus');
-    if (proxyEl) proxyEl.textContent = nseLoaded ? 'Yahoo chart + Yahoo fundamentals' : 'Yahoo chart only (fundamentals unavailable)';
+    if (proxyEl) proxyEl.textContent = nseLoaded ? 'Chart + Fundamentals (' + (s.fundSource||'') + ')' : 'Chart only — fundamentals unavailable';
 
   } catch(err) {
     document.getElementById('steamLoading').innerHTML = `<span style="color:var(--amber)">⚠ Partial data loaded. Some metrics may be unavailable. <br><small style="color:var(--muted)">${err.message}</small></span>`;
