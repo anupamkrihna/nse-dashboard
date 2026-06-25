@@ -767,9 +767,11 @@ function setProxyStatus(name, status) {
 
 // Single call to GAS backend — returns { summary, chart } for a symbol
 async function fetchStockFromGAS(sym) {
-  const clean = sym.replace('.NS', '').replace('.BO', '').toUpperCase();
+  // Always send with .NS suffix — GAS will add it if missing
+  // Never strip it here — HAL without .NS fetches Halliburton (NYSE)!
+  const nsSym = sym.includes('.') ? sym : sym + '.NS';
   setProxyStatus('GAS backend', 'trying');
-  const url = `${BACKEND}?action=stock&symbol=${encodeURIComponent(clean)}`;
+  const url = `${BACKEND}?action=stock&symbol=${encodeURIComponent(nsSym)}`;
   const r   = await fetch(url);
   if (!r.ok) throw new Error(`GAS returned HTTP ${r.status}`);
   const data = await r.json();
