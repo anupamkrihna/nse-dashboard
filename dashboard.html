@@ -45,18 +45,65 @@ body { background: #f0ede6; color: #1a2744; font-family: Arial, sans-serif; font
 .tab-panel { display: none; }
 .tab-panel.active { display: block; }
 
-/* ── KPI Tiles ── */
-.kpi-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-bottom: 18px; }
-.kpi { background: #fff; border-radius: 8px; padding: 10px 12px; border-top: 3px solid; cursor: pointer; transition: box-shadow 0.15s; }
-.kpi:hover { box-shadow: 0 4px 14px rgba(0,0,0,0.12); }
+/* ── Overview: wide KPI tile grid ── */
+.kpi-grid-wide {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 7px;
+}
+.kpi {
+  background: #fff;
+  border-radius: 8px;
+  padding: 9px 11px;
+  border-top: 3px solid #ddd;
+  cursor: pointer;
+  transition: box-shadow 0.15s, border-color 0.15s, transform 0.1s;
+  position: relative;
+  user-select: none;
+}
+.kpi:hover { box-shadow: 0 3px 12px rgba(0,0,0,0.10); transform: translateY(-1px); }
 .kpi.up-border { border-top-color: #2d7a4f; }
 .kpi.dn-border { border-top-color: #c0392b; }
-.kpi.sel { outline: 2px solid #e8b94a; }
-.kpi-lbl { font-size: 9px; font-weight: 600; color: #999; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 4px; }
-.kpi-val { font-family: 'Courier New', monospace; font-size: 16px; font-weight: 700; color: #1a2744; }
-.kpi-chg { font-size: 11px; margin-top: 2px; font-family: 'Courier New', monospace; }
+/* Selection states — chart 1 = gold ring, chart 2 = green ring */
+.kpi.sel1 { outline: 2.5px solid #e8b94a; outline-offset: 1px; box-shadow: 0 0 0 4px rgba(232,185,74,0.18); }
+.kpi.sel2 { outline: 2.5px solid #2d7a4f; outline-offset: 1px; box-shadow: 0 0 0 4px rgba(45,122,79,0.15); }
+.kpi.sel1.sel2 { outline: 2.5px solid #e8b94a; box-shadow: 0 0 0 4px rgba(232,185,74,0.18), inset 0 0 0 2px #2d7a4f; }
+/* Tiny chart badge in corner */
+.kpi-badge {
+  position: absolute;
+  top: 4px; right: 5px;
+  font-size: 8px; font-weight: 700;
+  padding: 1px 4px;
+  border-radius: 3px;
+  line-height: 1.4;
+}
+.kpi-badge.b1 { background: rgba(232,185,74,0.2); color: #9a6f10; }
+.kpi-badge.b2 { background: rgba(45,122,79,0.15); color: #1a5c35; }
+.kpi-badge.b12 { background: linear-gradient(90deg, rgba(232,185,74,0.25) 50%, rgba(45,122,79,0.2) 50%); color: #555; }
+.kpi-lbl { font-size: 9px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px; padding-right: 14px; }
+.kpi-val { font-family: 'Courier New', monospace; font-size: 15px; font-weight: 700; color: #1a2744; }
+.kpi-chg { font-size: 10px; margin-top: 1px; font-family: 'Courier New', monospace; }
 .kpi-chg.up { color: #2d7a4f; }
 .kpi-chg.dn { color: #c0392b; }
+
+/* ── Metrics strip below each chart ── */
+.metrics-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #f0f0f0;
+}
+.ms-item {
+  background: #f7f5f0;
+  border-radius: 5px;
+  padding: 5px 9px;
+  min-width: 70px;
+  flex: 1;
+}
+.ms-lbl { font-size: 9px; color: #999; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 2px; }
+.ms-val { font-family: 'Courier New', monospace; font-size: 12px; font-weight: 700; color: #1a2744; }
 
 /* ── Cards ── */
 .card { background: #fff; border-radius: 10px; border: 1px solid rgba(0,0,0,0.08); margin-bottom: 16px; overflow: hidden; }
@@ -212,56 +259,74 @@ select:focus, input[type=text]:focus { border-color: #e8b94a; }
     <!-- ══ OVERVIEW ══ -->
     <div class="tab-panel active" id="panel-overview">
 
-      <!-- KPI Bar -->
-      <div class="kpi-grid" id="kpiGrid">
-        <div class="kpi up-border"><div class="kpi-lbl">Nifty 50</div><div class="kpi-val" id="kpi0val">–</div><div class="kpi-chg" id="kpi0chg">–</div></div>
-        <div class="kpi up-border"><div class="kpi-lbl">Nifty Bank</div><div class="kpi-val" id="kpi1val">–</div><div class="kpi-chg" id="kpi1chg">–</div></div>
-        <div class="kpi up-border"><div class="kpi-lbl">Nifty IT</div><div class="kpi-val" id="kpi2val">–</div><div class="kpi-chg" id="kpi2chg">–</div></div>
-        <div class="kpi up-border"><div class="kpi-lbl">Nifty Midcap</div><div class="kpi-val" id="kpi3val">–</div><div class="kpi-chg" id="kpi3chg">–</div></div>
-        <div class="kpi up-border"><div class="kpi-lbl">Sensex</div><div class="kpi-val" id="kpi4val">–</div><div class="kpi-chg" id="kpi4chg">–</div></div>
-        <div class="kpi up-border"><div class="kpi-lbl">USD/INR</div><div class="kpi-val" id="kpi5val">–</div><div class="kpi-chg" id="kpi5chg">–</div></div>
+      <!-- ── INDEX TICKER TILES — all clickable, drive charts ── -->
+      <div style="margin-bottom:10px">
+        <div style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:#8a9ab8;margin-bottom:7px">Click any index to view in Chart 1 or Chart 2</div>
+        <div class="kpi-grid-wide" id="kpiGrid"></div>
       </div>
 
-      <!-- Charts grid -->
+      <!-- ── TWO CHARTS, each driven by tile selection ── -->
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
-        <div class="card">
-          <div class="card-head">
-            <div><div class="card-title">Nifty 50 — Price Chart</div><div class="card-sub">1Y daily close</div></div>
-            <div class="period-btns" id="niftyPeriods">
-              <button class="period-btn" onclick="changePeriod('nifty','1D',this)">1D</button>
-              <button class="period-btn" onclick="changePeriod('nifty','1W',this)">1W</button>
-              <button class="period-btn" onclick="changePeriod('nifty','1M',this)">1M</button>
-              <button class="period-btn active" onclick="changePeriod('nifty','1Y',this)">1Y</button>
-              <button class="period-btn" onclick="changePeriod('nifty','5Y',this)">5Y</button>
-            </div>
-          </div>
-          <div class="card-body"><div class="chart-box"><canvas id="niftyChart"></canvas></div></div>
-        </div>
-        <div class="card">
-          <div class="card-head">
-            <div><div class="card-title">Nifty Bank — Price Chart</div><div class="card-sub">1Y daily close</div></div>
-            <div class="period-btns" id="bankPeriods">
-              <button class="period-btn" onclick="changePeriod('bank','1D',this)">1D</button>
-              <button class="period-btn" onclick="changePeriod('bank','1W',this)">1W</button>
-              <button class="period-btn" onclick="changePeriod('bank','1M',this)">1M</button>
-              <button class="period-btn active" onclick="changePeriod('bank','1Y',this)">1Y</button>
-              <button class="period-btn" onclick="changePeriod('bank','5Y',this)">5Y</button>
-            </div>
-          </div>
-          <div class="card-body"><div class="chart-box"><canvas id="bankChart"></canvas></div></div>
-        </div>
-      </div>
 
-      <div class="card">
-        <div class="card-head"><div class="card-title">Market Gauges — Live</div><div class="card-sub">DMA levels from Nifty 50 · sector PEs reference</div></div>
-        <div class="card-body">
-          <div class="gauge-row">
-            <div class="gauge" id="gMcap"><div class="gauge-lbl">Nifty 50 PE</div><div class="gauge-val" id="niftyPE">…</div><div class="gauge-sub">trailing</div></div>
-            <div class="gauge" id="gPB"><div class="gauge-lbl">DMA 20</div><div class="gauge-val" id="dma20">…</div><div class="gauge-sub">EMA 20</div></div>
-            <div class="gauge" id="gYield"><div class="gauge-lbl">DMA 50</div><div class="gauge-val" id="dma50">…</div><div class="gauge-sub">EMA 50</div></div>
-            <div class="gauge" id="gBeta"><div class="gauge-lbl">DMA 200</div><div class="gauge-val" id="dma200">…</div><div class="gauge-sub">EMA 200</div></div>
-            <div class="gauge" id="gVol"><div class="gauge-lbl">Bank PE</div><div class="gauge-val" id="bankPE">…</div><div class="gauge-sub">trailing</div></div>
-            <div class="gauge" id="gDef"><div class="gauge-lbl">Defence PE</div><div class="gauge-val" id="defPE">~55x</div><div class="gauge-sub">sector avg</div></div>
+        <!-- Chart 1 -->
+        <div class="card">
+          <div class="card-head" style="flex-wrap:wrap;gap:8px">
+            <div style="flex:1;min-width:0">
+              <div class="card-title" id="chart1Title">Nifty 50</div>
+              <div class="card-sub" id="chart1Meta">–</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+              <div class="period-btns" id="c1Periods">
+                <button class="period-btn" onclick="ov.changePd(1,'1D',this)">1D</button>
+                <button class="period-btn" onclick="ov.changePd(1,'1W',this)">1W</button>
+                <button class="period-btn" onclick="ov.changePd(1,'1M',this)">1M</button>
+                <button class="period-btn active" onclick="ov.changePd(1,'1Y',this)">1Y</button>
+                <button class="period-btn" onclick="ov.changePd(1,'5Y',this)">5Y</button>
+              </div>
+            </div>
+          </div>
+          <div class="card-body" style="padding-bottom:10px">
+            <div class="chart-box"><canvas id="chart1"></canvas></div>
+            <!-- Metrics strip Chart 1 -->
+            <div class="metrics-strip" id="metrics1">
+              <div class="ms-item"><div class="ms-lbl">EMA 20</div><div class="ms-val" id="c1e20">–</div></div>
+              <div class="ms-item"><div class="ms-lbl">EMA 50</div><div class="ms-val" id="c1e50">–</div></div>
+              <div class="ms-item"><div class="ms-lbl">EMA 200</div><div class="ms-val" id="c1e200">–</div></div>
+              <div class="ms-item"><div class="ms-lbl">52W High</div><div class="ms-val" id="c1h52">–</div></div>
+              <div class="ms-item"><div class="ms-lbl">52W Low</div><div class="ms-val" id="c1l52">–</div></div>
+              <div class="ms-item"><div class="ms-lbl">Period Ret</div><div class="ms-val" id="c1ret">–</div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Chart 2 -->
+        <div class="card">
+          <div class="card-head" style="flex-wrap:wrap;gap:8px">
+            <div style="flex:1;min-width:0">
+              <div class="card-title" id="chart2Title">Nifty Bank</div>
+              <div class="card-sub" id="chart2Meta">–</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+              <div class="period-btns" id="c2Periods">
+                <button class="period-btn" onclick="ov.changePd(2,'1D',this)">1D</button>
+                <button class="period-btn" onclick="ov.changePd(2,'1W',this)">1W</button>
+                <button class="period-btn" onclick="ov.changePd(2,'1M',this)">1M</button>
+                <button class="period-btn active" onclick="ov.changePd(2,'1Y',this)">1Y</button>
+                <button class="period-btn" onclick="ov.changePd(2,'5Y',this)">5Y</button>
+              </div>
+            </div>
+          </div>
+          <div class="card-body" style="padding-bottom:10px">
+            <div class="chart-box"><canvas id="chart2"></canvas></div>
+            <!-- Metrics strip Chart 2 -->
+            <div class="metrics-strip" id="metrics2">
+              <div class="ms-item"><div class="ms-lbl">EMA 20</div><div class="ms-val" id="c2e20">–</div></div>
+              <div class="ms-item"><div class="ms-lbl">EMA 50</div><div class="ms-val" id="c2e50">–</div></div>
+              <div class="ms-item"><div class="ms-lbl">EMA 200</div><div class="ms-val" id="c2e200">–</div></div>
+              <div class="ms-item"><div class="ms-lbl">52W High</div><div class="ms-val" id="c2h52">–</div></div>
+              <div class="ms-item"><div class="ms-lbl">52W Low</div><div class="ms-val" id="c2l52">–</div></div>
+              <div class="ms-item"><div class="ms-lbl">Period Ret</div><div class="ms-val" id="c2ret">–</div></div>
+            </div>
           </div>
         </div>
       </div>
@@ -603,36 +668,260 @@ function drawDualChart(canvasId, labels, d1, d2, l1, l2) {
 }
 
 /* ═══════════════════════════════════════════════
-   OVERVIEW — KPIs + Charts
+   OVERVIEW — All indices, clickable tiles, dual chart
 ═══════════════════════════════════════════════ */
-const KPI_SYMS = [
-  {l:'Nifty 50',s:'^NSEI'},{l:'Nifty Bank',s:'^NSEBANK'},
-  {l:'Nifty IT',s:'^CNXIT'},{l:'Nifty Midcap',s:'^NSMIDCP50'},
-  {l:'Sensex',s:'^BSESN'},{l:'USD/INR',s:'USDINR=X'}
-];
-async function loadKPIs() {
-  KPI_SYMS.forEach(async (ks, i) => {
-    try {
-      const r = await fetch(BACKEND + '?symbol=' + encodeURIComponent(ks.s) + '&range=2d&interval=1d');
-      const j = await r.json();
-      const meta = j.chart?.result?.[0]?.meta;
-      if (!meta?.regularMarketPrice) return;
-      const p = meta.regularMarketPrice, prev = meta.previousClose || meta.chartPreviousClose;
-      const chg = prev ? (p-prev)/prev*100 : 0;
-      const pStr = ks.s==='USDINR=X' ? p.toFixed(2) : Math.round(p).toLocaleString('en-IN');
-      document.getElementById('kpi'+i+'val').textContent = pStr;
-      const chgEl = document.getElementById('kpi'+i+'chg');
-      chgEl.textContent = (chg>=0?'▲ ':' ▼ ') + Math.abs(chg).toFixed(2) + '%';
-      chgEl.className = 'kpi-chg ' + (chg>=0?'up':'dn');
-      const kpiEl = document.getElementById('kpiGrid').children[i];
-      if (kpiEl) {
-        kpiEl.className = 'kpi ' + (chg>=0?'up-border':'dn-border');
-      }
-    } catch(e){}
-  });
-}
 
-const chartPeriods = { nifty:'1Y', bank:'1Y' };
+// All 14 index tiles shown in the overview bar
+const OV_INDICES = [
+  {l:'Nifty 50',       s:'^NSEI',                  iso:false},
+  {l:'Sensex',         s:'^BSESN',                 iso:false},
+  {l:'Nifty Bank',     s:'^NSEBANK',               iso:false},
+  {l:'Nifty IT',       s:'^CNXIT',                 iso:false},
+  {l:'Nifty Auto',     s:'^CNXAUTO',               iso:false},
+  {l:'Nifty FMCG',     s:'^CNXFMCG',               iso:false},
+  {l:'Nifty Pharma',   s:'^CNXPHARMA',             iso:false},
+  {l:'Nifty Metal',    s:'^CNXMETAL',               iso:false},
+  {l:'Nifty Energy',   s:'^CNXENERGY',             iso:false},
+  {l:'Nifty PSE',      s:'^CNXPSE',                iso:false},
+  {l:'Nifty Defence',  s:'NIFTY_IND_DEFENCE.NS',   iso:false},
+  {l:'Nifty Midcap',   s:'^NSMIDCP50',             iso:false},
+  {l:'USD/INR',        s:'USDINR=X',               iso:true },
+  {l:'Gold/oz',        s:'GC=F',                   iso:true },
+];
+
+// Overview state
+const ov = {
+  sel1: 0,    // tile index driving chart 1
+  sel2: 2,    // tile index driving chart 2
+  pd1:  '1Y', // period chart 1
+  pd2:  '1Y', // period chart 2
+  data: {},   // cached: {sym: {pts, meta}}
+
+  // Build the KPI tile grid
+  buildGrid() {
+    const grid = document.getElementById('kpiGrid');
+    if (!grid) return;
+    grid.innerHTML = OV_INDICES.map((idx, i) => `
+      <div class="kpi" id="kpi${i}" onclick="ov.tileClick(${i}, event)">
+        <div class="kpi-badge" id="kpibadge${i}"></div>
+        <div class="kpi-lbl">${idx.l}</div>
+        <div class="kpi-val" id="kpiv${i}">…</div>
+        <div class="kpi-chg" id="kpic${i}">–</div>
+      </div>`).join('');
+    this.refreshBadges();
+  },
+
+  // Click tile — first click = chart 1, second click on same = swap to chart 2
+  tileClick(i, e) {
+    // Right-click or Ctrl+click → assign to chart 2
+    if (e.ctrlKey || e.metaKey || e.shiftKey || e.button === 2) {
+      this.sel2 = i;
+      this.renderChart(2);
+    } else if (this.sel1 === i) {
+      // Already chart 1 — promote to chart 2 slot, find next for chart 1
+      this.sel2 = i;
+      this.renderChart(2);
+    } else {
+      this.sel1 = i;
+      this.renderChart(1);
+    }
+    this.refreshBadges();
+  },
+
+  // Update the gold/green selection rings and badges
+  refreshBadges() {
+    OV_INDICES.forEach((_, i) => {
+      const el  = document.getElementById('kpi' + i);
+      const bdg = document.getElementById('kpibadge' + i);
+      if (!el) return;
+      el.classList.remove('sel1', 'sel2');
+      if (i === this.sel1 && i === this.sel2) {
+        el.classList.add('sel1', 'sel2');
+        bdg.textContent = 'C1·C2'; bdg.className = 'kpi-badge b12';
+      } else if (i === this.sel1) {
+        el.classList.add('sel1');
+        bdg.textContent = 'C1'; bdg.className = 'kpi-badge b1';
+      } else if (i === this.sel2) {
+        el.classList.add('sel2');
+        bdg.textContent = 'C2'; bdg.className = 'kpi-badge b2';
+      } else {
+        bdg.textContent = ''; bdg.className = 'kpi-badge';
+      }
+    });
+  },
+
+  // Load all tile prices in parallel
+  async loadAllTiles() {
+    const promises = OV_INDICES.map(async (idx, i) => {
+      try {
+        const urls = [
+          BACKEND + '?symbol=' + encodeURIComponent(idx.s) + '&range=2d&interval=1d',
+          'https://query1.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(idx.s) + '?range=2d&interval=1d'
+        ];
+        let meta = null;
+        for (const url of urls) {
+          try {
+            const r = await fetch(url);
+            if (!r.ok) continue;
+            const j = await r.json();
+            meta = j.chart?.result?.[0]?.meta;
+            if (meta?.regularMarketPrice) break;
+          } catch(e) {}
+        }
+        if (!meta?.regularMarketPrice) return;
+        const p    = meta.regularMarketPrice;
+        const prev = meta.previousClose || meta.chartPreviousClose;
+        const chg  = prev ? (p - prev) / prev * 100 : 0;
+        const pStr = idx.iso ? p.toFixed(2) : Math.round(p).toLocaleString('en-IN');
+        const valEl = document.getElementById('kpiv' + i);
+        const chgEl = document.getElementById('kpic' + i);
+        const kpiEl = document.getElementById('kpi' + i);
+        if (valEl) valEl.textContent = pStr;
+        if (chgEl) {
+          chgEl.textContent = (chg >= 0 ? '▲ ' : '▼ ') + Math.abs(chg).toFixed(2) + '%';
+          chgEl.className = 'kpi-chg ' + (chg >= 0 ? 'up' : 'dn');
+        }
+        if (kpiEl) {
+          const base = kpiEl.classList.contains('sel1') ? ' sel1' : kpiEl.classList.contains('sel2') ? ' sel2' : '';
+          kpiEl.className = 'kpi ' + (chg >= 0 ? 'up-border' : 'dn-border') + base;
+        }
+      } catch(e) {}
+    });
+    await Promise.all(promises);
+  },
+
+  // Render one chart slot (1 or 2) with the selected index
+  async renderChart(slot) {
+    const idx    = OV_INDICES[slot === 1 ? this.sel1 : this.sel2];
+    const period = slot === 1 ? this.pd1 : this.pd2;
+    const canvasId = 'chart' + slot;
+    const cfg    = PERIOD_CFG[period];
+    const color  = slot === 1 ? '#e8b94a' : '#2d7a4f';
+
+    document.getElementById('chart' + slot + 'Title').textContent = idx.l;
+    document.getElementById('chart' + slot + 'Meta').textContent  = period + ' · loading…';
+
+    // Fetch (GAS first, Yahoo direct fallback)
+    let pts = null, meta = null;
+    const urls = [
+      BACKEND + '?symbol=' + encodeURIComponent(idx.s) + '&range=' + cfg.range + '&interval=' + cfg.interval,
+      'https://query1.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(idx.s) + '?range=' + cfg.range + '&interval=' + cfg.interval,
+    ];
+    for (const url of urls) {
+      try {
+        const r = await fetch(url);
+        if (!r.ok) continue;
+        const j  = await r.json();
+        const res = j.chart?.result?.[0];
+        if (!res) continue;
+        const q = res.indicators.quote[0];
+        const raw = res.timestamp.map((t, i) => ({ t: new Date(t * 1000), c: q.close[i] })).filter(d => d.c != null);
+        if (raw.length) { pts = raw; meta = res.meta; break; }
+      } catch(e) {}
+    }
+
+    if (!pts) {
+      document.getElementById('chart' + slot + 'Meta').textContent = '⚠ Failed to load';
+      return;
+    }
+
+    const fmtDate = p => {
+      if (period === '1D') return p.t.toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'});
+      if (period === '5Y') return p.t.toLocaleDateString('en-IN', {month:'short', year:'2-digit'});
+      return p.t.toLocaleDateString('en-IN', {day:'2-digit', month:'short'});
+    };
+    const labels  = pts.map(fmtDate);
+    const closes  = pts.map(p => p.c);
+    const valids  = closes.filter(c => c != null);
+
+    // Build datasets with EMAs
+    const datasets = [{
+      label: idx.l, data: closes, borderColor: color, borderWidth: 1.5,
+      pointRadius: 0, fill: true,
+      backgroundColor: slot === 1 ? 'rgba(232,185,74,0.07)' : 'rgba(45,122,79,0.07)',
+      tension: 0.2
+    }];
+    if (!['1D','1W'].includes(period) && valids.length >= 20)
+      datasets.push({ label: 'EMA20', data: calcEMA(valids, 20), borderColor: '#888', borderWidth: 1, pointRadius: 0, fill: false, borderDash: [4,3], tension: 0.1 });
+    if (!['1D','1W','1M'].includes(period) && valids.length >= 50)
+      datasets.push({ label: 'EMA50', data: calcEMA(valids, 50), borderColor: '#4a90d9', borderWidth: 1, pointRadius: 0, fill: false, borderDash: [7,4], tension: 0.1 });
+    if (period === '5Y' && valids.length >= 200)
+      datasets.push({ label: 'EMA200', data: calcEMA(valids, 200), borderColor: '#c0392b', borderWidth: 0.8, pointRadius: 0, fill: false, borderDash: [10,5], tension: 0.1 });
+
+    // Draw
+    if (chartInstances[canvasId]) chartInstances[canvasId].destroy();
+    const ctx = document.getElementById(canvasId)?.getContext('2d');
+    if (ctx) {
+      chartInstances[canvasId] = new Chart(ctx, {
+        type: 'line',
+        data: { labels, datasets },
+        options: {
+          responsive: true, maintainAspectRatio: false, animation: false,
+          plugins: {
+            legend: { display: datasets.length > 1, labels: { color: '#666', font: { size: 10 }, boxWidth: 12 } },
+            tooltip: { mode: 'index', intersect: false, callbacks: {
+              label: item => item.raw != null ? `${item.dataset.label}: \u20b9${Number(item.raw).toLocaleString('en-IN', {maximumFractionDigits: 0})}` : ''
+            }}
+          },
+          scales: {
+            x: { grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { maxTicksLimit: 9, color: '#999', font: { size: 10 } }, border: { color: 'rgba(0,0,0,0.08)' } },
+            y: { grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { color: '#999', font: { size: 10 }, callback: v => idx.iso ? v.toFixed(2) : '\u20b9' + Math.round(v).toLocaleString('en-IN') }, border: { color: 'rgba(0,0,0,0.08)' } }
+          }
+        }
+      });
+    }
+
+    // Update metrics strip
+    const pfx  = 'c' + slot;
+    const last  = closes.at(-1);
+    const first = closes[0];
+    const ret   = (last && first) ? ((last - first) / first * 100).toFixed(1) : '–';
+    const retCls = parseFloat(ret) >= 0 ? 'up-c' : 'dn-c';
+    const fmt   = v => v != null ? '\u20b9' + Math.round(v).toLocaleString('en-IN') : '–';
+    const e20v  = valids.length >= 20  ? calcEMA(valids, 20).at(-1)  : null;
+    const e50v  = valids.length >= 50  ? calcEMA(valids, 50).at(-1)  : null;
+    const e200v = valids.length >= 200 ? calcEMA(valids, 200).at(-1) : null;
+
+    const setEl = (id, html) => { const el = document.getElementById(id); if (el) el.innerHTML = html; };
+    setEl(pfx + 'e20',  fmt(e20v));
+    setEl(pfx + 'e50',  fmt(e50v));
+    setEl(pfx + 'e200', fmt(e200v));
+    setEl(pfx + 'h52',  meta?.fiftyTwoWeekHigh  ? '\u20b9' + Math.round(meta.fiftyTwoWeekHigh).toLocaleString('en-IN')  : '–');
+    setEl(pfx + 'l52',  meta?.fiftyTwoWeekLow   ? '\u20b9' + Math.round(meta.fiftyTwoWeekLow).toLocaleString('en-IN')   : '–');
+    setEl(pfx + 'ret',  ret !== '–' ? `<span class="${retCls}">${parseFloat(ret) >= 0 ? '+' : ''}${ret}%</span>` : '–');
+
+    const pStr = last ? (idx.iso ? last.toFixed(2) : Math.round(last).toLocaleString('en-IN')) : '–';
+    document.getElementById('chart' + slot + 'Meta').textContent = pStr + ' · ' + period + ' · ' + pts.length + ' pts';
+  },
+
+  // Period button handler
+  async changePd(slot, period, btn) {
+    btn.closest('.period-btns').querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    if (slot === 1) this.pd1 = period;
+    else            this.pd2 = period;
+    await this.renderChart(slot);
+  },
+
+  // Init everything
+  async init() {
+    this.buildGrid();
+    this.refreshBadges();
+    await Promise.all([
+      this.loadAllTiles(),
+      this.renderChart(1),
+      this.renderChart(2),
+    ]);
+  }
+};
+
+// Compatibility: old changePeriod calls from anywhere still work
+async function changePeriod(which, period, btn) {
+  const slot = which === 'nifty' ? 1 : 2;
+  await ov.changePd(slot, period, btn);
+}
+// Old loadKPIs shim
+async function loadKPIs() { await ov.loadAllTiles(); }
 /* EMA helper */
 function calcEMA(arr, n) {
   const k = 2 / (n + 1), res = [arr[0]];
@@ -641,47 +930,8 @@ function calcEMA(arr, n) {
 }
 
 /* Gauges — live EMA-derived values from Nifty chart */
-async function loadGauges() {
-  const d = await fetchChart('^NSEI', '1y', '1d');
-  if (!d) {
-    document.getElementById('niftyPE').textContent = '~22x';
-    document.getElementById('niftyPB').textContent = '~3.8x';
-    document.getElementById('niftyYield').textContent = '~4.5%';
-    document.getElementById('itPE').textContent = '~27x';
-    document.getElementById('bankPE').textContent = '~16x';
-    document.getElementById('defPE').textContent = '~55x';
-    return;
-  }
-  const closes = d.pts.map(p => p.c).filter(c => c != null);
-  const last   = closes.at(-1);
-  const e20    = closes.length >= 20  ? calcEMA(closes, 20).at(-1)  : null;
-  const e50    = closes.length >= 50  ? calcEMA(closes, 50).at(-1)  : null;
-  const e200   = closes.length >= 200 ? calcEMA(closes, 200).at(-1) : null;
-  const niftyPEv = d.meta?.trailingPE ?? null;
-
-  document.getElementById('niftyPE').textContent    = niftyPEv ? niftyPEv.toFixed(1)+'x' : '~22x';
-  document.getElementById('niftyPB').textContent    = '~3.8x';
-  document.getElementById('niftyYield').textContent = '~4.5%';
-  document.getElementById('itPE').textContent       = '~27x';
-  document.getElementById('bankPE').textContent     = '~16x';
-  document.getElementById('defPE').textContent      = '~55x';
-
-  // Update DMA gauge tiles with live values
-  const dmaEls = { dma20: e20, dma50: e50, dma200: e200 };
-  Object.entries(dmaEls).forEach(([id, val]) => {
-    const el = document.getElementById(id);
-    if (el && val) el.textContent = '\u20b9' + Math.round(val).toLocaleString('en-IN');
-  });
-
-  // Colour gauges: green = above all DMAs, red = below
-  const state = (last && e20 && e50 && e200)
-    ? (last > e20 && last > e50 && last > e200 ? 'green' : last < e50 || last < e200 ? 'red' : 'amber')
-    : null;
-  ['gMcap','gBeta','gVol'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el && state) { el.classList.remove('green','red','amber'); el.classList.add(state); }
-  });
-}
+// loadGauges — metrics now computed live inside ov.renderChart()
+function loadGauges() {}
 
 function buildChartWithEMAs(canvasId, labels, closes, mainLabel, mainColor, period) {
   if (chartInstances[canvasId]) chartInstances[canvasId].destroy();
@@ -719,18 +969,8 @@ function buildChartWithEMAs(canvasId, labels, closes, mainLabel, mainColor, peri
   });
 }
 
-async function loadOverviewCharts() {
-  const nData = await fetchChart('^NSEI', '1y', '1d');
-  if (nData) {
-    const lbl = nData.pts.map(p => p.t.toLocaleDateString('en-IN', {day:'2-digit', month:'short'}));
-    buildChartWithEMAs('niftyChart', lbl, nData.pts.map(p => p.c), 'Nifty 50', '#e8b94a', '1Y');
-  }
-  const bData = await fetchChart('^NSEBANK', '1y', '1d');
-  if (bData) {
-    const lbl = bData.pts.map(p => p.t.toLocaleDateString('en-IN', {day:'2-digit', month:'short'}));
-    buildChartWithEMAs('bankChart', lbl, bData.pts.map(p => p.c), 'Nifty Bank', '#2d7a4f', '1Y');
-  }
-}
+// loadOverviewCharts delegates to ov.init()
+async function loadOverviewCharts() { await ov.init(); }
 
 async function changePeriod(which, period, btn) {
   const sym   = which === 'nifty' ? '^NSEI' : '^NSEBANK';
@@ -1331,9 +1571,7 @@ async function runSignalLab() {
    INIT
 ═══════════════════════════════════════════════ */
 loadTicker();
-loadKPIs();
-loadOverviewCharts();
-loadGauges();  // async — loads DMA20/50/200 live from Nifty chart
+ov.init();  // builds tiles, loads all prices, renders both charts
 </script>
 </body>
 </html>
