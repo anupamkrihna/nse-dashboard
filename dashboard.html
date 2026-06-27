@@ -176,6 +176,15 @@ select:focus, input[type=text]:focus { border-color: #e8b94a; }
 .ratio-card { background: #f7f5f0; border-radius: 8px; padding: 12px 14px; }
 .ratio-name { font-size: 12px; font-weight: 700; color: #1a2744; margin-bottom: 8px; }
 .ratio-vals { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+
+/* ── C1/C2 ratio & correlation tiles ── */
+.ratio-tile { background: #fff; border-radius: 8px; padding: 10px 13px; border-left: 3px solid #ddd; }
+.ratio-tile.positive { border-left-color: #2d7a4f; }
+.ratio-tile.negative { border-left-color: #c0392b; }
+.ratio-tile.neutral  { border-left-color: #e8b94a; }
+.rt-lbl { font-size: 9px; font-weight: 600; color: #999; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 4px; }
+.rt-val { font-family: 'Courier New', monospace; font-size: 18px; font-weight: 700; color: #1a2744; }
+.rt-sub { font-size: 10px; color: #999; margin-top: 2px; }
 .rv { display: flex; flex-direction: column; }
 .rv-lbl { font-size: 10px; color: #888; }
 .rv-val { font-family: 'Courier New', monospace; font-size: 14px; font-weight: 700; color: #1a2744; margin-top: 1px; }
@@ -327,6 +336,59 @@ select:focus, input[type=text]:focus { border-color: #e8b94a; }
               <div class="ms-item"><div class="ms-lbl">52W Low</div><div class="ms-val" id="c2l52">–</div></div>
               <div class="ms-item"><div class="ms-lbl">Period Ret</div><div class="ms-val" id="c2ret">–</div></div>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── RATIO TILES — computed from C1 vs C2 ── -->
+      <div id="ratioTilesWrap" style="display:none;margin-bottom:10px">
+        <div style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:#8a9ab8;margin-bottom:7px" id="ratioTilesLabel">C1 / C2 Analytics</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px" id="ratioTiles"></div>
+      </div>
+
+      <!-- ── RATIO CHART (C1 / C2) + CORRELATION CHART side by side ── -->
+      <div id="ratioChartsWrap" style="display:none;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:6px">
+
+        <!-- C1 / C2 ratio chart -->
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title" id="ratioChartTitle">C1 / C2 Ratio</div>
+              <div class="card-sub">Higher = C1 outperforming · Lower = C2 outperforming</div>
+            </div>
+            <div class="period-btns" id="ratioPeriods">
+              <button class="period-btn" onclick="ov.buildAnalytics('1M',this)">1M</button>
+              <button class="period-btn" onclick="ov.buildAnalytics('3M',this)">3M</button>
+              <button class="period-btn" onclick="ov.buildAnalytics('6M',this)">6M</button>
+              <button class="period-btn active" onclick="ov.buildAnalytics('1Y',this)">1Y</button>
+              <button class="period-btn" onclick="ov.buildAnalytics('5Y',this)">5Y</button>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="chart-box" style="height:220px"><canvas id="ratioChart"></canvas></div>
+            <div style="margin-top:8px;font-size:10px;color:#999" id="ratioChartMeta"></div>
+          </div>
+        </div>
+
+        <!-- Rolling correlation chart -->
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title" id="corrChartTitle">Rolling Correlation</div>
+              <div class="card-sub">60-day rolling Pearson correlation of daily returns</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <select id="corrWindow" onchange="ov.rebuildCorr()" style="font-size:11px;padding:4px 8px">
+                <option value="20">20-day</option>
+                <option value="30">30-day</option>
+                <option value="60" selected>60-day</option>
+                <option value="90">90-day</option>
+              </select>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="chart-box" style="height:220px"><canvas id="corrChart"></canvas></div>
+            <div style="margin-top:8px;font-size:10px;color:#999" id="corrChartMeta"></div>
           </div>
         </div>
       </div>
@@ -925,6 +987,9 @@ const ov = {
 
     const pStr = last ? (idx.iso ? last.toFixed(2) : Math.round(last).toLocaleString('en-IN')) : '–';
     document.getElementById('chart' + slot + 'Meta').textContent = pStr + ' · ' + period + ' · ' + pts.length + ' pts';
+
+    // Cache series for analytics — triggers rebuild when both slots ready
+    this.cacheForAnalytics(slot, pts);
   },
 
   // Period button handler
@@ -945,7 +1010,349 @@ const ov = {
       this.renderChart(1),
       this.renderChart(2),
     ]);
-  }
+    // Build analytics once both charts have data
+    await this.buildAnalytics('1Y', null);
+  },
+
+  // ── ANALYTICS: ratio tiles + ratio chart + correlation chart ──────────
+
+  // Stored raw series for analytics
+  _s1pts: null,  // { t, c }[] for chart 1
+  _s2pts: null,
+
+  // Called by renderChart to cache the series for analytics
+  cacheForAnalytics(slot, pts) {
+    if (slot === 1) this._s1pts = pts;
+    else            this._s2pts = pts;
+    // Rebuild whenever both are ready
+    if (this._s1pts && this._s2pts) this.buildAnalytics(this._analyticsPeriod || '1Y', null);
+  },
+
+  _analyticsPeriod: '1Y',
+
+  async buildAnalytics(period, btn) {
+    this._analyticsPeriod = period;
+    if (btn) {
+      document.querySelectorAll('#ratioPeriods .period-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    }
+
+    const idx1 = OV_INDICES[this.sel1];
+    const idx2 = OV_INDICES[this.sel2];
+    if (!idx1 || !idx2) return;
+
+    // Fetch fresh data at the requested period (may differ from chart periods)
+    const cfg = PERIOD_CFG[period] || PERIOD_CFG['1Y'];
+
+    const [d1, d2] = await Promise.all([
+      fetchChartDirect(idx1.s, cfg.range, cfg.interval),
+      fetchChartDirect(idx2.s, cfg.range, cfg.interval),
+    ]);
+
+    if (!d1 || !d2 || d1.length < 5 || d2.length < 5) return;
+
+    // Show analytics panels
+    const wrap1 = document.getElementById('ratioTilesWrap');
+    const wrap2 = document.getElementById('ratioChartsWrap');
+    if (wrap1) wrap1.style.display = 'block';
+    if (wrap2) wrap2.style.display = 'grid';
+
+    // Update labels
+    const lbl = document.getElementById('ratioTilesLabel');
+    if (lbl) lbl.textContent = idx1.l + ' / ' + idx2.l + ' Analytics';
+    const rct = document.getElementById('ratioChartTitle');
+    if (rct) rct.textContent = idx1.l + ' ÷ ' + idx2.l + ' Ratio';
+    const cct = document.getElementById('corrChartTitle');
+    if (cct) cct.textContent = 'Rolling Correlation — ' + idx1.l + ' vs ' + idx2.l;
+
+    // Align series by date string
+    const map1 = new Map(d1.map(p => [p.t.toDateString(), p.c]));
+    const map2 = new Map(d2.map(p => [p.t.toDateString(), p.c]));
+    const dates = d1.map(p => p.t.toDateString()).filter(d => map2.has(d));
+    if (dates.length < 5) return;
+
+    const c1 = dates.map(d => map1.get(d));
+    const c2 = dates.map(d => map2.get(d));
+    const ts = dates.map(d => new Date(d));
+
+    // ── Compute ratio series ──
+    const ratioSeries = c1.map((v, i) => c2[i] > 0 ? v / c2[i] : null);
+
+    // ── Daily returns for correlation ──
+    const r1 = c1.slice(1).map((v, i) => c1[i] > 0 ? (v - c1[i]) / c1[i] : 0);
+    const r2 = c2.slice(1).map((v, i) => c2[i] > 0 ? (v - c2[i]) / c2[i] : 0);
+
+    // ── Rolling correlation ──
+    const win = parseInt(document.getElementById('corrWindow')?.value || '60');
+    this._lastR1 = r1; this._lastR2 = r2; this._lastDates = dates.slice(1); this._lastTs = ts.slice(1);
+    const corrSeries = this._rollingCorr(r1, r2, win);
+
+    // ── Ratio tile metrics ──
+    const ret1  = c1[0] > 0 ? (c1.at(-1) - c1[0]) / c1[0] : null;
+    const ret2  = c2[0] > 0 ? (c2.at(-1) - c2[0]) / c2[0] : null;
+    const retSpread = (ret1 !== null && ret2 !== null) ? ret1 - ret2 : null;
+    const currentRatio = ratioSeries.at(-1);
+    const startRatio   = ratioSeries[0];
+    const ratioDelta   = (currentRatio && startRatio) ? (currentRatio - startRatio) / startRatio : null;
+
+    // Volatility (annualised std-dev of daily returns)
+    const vol1 = this._annVol(r1);
+    const vol2 = this._annVol(r2);
+
+    // Overall correlation
+    const corrAll = this._pearson(r1, r2);
+
+    // Current ratio vs 52W ratio range
+    const ratioValid = ratioSeries.filter(v => v != null);
+    const ratioHi = Math.max(...ratioValid);
+    const ratioLo = Math.min(...ratioValid);
+    const ratioPos = ratioHi > ratioLo ? ((currentRatio - ratioLo) / (ratioHi - ratioLo) * 100).toFixed(0) : '–';
+
+    // Render tiles
+    const tiles = [
+      {
+        lbl: 'Current Ratio', val: currentRatio ? currentRatio.toFixed(3) : '–',
+        sub: `${idx1.l} / ${idx2.l}`,
+        cls: 'neutral'
+      },
+      {
+        lbl: 'Ratio Change', val: ratioDelta !== null ? (ratioDelta >= 0 ? '+' : '') + (ratioDelta * 100).toFixed(1) + '%' : '–',
+        sub: `over ${period}`,
+        cls: ratioDelta > 0 ? 'positive' : ratioDelta < 0 ? 'negative' : 'neutral'
+      },
+      {
+        lbl: 'Return Spread', val: retSpread !== null ? (retSpread >= 0 ? '+' : '') + (retSpread * 100).toFixed(1) + '%' : '–',
+        sub: `${idx1.l} − ${idx2.l}`,
+        cls: retSpread > 0.02 ? 'positive' : retSpread < -0.02 ? 'negative' : 'neutral'
+      },
+      {
+        lbl: 'Correlation', val: corrAll !== null ? corrAll.toFixed(3) : '–',
+        sub: `Pearson · ${period}`,
+        cls: corrAll > 0.7 ? 'positive' : corrAll < 0.3 ? 'negative' : 'neutral'
+      },
+      {
+        lbl: `Vol ${idx1.l}`, val: vol1 !== null ? (vol1 * 100).toFixed(1) + '%' : '–',
+        sub: 'Annualised',
+        cls: vol1 > 0.3 ? 'negative' : vol1 < 0.15 ? 'positive' : 'neutral'
+      },
+      {
+        lbl: `Vol ${idx2.l}`, val: vol2 !== null ? (vol2 * 100).toFixed(1) + '%' : '–',
+        sub: 'Annualised',
+        cls: vol2 > 0.3 ? 'negative' : vol2 < 0.15 ? 'positive' : 'neutral'
+      },
+      {
+        lbl: 'Ratio Position', val: ratioPos !== '–' ? ratioPos + '%' : '–',
+        sub: `in ${period} range`,
+        cls: parseFloat(ratioPos) > 70 ? 'negative' : parseFloat(ratioPos) < 30 ? 'positive' : 'neutral'
+      },
+      {
+        lbl: `${idx1.l} Return`, val: ret1 !== null ? (ret1 >= 0 ? '+' : '') + (ret1 * 100).toFixed(1) + '%' : '–',
+        sub: period,
+        cls: ret1 > 0 ? 'positive' : 'negative'
+      },
+      {
+        lbl: `${idx2.l} Return`, val: ret2 !== null ? (ret2 >= 0 ? '+' : '') + (ret2 * 100).toFixed(1) + '%' : '–',
+        sub: period,
+        cls: ret2 > 0 ? 'positive' : 'negative'
+      },
+    ];
+
+    const tilesEl = document.getElementById('ratioTiles');
+    if (tilesEl) {
+      tilesEl.innerHTML = tiles.map(t => `
+        <div class="ratio-tile ${t.cls}">
+          <div class="rt-lbl">${t.lbl}</div>
+          <div class="rt-val">${t.val}</div>
+          <div class="rt-sub">${t.sub}</div>
+        </div>`).join('');
+    }
+
+    // ── Ratio chart ──
+    const fmtD = (d, i) => {
+      const t = ts[i];
+      if (!t) return '';
+      if (period === '1D') return t.toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'});
+      if (period === '5Y') return t.toLocaleDateString('en-IN', {month:'short', year:'2-digit'});
+      return t.toLocaleDateString('en-IN', {day:'2-digit', month:'short'});
+    };
+    const ratioLabels = dates.map(fmtD);
+
+    if (chartInstances['ratioChart']) chartInstances['ratioChart'].destroy();
+    const rctx = document.getElementById('ratioChart')?.getContext('2d');
+    if (rctx) {
+      // Colour fill: green above start ratio, red below
+      const startR = ratioSeries[0];
+      chartInstances['ratioChart'] = new Chart(rctx, {
+        type: 'line',
+        data: { labels: ratioLabels, datasets: [
+          {
+            label: `${idx1.l} / ${idx2.l}`,
+            data: ratioSeries,
+            borderColor: '#e8b94a',
+            borderWidth: 1.5,
+            pointRadius: 0,
+            fill: { target: 'origin', above: 'rgba(45,122,79,0.08)', below: 'rgba(192,57,43,0.08)' },
+            tension: 0.2,
+          },
+          {
+            label: 'Start level',
+            data: Array(ratioSeries.length).fill(startR),
+            borderColor: 'rgba(0,0,0,0.15)',
+            borderWidth: 1,
+            borderDash: [5,4],
+            pointRadius: 0,
+            fill: false,
+          }
+        ]},
+        options: {
+          responsive: true, maintainAspectRatio: false, animation: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: { mode: 'index', intersect: false, callbacks: {
+              label: item => item.datasetIndex === 0 ? `Ratio: ${item.raw?.toFixed(4)}` : `Start: ${item.raw?.toFixed(4)}`
+            }}
+          },
+          scales: {
+            x: { grid: { color: 'rgba(0,0,0,0.03)' }, ticks: { maxTicksLimit: 8, color: '#999', font: { size: 10 } }, border: { color: 'rgba(0,0,0,0.08)' } },
+            y: { grid: { color: 'rgba(0,0,0,0.03)' }, ticks: { color: '#999', font: { size: 10 }, callback: v => v?.toFixed(3) }, border: { color: 'rgba(0,0,0,0.08)' } }
+          }
+        }
+      });
+    }
+    const rmeta = document.getElementById('ratioChartMeta');
+    if (rmeta) rmeta.textContent = `Range: ${ratioLo.toFixed(3)} – ${ratioHi.toFixed(3)} · Current: ${currentRatio?.toFixed(3)} (${ratioPos}th percentile of ${period} range)`;
+
+    // ── Correlation chart ──
+    this._drawCorrChart(corrSeries, dates.slice(1), ts.slice(1), win);
+  },
+
+  _drawCorrChart(corrSeries, dates, ts, win) {
+    const idx1 = OV_INDICES[this.sel1];
+    const idx2 = OV_INDICES[this.sel2];
+    const period = this._analyticsPeriod || '1Y';
+    const fmtD = (_, i) => {
+      const t = ts[i];
+      if (!t) return '';
+      if (period === '5Y') return t.toLocaleDateString('en-IN', {month:'short', year:'2-digit'});
+      return t.toLocaleDateString('en-IN', {day:'2-digit', month:'short'});
+    };
+
+    if (chartInstances['corrChart']) chartInstances['corrChart'].destroy();
+    const cctx = document.getElementById('corrChart')?.getContext('2d');
+    if (!cctx) return;
+
+    // Colour points by correlation strength
+    const borderColors = corrSeries.map(v =>
+      v == null ? 'transparent' :
+      v > 0.7  ? '#2d7a4f' :
+      v > 0.3  ? '#e8b94a' :
+      v > -0.3 ? '#999' :
+      '#c0392b'
+    );
+
+    chartInstances['corrChart'] = new Chart(cctx, {
+      type: 'line',
+      data: { labels: dates.map(fmtD), datasets: [
+        {
+          label: `${win}-day rolling corr`,
+          data: corrSeries,
+          borderColor: '#4a90d9',
+          borderWidth: 1.5,
+          pointRadius: 0,
+          fill: { target: { value: 0 }, above: 'rgba(45,122,79,0.08)', below: 'rgba(192,57,43,0.08)' },
+          tension: 0.3,
+        },
+        {
+          label: '+0.7 high corr',
+          data: Array(corrSeries.length).fill(0.7),
+          borderColor: 'rgba(45,122,79,0.3)', borderWidth: 1, borderDash: [5,4], pointRadius: 0, fill: false,
+        },
+        {
+          label: '0 line',
+          data: Array(corrSeries.length).fill(0),
+          borderColor: 'rgba(0,0,0,0.15)', borderWidth: 1, borderDash: [3,3], pointRadius: 0, fill: false,
+        },
+        {
+          label: '-0.7 low corr',
+          data: Array(corrSeries.length).fill(-0.7),
+          borderColor: 'rgba(192,57,43,0.3)', borderWidth: 1, borderDash: [5,4], pointRadius: 0, fill: false,
+        },
+      ]},
+      options: {
+        responsive: true, maintainAspectRatio: false, animation: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { mode: 'index', intersect: false, callbacks: {
+            label: item => item.datasetIndex === 0 ? `${win}d Corr: ${item.raw?.toFixed(3)}` : null,
+            filter: item => item.datasetIndex === 0,
+          }}
+        },
+        scales: {
+          x: { grid: { color: 'rgba(0,0,0,0.03)' }, ticks: { maxTicksLimit: 8, color: '#999', font: { size: 10 } }, border: { color: 'rgba(0,0,0,0.08)' } },
+          y: {
+            min: -1, max: 1,
+            grid: { color: 'rgba(0,0,0,0.03)' },
+            ticks: { color: '#999', font: { size: 10 }, stepSize: 0.2, callback: v => v.toFixed(1) },
+            border: { color: 'rgba(0,0,0,0.08)' }
+          }
+        }
+      }
+    });
+
+    // Current + avg correlation summary
+    const valid = corrSeries.filter(v => v != null);
+    const lastCorr = valid.at(-1);
+    const avgCorr  = valid.length ? valid.reduce((a, b) => a + b, 0) / valid.length : null;
+    const cmeta = document.getElementById('corrChartMeta');
+    const corrDesc = lastCorr > 0.7 ? 'strongly correlated — move together' :
+                     lastCorr > 0.3 ? 'moderately correlated' :
+                     lastCorr > -0.3 ? 'low / no correlation' :
+                     'negatively correlated — diverging';
+    if (cmeta) cmeta.textContent = `Current ${win}-day: ${lastCorr?.toFixed(3)} (${corrDesc}) · Period avg: ${avgCorr?.toFixed(3)}`;
+  },
+
+  // Rebuild only correlation chart when window changes
+  rebuildCorr() {
+    if (!this._lastR1 || !this._lastR2) return;
+    const win = parseInt(document.getElementById('corrWindow')?.value || '60');
+    const corrSeries = this._rollingCorr(this._lastR1, this._lastR2, win);
+    this._drawCorrChart(corrSeries, this._lastDates, this._lastTs, win);
+  },
+
+  // ── Stats helpers ──
+
+  _rollingCorr(r1, r2, win) {
+    const result = Array(Math.min(win - 1, r1.length - 1)).fill(null);
+    for (let i = win; i <= r1.length; i++) {
+      const a = r1.slice(i - win, i);
+      const b = r2.slice(i - win, i);
+      result.push(this._pearson(a, b));
+    }
+    return result;
+  },
+
+  _pearson(a, b) {
+    const n = Math.min(a.length, b.length);
+    if (n < 3) return null;
+    const ma = a.slice(0, n).reduce((s, v) => s + v, 0) / n;
+    const mb = b.slice(0, n).reduce((s, v) => s + v, 0) / n;
+    let num = 0, da = 0, db = 0;
+    for (let i = 0; i < n; i++) {
+      num += (a[i] - ma) * (b[i] - mb);
+      da  += (a[i] - ma) ** 2;
+      db  += (b[i] - mb) ** 2;
+    }
+    const denom = Math.sqrt(da * db);
+    return denom === 0 ? null : Math.max(-1, Math.min(1, num / denom));
+  },
+
+  _annVol(returns) {
+    if (!returns || returns.length < 2) return null;
+    const n = returns.length;
+    const mean = returns.reduce((a, b) => a + b, 0) / n;
+    const variance = returns.reduce((s, v) => s + (v - mean) ** 2, 0) / (n - 1);
+    return Math.sqrt(variance * 252); // annualised
+  },
 };
 
 // Compatibility: old changePeriod calls from anywhere still work
@@ -955,6 +1362,25 @@ async function changePeriod(which, period, btn) {
 }
 // Old loadKPIs shim
 async function loadKPIs() { await ov.loadAllTiles(); }
+
+// Direct Yahoo fetch for analytics — skips GAS, tries query1 then query2
+async function fetchChartDirect(sym, range, interval) {
+  for (const host of ['query1', 'query2']) {
+    try {
+      const url = `https://${host}.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?range=${range}&interval=${interval}`;
+      const r = await fetch(url);
+      if (!r.ok) continue;
+      const j = await r.json();
+      const res = j.chart?.result?.[0];
+      if (!res) continue;
+      const q = res.indicators.quote[0];
+      const pts = res.timestamp.map((t, i) => ({ t: new Date(t * 1000), c: q.close[i] })).filter(d => d.c != null);
+      if (pts.length) return pts;
+    } catch(e) {}
+  }
+  // Final fallback: GAS proxy
+  return fetchChart(sym, range, interval).then(d => d?.pts || null);
+}
 /* EMA helper */
 function calcEMA(arr, n) {
   const k = 2 / (n + 1), res = [arr[0]];
