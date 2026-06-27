@@ -872,12 +872,54 @@ function renderMembership(sym) {
    DATA FETCH — DUAL SOURCE
 ═══════════════════════════════════════════════ */
 async function fetchGAS(nsSym) {
-  const r = await fetch(BACKEND + '?action=stock&symbol=' + encodeURIComponent(nsSym));
-  if (!r.ok) throw new Error('GAS HTTP ' + r.status);
-  const d = await r.json();
-  if (d.error) throw new Error(d.error);
-  if (!d.summary) throw new Error('No summary');
-  return d;
+  // Try GAS action=stock first (Upstox fundamentals + Yahoo chart)
+  try {
+    const r = await fetch(BACKEND + '?action=stock&symbol=' + encodeURIComponent(nsSym));
+    if (r.ok) {
+      const d = await r.json();
+      if (!d.error && d.summary?.regularMarketPrice) return d;
+    }
+  } catch(e) {}
+  // Fallback: direct Yahoo v8 chart (always works — browser never blocked)
+  // Reconstructs a summary-like object from chart meta
+  const r2 = await fetch('https://query1.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(nsSym) + '?range=1y&interval=1d');
+  if (!r2.ok) throw new Error('Yahoo chart HTTP ' + r2.status);
+  const j2 = await r2.json();
+  const res = j2.chart?.result?.[0];
+  if (!res) throw new Error('No chart data for ' + nsSym);
+  const meta = res.meta;
+  if (!meta?.regularMarketPrice) throw new Error('No price in chart for ' + nsSym);
+  // Build a minimal summary object from chart meta
+  const q = res.indicators.quote[0];
+  const closes = res.timestamp.map((t,i) => q.close[i]).filter(c=>c!=null);
+  const return1y = closes.length>1 ? (closes.at(-1)-closes[0])/closes[0] : null;
+  const summary = {
+    regularMarketPrice:       meta.regularMarketPrice,
+    regularMarketChangePercent: meta.regularMarketChangePercent ?? null,
+    previousClose:            meta.previousClose,
+    fiftyTwoWeekHigh:         meta.fiftyTwoWeekHigh,
+    fiftyTwoWeekLow:          meta.fiftyTwoWeekLow,
+    marketCap:                meta.marketCap,
+    averageVolume:            meta.averageVolume3Month ?? meta.averageVolume,
+    trailingPE:               meta.trailingPE ?? null,
+    priceToBook:              null,
+    epsTrailingTwelveMonths:  null,
+    dividendYield:            null,
+    beta:                     null,
+    revenueGrowth:            null,
+    totalRevenue:             null,
+    netIncome:                null,
+    profitMargins:            null,
+    heldPercentInsiders:      null,
+    heldPercentInstitutions:  null,
+    fiiHold:                  null,
+    diiHold:                  null,
+    sectorPE:                 null,
+    return1y,
+    nseDataLoaded:            false,
+    chartFallback:            true,
+  };
+  return { summary, chart: j2 };
 }
 
 async function fetchYahooHoldings(yfSym) {
