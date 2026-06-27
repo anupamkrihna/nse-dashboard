@@ -5,448 +5,358 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NSE Pro — Market Intelligence Suite</title>
 <style>
-  :root {
-    --bg: #f5f6f8;
-    --surface: #ffffff;
-    --surface2: #eef0f4;
-    --border: rgba(0,0,0,0.08);
-    --border2: rgba(0,0,0,0.13);
-    --text: #1a1d24;
-    --muted: #7a7f8e;
-    --accent: #e8b84b;        /* gold */
-    --green: #1a9e68;
-    --red: #c0392b;
-    --amber: #f6c05c;
-    --gold: #e8b84b;
-    --font-mono: 'JetBrains Mono','Fira Code','Courier New',monospace;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body { height: 100%; }
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    font-size: 14px;
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  background: #f0ede6;
+  color: #1a2744;
+  font-family: Arial, sans-serif;
+  font-size: 14px;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
 
-  /* ── Ticker strip ── */
-  .ticker-bar {
-    background: var(--surface);
-    border-bottom: 1px solid var(--border);
-    padding: 0;
-    height: 34px;
-    overflow: hidden;
-    position: relative;
-    flex-shrink: 0;
-  }
-  .ticker-bar::before, .ticker-bar::after {
-    content: '';
-    position: absolute;
-    top: 0; bottom: 0;
-    width: 60px;
-    z-index: 2;
-    pointer-events: none;
-  }
-  .ticker-bar::before { left: 0; background: linear-gradient(to right, var(--surface), transparent); }
-  .ticker-bar::after  { right: 0; background: linear-gradient(to left, var(--surface), transparent); }
-  .ticker-track {
-    display: flex;
-    align-items: center;
-    height: 34px;
-    white-space: nowrap;
-    animation: ticker 40s linear infinite;
-    width: max-content;
-  }
-  @keyframes ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
-  .ticker-item {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 0 24px;
-    font-family: var(--font-mono);
-    font-size: 12px;
-    border-right: 1px solid var(--border);
-  }
-  .ticker-label { color: var(--muted); letter-spacing: 0.3px; }
-  .ticker-val { font-weight: 600; color: var(--text); }
-  .ticker-chg.up { color: var(--green); }
-  .ticker-chg.dn { color: var(--red); }
+/* ── Unified Header ── */
+.u-header {
+  background: #1a2744;
+  height: 48px;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-shrink: 0;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.u-brand {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: #f0e6c8;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.u-brand span { color: #e8b94a; }
+.u-tabs { display: flex; gap: 2px; margin-left: 8px; }
+.u-tab {
+  padding: 0 16px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  font-size: 13px;
+  color: #8a9ab8;
+  text-decoration: none;
+  border-bottom: 3px solid transparent;
+  transition: color 0.15s;
+}
+.u-tab:hover { color: #f0e6c8; background: #233354; }
+.u-tab.active { color: #f0e6c8; border-bottom-color: #e8b94a; background: #233354; }
+.u-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.live-dot { width: 6px; height: 6px; border-radius: 50%; background: #2d7a4f; animation: blink 2s ease-in-out infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+.u-clock { font-family: 'Courier New', monospace; font-size: 12px; color: #f0e6c8; }
+.u-ist { font-size: 11px; color: #8a9ab8; }
 
-  /* ── Header ── */
-  .header {
-    padding: 22px 40px 20px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-shrink: 0;
-  }
-  .brand {
-    display: flex;
-    align-items: baseline;
-    gap: 10px;
-  }
-  .brand-name {
-    font-size: 20px;
-    font-weight: 700;
-    letter-spacing: 1.5px;
-    color: var(--text);
-  }
-  .brand-name span { color: var(--accent); }
-  .brand-tagline {
-    font-size: 12px;
-    color: var(--muted);
-    letter-spacing: 0.5px;
-  }
-  .header-meta {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 12px;
-    color: var(--muted);
-    font-family: var(--font-mono);
-  }
-  .live-dot {
-    width: 6px; height: 6px;
-    border-radius: 50%;
-    background: var(--green);
-    animation: blink 2s ease-in-out infinite;
-  }
-  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+/* ── Ticker ── */
+.u-ticker {
+  background: #233354;
+  height: 28px;
+  overflow: hidden;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  position: relative;
+  flex-shrink: 0;
+}
+.u-ticker::before, .u-ticker::after {
+  content: '';
+  position: absolute;
+  top: 0; bottom: 0;
+  width: 40px;
+  z-index: 2;
+  pointer-events: none;
+}
+.u-ticker::before { left: 0; background: linear-gradient(to right, #233354, transparent); }
+.u-ticker::after  { right: 0; background: linear-gradient(to left, #233354, transparent); }
+.ticker-track {
+  display: flex;
+  align-items: center;
+  height: 28px;
+  white-space: nowrap;
+  animation: scroll 50s linear infinite;
+  width: max-content;
+}
+@keyframes scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+.t-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 20px;
+  border-right: 1px solid rgba(255,255,255,0.07);
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+}
+.t-lbl { color: #8a9ab8; }
+.t-val { color: #f0e6c8; font-weight: 600; }
+.t-up  { color: #2d7a4f; }
+.t-dn  { color: #c0392b; }
 
-  /* ── Main ── */
-  .main {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 20px 40px 40px;
-    gap: 32px;
-  }
+/* ── Main ── */
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 24px 40px;
+  gap: 28px;
+}
 
-  .suite-label {
-    font-size: 11px;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    color: var(--muted);
-    text-align: center;
-  }
+.suite-label {
+  font-size: 10px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: #8a9ab8;
+  text-align: center;
+}
 
-  /* ── Cards ── */
-  .cards {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-    width: 100%;
-    max-width: 860px;
-  }
+/* ── Cards ── */
+.cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  width: 100%;
+  max-width: 820px;
+}
+.card {
+  background: #fff;
+  border: 1px solid rgba(0,0,0,0.10);
+  border-radius: 14px;
+  padding: 30px 28px 26px;
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  min-height: 260px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+}
+.card-1:hover { border-color: rgba(232,185,74,0.4); }
+.card-2:hover { border-color: rgba(45,122,79,0.35); }
+.card::before {
+  content: '';
+  position: absolute;
+  top: -30px; right: -30px;
+  width: 120px; height: 120px;
+  border-radius: 50%;
+  opacity: 0.05;
+  transition: opacity 0.25s;
+}
+.card:hover::before { opacity: 0.10; }
+.card-1::before { background: #e8b94a; }
+.card-2::before { background: #2d7a4f; }
 
-  .card {
-    position: relative;
-    background: var(--surface);
-    border: 1px solid var(--border2);
-    border-radius: 16px;
-    padding: 36px 32px 32px;
-    cursor: pointer;
-    text-decoration: none;
-    color: inherit;
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-    overflow: hidden;
-    transition: border-color 0.25s, transform 0.2s, box-shadow 0.25s;
-    min-height: 280px;
-  }
-  .card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-  }
-  .card-1:hover { border-color: rgba(232,184,75,0.5); }
-  .card-2:hover { border-color: rgba(62,207,142,0.5); }
+.card-eyebrow { font-size: 10px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 14px; }
+.card-1 .card-eyebrow { color: #e8b94a; }
+.card-2 .card-eyebrow { color: #2d7a4f; }
 
-  /* Glow corner accent */
-  .card::before {
-    content: '';
-    position: absolute;
-    top: -40px; right: -40px;
-    width: 140px; height: 140px;
-    border-radius: 50%;
-    opacity: 0.06;
-    transition: opacity 0.3s;
-  }
-  .card:hover::before { opacity: 0.12; }
-  .card-1::before { background: #e8b84b; }
-  .card-2::before { background: #3ecf8e; }
+.card-icon { font-size: 32px; margin-bottom: 12px; line-height: 1; }
+.card-title { font-size: 20px; font-weight: 700; letter-spacing: -0.3px; margin-bottom: 9px; color: #1a2744; }
+.card-desc { font-size: 12px; color: #666; line-height: 1.7; flex: 1; margin-bottom: 18px; }
 
-  .card-eyebrow {
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 1.8px;
-    text-transform: uppercase;
-    margin-bottom: 16px;
-  }
-  .card-1 .card-eyebrow { color: var(--accent); }
-  .card-2 .card-eyebrow { color: var(--green); }
+.card-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 20px; }
+.tag { font-size: 10px; padding: 3px 9px; border-radius: 4px; font-weight: 500; }
+.card-1 .tag { background: rgba(232,185,74,0.12); color: #9a6f10; }
+.card-2 .tag { background: rgba(45,122,79,0.1); color: #1a5c35; }
 
-  .card-icon {
-    font-size: 36px;
-    margin-bottom: 14px;
-    line-height: 1;
-  }
+.card-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 9px 16px;
+  border-radius: 7px;
+  width: fit-content;
+  transition: gap 0.2s;
+}
+.card:hover .card-cta { gap: 11px; }
+.card-1 .card-cta { background: rgba(232,185,74,0.12); color: #9a6f10; border: 1px solid rgba(232,185,74,0.28); }
+.card-2 .card-cta { background: rgba(45,122,79,0.10); color: #1a5c35; border: 1px solid rgba(45,122,79,0.22); }
+.arrow { transition: transform 0.2s; }
+.card:hover .arrow { transform: translateX(3px); }
 
-  .card-title {
-    font-size: 22px;
-    font-weight: 700;
-    letter-spacing: -0.3px;
-    margin-bottom: 10px;
-    line-height: 1.2;
-  }
+/* ── Footer ── */
+.footer {
+  padding: 14px 24px;
+  border-top: 1px solid rgba(0,0,0,0.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  background: #fff;
+}
+.footer-left { font-size: 11px; color: #888; font-family: 'Courier New', monospace; }
+.footer-links { display: flex; gap: 16px; }
+.footer-links a { font-size: 11px; color: #888; text-decoration: none; transition: color 0.15s; }
+.footer-links a:hover { color: #e8b94a; }
 
-  .card-desc {
-    font-size: 13px;
-    color: var(--muted);
-    line-height: 1.7;
-    flex: 1;
-    margin-bottom: 24px;
-  }
-
-  .card-features {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-bottom: 24px;
-  }
-  .feat-tag {
-    font-size: 11px;
-    padding: 3px 9px;
-    border-radius: 5px;
-    font-weight: 500;
-  }
-  .card-1 .feat-tag { background: rgba(232,184,75,0.1); color: #f0cc7a; }
-  .card-2 .feat-tag { background: rgba(62,207,142,0.1); color: #6de8b0; }
-
-  .card-cta {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 13px;
-    font-weight: 600;
-    padding: 11px 18px;
-    border-radius: 9px;
-    width: fit-content;
-    transition: gap 0.2s;
-  }
-  .card:hover .card-cta { gap: 12px; }
-  .card-1 .card-cta { background: rgba(232,184,75,0.12); color: var(--accent); border: 1px solid rgba(232,184,75,0.25); }
-  .card-2 .card-cta { background: rgba(62,207,142,0.1); color: var(--green); border: 1px solid rgba(62,207,142,0.2); }
-
-  .arrow { font-size: 16px; transition: transform 0.2s; }
-  .card:hover .arrow { transform: translateX(4px); }
-
-  /* ── Divider between cards ── */
-  .card-divider {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-  }
-  .card-divider::before {
-    content: 'OR';
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--muted);
-    letter-spacing: 1px;
-    background: var(--bg);
-    padding: 6px 8px;
-    border-radius: 50%;
-    border: 1px solid var(--border2);
-    position: relative;
-    z-index: 1;
-  }
-
-  /* ── Footer strip ── */
-  .footer {
-    padding: 16px 40px;
-    border-top: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-shrink: 0;
-  }
-  .footer-left {
-    font-size: 11px;
-    color: var(--muted);
-    font-family: var(--font-mono);
-  }
-  .footer-right {
-    font-size: 11px;
-    color: var(--muted);
-  }
-  .footer-right a {
-    color: var(--muted);
-    text-decoration: none;
-    transition: color 0.2s;
-  }
-  .footer-right a:hover { color: var(--accent); }
-
-  /* ── Scan line ambient effect ── */
-  body::after {
-    content: '';
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 2px,
-      rgba(255,255,255,0.012) 2px,
-      rgba(255,255,255,0.012) 4px
-    );
-    pointer-events: none;
-    z-index: 0;
-  }
-  .ticker-bar, .header, .main, .footer { position: relative; z-index: 1; }
-
-  /* ── Responsive ── */
-  @media (max-width: 640px) {
-    .header { padding: 16px 20px; }
-    .main { padding: 16px 16px 32px; gap: 20px; }
-    .cards { grid-template-columns: 1fr; max-width: 420px; }
-    .card-divider { display: none; }
-    .card { min-height: auto; padding: 28px 24px 24px; }
-    .footer { padding: 14px 20px; }
-  }
+@media (max-width: 600px) {
+  .cards { grid-template-columns: 1fr; max-width: 380px; }
+  .u-tabs { display: none; }
+  .card { min-height: auto; padding: 22px 18px 20px; }
+}
 </style>
 </head>
 <body>
 
-<!-- TICKER STRIP -->
-<div class="ticker-bar">
-  <div class="ticker-track" id="tickerTrack">
-    <!-- filled by JS, duplicated for seamless loop -->
-  </div>
-</div>
-
-<!-- HEADER -->
-<header class="header">
-  <div class="brand">
-    <div class="brand-name">NSE <span>Pro</span></div>
-    <div class="brand-tagline">Market Intelligence Suite</div>
-  </div>
-  <div class="header-meta">
+<header class="u-header">
+  <a href="index.html" class="u-brand">NSE <span>Pro</span></a>
+  <nav class="u-tabs">
+    <a href="dashboard.html" class="u-tab">📊 Dashboard</a>
+    <a href="steam.html"     class="u-tab">🔥 Steam Gauge</a>
+  </nav>
+  <div class="u-right">
     <div class="live-dot"></div>
-    <span id="liveTime">–</span>
-    &nbsp;·&nbsp; IST
+    <span class="u-clock" id="uClock">–</span>
+    <span class="u-ist">IST</span>
   </div>
 </header>
 
-<!-- MAIN -->
+<div class="u-ticker">
+  <div class="ticker-track" id="tickerTrack">
+    <span class="t-item"><span class="t-lbl">Loading…</span></span>
+  </div>
+</div>
+
 <main class="main">
-
   <div class="suite-label">Select your tool</div>
-
   <div class="cards">
-
-    <!-- Card 1: NSE Dashboard Pro -->
     <a class="card card-1" href="dashboard.html">
       <div class="card-eyebrow">Module 01</div>
       <div class="card-icon">📊</div>
       <div class="card-title">NSE Dashboard Pro</div>
-      <div class="card-desc">Live index KPIs, moving averages, index ratio analysis, stock vs Nifty performance, and the custom analysis Signal Lab. Powered by your Google Apps Script backend.</div>
-      <div class="card-features">
-        <span class="feat-tag">Nifty 50</span>
-        <span class="feat-tag">Index Ratios</span>
-        <span class="feat-tag">Moving Averages</span>
-        <span class="feat-tag">Signal Lab</span>
-        <span class="feat-tag">Stock vs Nifty</span>
+      <div class="card-desc">Live index KPIs, moving averages, ratio analysis, stock vs Nifty performance, Signal Lab CTAE. All 25 NSE indices with full constituent alpha ranking.</div>
+      <div class="card-tags">
+        <span class="tag">Nifty 50</span>
+        <span class="tag">All 25 Indices</span>
+        <span class="tag">Index Ratios</span>
+        <span class="tag">Signal Lab</span>
+        <span class="tag">Stock vs Index</span>
       </div>
-      <div class="card-cta">
-        Open Dashboard <span class="arrow">→</span>
-      </div>
+      <div class="card-cta">Open Dashboard <span class="arrow">→</span></div>
     </a>
-
-    <!-- Card 2: Steam Gauge -->
     <a class="card card-2" href="steam.html">
       <div class="card-eyebrow">Module 02</div>
       <div class="card-icon">🔥</div>
       <div class="card-title">Steam Gauge</div>
-      <div class="card-desc">Search any NSE stock, see which indices it belongs to, and run a 5-point momentum exhaustion analysis — Valuation, Price Extension, Volume Quality, Earnings Momentum, and RS Rank.</div>
-      <div class="card-features">
-        <span class="feat-tag">20+ Indices</span>
-        <span class="feat-tag">5-Point Gauge</span>
-        <span class="feat-tag">Index Membership</span>
-        <span class="feat-tag">Sector Peers</span>
-        <span class="feat-tag">Live Data</span>
+      <div class="card-desc">Deep-dive any NSE stock. 5-point momentum exhaustion analysis — Valuation, Price Extension, Volume, Earnings, RS & Smart Money. Live from Yahoo + Upstox.</div>
+      <div class="card-tags">
+        <span class="tag">Smart Money</span>
+        <span class="tag">Sector PE</span>
+        <span class="tag">Promoter %</span>
+        <span class="tag">Index Membership</span>
+        <span class="tag">Live Holdings</span>
       </div>
-      <div class="card-cta">
-        Open Steam Gauge <span class="arrow">→</span>
-      </div>
+      <div class="card-cta">Open Steam Gauge <span class="arrow">→</span></div>
     </a>
-
   </div>
-
-  <!-- Back link hint -->
-  <div style="font-size:12px;color:var(--muted);text-align:center;margin-top:4px">
-    Both tools use a 4-proxy Yahoo Finance chain — no login required
+  <div style="font-size:11px;color:#999;text-align:center">
+    GAS backend · Yahoo Finance · Upstox Analytics — no login required
   </div>
-
 </main>
 
-<!-- FOOTER -->
 <footer class="footer">
   <div class="footer-left" id="footerDate">–</div>
-  <div class="footer-right">
+  <div class="footer-links">
     <a href="dashboard.html">Dashboard Pro</a>
-    &nbsp;·&nbsp;
     <a href="steam.html">Steam Gauge</a>
   </div>
 </footer>
 
 <script>
-// ── Ticker data (static seed — NSE reference values) ──
-const TICKERS = [
-  { label: 'NIFTY 50',    val: '24,833',  chg: '+0.61%', up: true  },
-  { label: 'BANK NIFTY',  val: '53,412',  chg: '+0.44%', up: true  },
-  { label: 'NIFTY IT',    val: '36,218',  chg: '-0.23%', up: false },
-  { label: 'NIFTY METAL', val: '8,912',   chg: '+1.12%', up: true  },
-  { label: 'NIFTY MIDCAP',val: '57,334',  chg: '+0.78%', up: true  },
-  { label: 'NIFTY SMCAP', val: '18,441',  chg: '+0.55%', up: true  },
-  { label: 'NIFTY DEFENCE',val: '6,784',  chg: '+2.34%', up: true  },
-  { label: 'NIFTY PHARMA',val: '21,560',  chg: '-0.18%', up: false },
-  { label: 'NIFTY AUTO',  val: '23,190',  chg: '+0.91%', up: true  },
-  { label: 'NIFTY FMCG',  val: '56,780',  chg: '+0.12%', up: true  },
-  { label: 'SENSEX',      val: '81,752',  chg: '+0.58%', up: true  },
-  { label: 'USD/INR',     val: '83.42',   chg: '-0.04%', up: false },
-  { label: 'GOLD/10g',    val: '₹73,240', chg: '+0.22%', up: true  },
+const BACKEND = 'https://script.google.com/macros/s/AKfycbxbqcip3QPPRP5YUxngoWecv5nN2eKk5h9T2WYL2_vmTs3ix6Tjt_KTfKq2MDptrmPMcw/exec';
+
+// ── IST Clock ──
+function tick() {
+  const now  = new Date();
+  const opts = { timeZone:'Asia/Kolkata', hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false };
+  document.getElementById('uClock').textContent = now.toLocaleTimeString('en-IN', opts);
+  const dopt = { timeZone:'Asia/Kolkata', weekday:'short', day:'numeric', month:'short', year:'numeric' };
+  document.getElementById('footerDate').textContent = now.toLocaleDateString('en-IN', dopt);
+}
+tick();
+setInterval(tick, 1000);
+
+// ── Ticker — fetch live from GAS backend ──
+const TICKER_SYMS = [
+  { label:'NIFTY 50',     sym:'^NSEI'       },
+  { label:'BANK NIFTY',   sym:'^NSEBANK'    },
+  { label:'NIFTY IT',     sym:'^CNXIT'      },
+  { label:'NIFTY DEFENCE',sym:'NIFTY_IND_DEFENCE.NS' },
+  { label:'NIFTY MIDCAP', sym:'^NSMIDCP50'  },
+  { label:'NIFTY SMALLCAP',sym:'^CNXSC'     },
+  { label:'NIFTY FMCG',   sym:'^CNXFMCG'   },
+  { label:'NIFTY PHARMA', sym:'^CNXPHARMA'  },
+  { label:'NIFTY AUTO',   sym:'^CNXAUTO'    },
+  { label:'NIFTY METAL',  sym:'^CNXMETAL'   },
+  { label:'NIFTY ENERGY', sym:'^CNXENERGY'  },
+  { label:'NIFTY PSE',    sym:'^CNXPSE'     },
+  { label:'SENSEX',       sym:'^BSESN'      },
+  { label:'USD/INR',      sym:'USDINR=X'    },
+  { label:'GOLD/OZ',      sym:'GC=F'        },
 ];
 
-function buildTicker() {
-  const items = [...TICKERS, ...TICKERS]; // duplicate for seamless loop
-  const track = document.getElementById('tickerTrack');
-  track.innerHTML = items.map(t => `
-    <span class="ticker-item">
-      <span class="ticker-label">${t.label}</span>
-      <span class="ticker-val">${t.val}</span>
-      <span class="ticker-chg ${t.up ? 'up' : 'dn'}">${t.chg}</span>
-    </span>
-  `).join('');
+function fmtPrice(n, sym) {
+  if (!n) return '–';
+  if (sym === 'USDINR=X') return n.toFixed(2);
+  if (sym === 'GC=F') return '$' + Math.round(n).toLocaleString();
+  return Math.round(n).toLocaleString('en-IN');
 }
 
-// ── Live clock ──
-function updateTime() {
-  const now = new Date();
-  const opts = { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
-  document.getElementById('liveTime').textContent = now.toLocaleTimeString('en-IN', opts);
-  const dopts = { timeZone: 'Asia/Kolkata', weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' };
-  document.getElementById('footerDate').textContent = now.toLocaleDateString('en-IN', dopts);
+function buildTickerHTML(items) {
+  const doubled = [...items, ...items];
+  return doubled.map(it => {
+    const chgClass = it.chg >= 0 ? 't-up' : 't-dn';
+    const chgStr = (it.chg >= 0 ? '▲' : '▼') + Math.abs(it.chg).toFixed(2) + '%';
+    return `<span class="t-item">
+      <span class="t-lbl">${it.label}</span>
+      <span class="t-val">${it.price}</span>
+      <span class="${chgClass}">${chgStr}</span>
+    </span>`;
+  }).join('');
 }
 
-buildTicker();
-updateTime();
-setInterval(updateTime, 1000);
+async function loadTicker() {
+  const results = [];
+  // Fetch all in parallel — backend supports one symbol per call
+  const fetches = TICKER_SYMS.map(async (ts) => {
+    try {
+      const url = BACKEND + '?symbol=' + encodeURIComponent(ts.sym) + '&range=2d&interval=1d';
+      const r   = await fetch(url);
+      if (!r.ok) throw new Error();
+      const j   = await r.json();
+      const res = j.chart?.result?.[0];
+      if (!res) throw new Error();
+      const meta  = res.meta;
+      const price = meta.regularMarketPrice;
+      const prev  = meta.previousClose || meta.chartPreviousClose;
+      const chg   = prev ? (price - prev) / prev * 100 : 0;
+      return { label: ts.label, sym: ts.sym, price: fmtPrice(price, ts.sym), chg, ok: true };
+    } catch(e) {
+      return { label: ts.label, sym: ts.sym, price: '–', chg: 0, ok: false };
+    }
+  });
+  const all = await Promise.all(fetches);
+  const good = all.filter(x => x.ok);
+  if (!good.length) return;
+  document.getElementById('tickerTrack').innerHTML = buildTickerHTML(good);
+}
+
+loadTicker();
 </script>
 </body>
 </html>
