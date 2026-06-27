@@ -360,6 +360,8 @@ select:focus, input[type=text]:focus { border-color: #e8b94a; }
             <span class="ctrl-label">vs</span>
             <select id="svnIndex" style="width:175px">
               <option value="^NSEI|Nifty 50">Nifty 50</option>
+              <option value="^BSESN|Sensex">Sensex</option>
+              <option value="^NSEMDCP50|Nifty Next 50">Nifty Next 50</option>
               <option value="^NSEBANK|Nifty Bank">Nifty Bank</option>
               <option value="^CNXIT|Nifty IT">Nifty IT</option>
               <option value="^CNXAUTO|Nifty Auto">Nifty Auto</option>
@@ -369,16 +371,15 @@ select:focus, input[type=text]:focus { border-color: #e8b94a; }
               <option value="^CNXREALTY|Nifty Realty">Nifty Realty</option>
               <option value="^CNXENERGY|Nifty Energy">Nifty Energy</option>
               <option value="^CNXPSE|Nifty PSE">Nifty PSE</option>
+              <option value="^CNXPSUBANK|Nifty PSU Bank">Nifty PSU Bank</option>
               <option value="NIFTY_IND_DEFENCE.NS|Nifty Defence">Nifty Defence</option>
-              <option value="^NSMIDCP50|Nifty Midcap 50">Nifty Midcap 50</option>
-              <option value="^NSMIDCP|Nifty Midcap 100">Nifty Midcap 100</option>
-              <option value="^CNXSC100|Nifty Smallcap 100">Nifty Smallcap 100</option>
+              <option value="^CNXMIDCAP|Nifty Midcap 150">Nifty Midcap 150</option>
+              <option value="^CNXSC|Nifty Smallcap">Nifty Smallcap</option>
               <option value="^CNXFINANCE|Nifty Financial Services">Nifty Financial</option>
               <option value="^CNXHEALTH|Nifty Healthcare">Nifty Healthcare</option>
               <option value="^CNXOILGAS|Nifty Oil & Gas">Nifty Oil & Gas</option>
               <option value="^CNXINFRA|Nifty Infra">Nifty Infra</option>
               <option value="^CNXCPSE|Nifty CPSE">Nifty CPSE</option>
-              <option value="^BSESN|Sensex">Sensex</option>
             </select>
             <select id="svnPeriod">
               <option value="1D">1D</option>
@@ -552,28 +553,49 @@ function tick() {
 tick(); setInterval(tick, 1000);
 
 const TICKER_SYMS = [
-  {l:'NIFTY 50',s:'^NSEI'},{l:'BANK NIFTY',s:'^NSEBANK'},{l:'NIFTY IT',s:'^CNXIT'},
-  {l:'NIFTY DEFENCE',s:'NIFTY_IND_DEFENCE.NS'},{l:'NIFTY MIDCAP',s:'^NSMIDCP50'},
-  {l:'NIFTY PHARMA',s:'^CNXPHARMA'},{l:'NIFTY AUTO',s:'^CNXAUTO'},
-  {l:'NIFTY FMCG',s:'^CNXFMCG'},{l:'NIFTY METAL',s:'^CNXMETAL'},
-  {l:'NIFTY ENERGY',s:'^CNXENERGY'},{l:'SENSEX',s:'^BSESN'},{l:'USD/INR',s:'USDINR=X'}
+  {l:'NIFTY 50',    s:'^NSEI',                  skip:false},
+  {l:'BANK NIFTY',  s:'^NSEBANK',               skip:false},
+  {l:'NIFTY IT',    s:'^CNXIT',                 skip:false},
+  {l:'NIFTY NEXT50',s:'^NSEMDCP50',             skip:true },
+  {l:'NIFTY MIDCAP',s:'^CNXMIDCAP',             skip:true },
+  {l:'NIFTY SC',    s:'^CNXSC',                 skip:true },
+  {l:'NIFTY DEF',   s:'NIFTY_IND_DEFENCE.NS',   skip:false},
+  {l:'NIFTY PHARMA',s:'^CNXPHARMA',             skip:false},
+  {l:'NIFTY AUTO',  s:'^CNXAUTO',               skip:false},
+  {l:'NIFTY FMCG',  s:'^CNXFMCG',               skip:false},
+  {l:'NIFTY METAL', s:'^CNXMETAL',               skip:false},
+  {l:'NIFTY ENERGY',s:'^CNXENERGY',             skip:false},
+  {l:'SENSEX',      s:'^BSESN',                 skip:false},
+  {l:'USD/INR',     s:'USDINR=X',               skip:false},
 ];
 async function loadTicker() {
   const results = await Promise.all(TICKER_SYMS.map(async ts => {
     try {
-      const r = await fetch(BACKEND + '?symbol=' + encodeURIComponent(ts.s) + '&range=2d&interval=1d');
-      const j = await r.json();
-      const meta = j.chart?.result?.[0]?.meta;
-      const p = meta?.regularMarketPrice, prev = meta?.previousClose || meta?.chartPreviousClose;
-      if (!p) return null;
-      const chg = prev ? (p-prev)/prev*100 : 0;
-      const pStr = ts.s==='USDINR=X' ? p.toFixed(2) : Math.round(p).toLocaleString('en-IN');
-      return {l:ts.l, p:pStr, chg, ok:true};
+      const urls = [
+        ...(ts.skip ? [] : [BACKEND + '?symbol=' + encodeURIComponent(ts.s) + '&range=2d&interval=1d']),
+        'https://query1.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(ts.s) + '?range=2d&interval=1d',
+        'https://query2.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(ts.s) + '?range=2d&interval=1d',
+      ];
+      let meta = null;
+      for (const url of urls) {
+        try {
+          const r = await fetch(url);
+          if (!r.ok) continue;
+          const j = await r.json();
+          meta = j.chart?.result?.[0]?.meta;
+          if (meta?.regularMarketPrice) break;
+        } catch(e) {}
+      }
+      if (!meta?.regularMarketPrice) return null;
+      const p = meta.regularMarketPrice, prev = meta.previousClose || meta.chartPreviousClose;
+      const chg = prev ? (p - prev) / prev * 100 : 0;
+      const pStr = ts.s === 'USDINR=X' ? p.toFixed(2) : Math.round(p).toLocaleString('en-IN');
+      return {l: ts.l, p: pStr, chg, ok: true};
     } catch(e) { return null; }
   }));
   const good = results.filter(Boolean);
   if (!good.length) return;
-  const doubled = [...good,...good];
+  const doubled = [...good, ...good];
   document.getElementById('tickerTrack').innerHTML = doubled.map(it =>
     `<span class="t-item"><span class="t-lbl">${it.l}</span><span class="t-val">${it.p}</span><span class="${it.chg>=0?'t-up':'t-dn'}">${it.chg>=0?'▲':'▼'}${Math.abs(it.chg).toFixed(2)}%</span></span>`
   ).join('');
@@ -598,7 +620,8 @@ function switchTab(el, panel) {
 async function fetchChart(sym, range, interval) {
   const urls = [
     BACKEND + '?symbol=' + encodeURIComponent(sym) + '&range=' + range + '&interval=' + interval,
-    'https://query1.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(sym) + '?range=' + range + '&interval=' + interval
+    'https://query1.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(sym) + '?range=' + range + '&interval=' + interval,
+    'https://query2.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(sym) + '?range=' + range + '&interval=' + interval,
   ];
   for (const url of urls) {
     try {
@@ -671,22 +694,27 @@ function drawDualChart(canvasId, labels, d1, d2, l1, l2) {
    OVERVIEW — All indices, clickable tiles, dual chart
 ═══════════════════════════════════════════════ */
 
-// All 14 index tiles shown in the overview bar
+// All index tiles shown in the overview bar
+// skipGAS: true = bypass GAS proxy (which gets 403'd by Yahoo for these index symbols)
+// and go direct to Yahoo v8 chart from browser
 const OV_INDICES = [
-  {l:'Nifty 50',       s:'^NSEI',                  iso:false},
-  {l:'Sensex',         s:'^BSESN',                 iso:false},
-  {l:'Nifty Bank',     s:'^NSEBANK',               iso:false},
-  {l:'Nifty IT',       s:'^CNXIT',                 iso:false},
-  {l:'Nifty Auto',     s:'^CNXAUTO',               iso:false},
-  {l:'Nifty FMCG',     s:'^CNXFMCG',               iso:false},
-  {l:'Nifty Pharma',   s:'^CNXPHARMA',             iso:false},
-  {l:'Nifty Metal',    s:'^CNXMETAL',               iso:false},
-  {l:'Nifty Energy',   s:'^CNXENERGY',             iso:false},
-  {l:'Nifty PSE',      s:'^CNXPSE',                iso:false},
-  {l:'Nifty Defence',  s:'NIFTY_IND_DEFENCE.NS',   iso:false},
-  {l:'Nifty Midcap',   s:'^NSMIDCP50',             iso:false},
-  {l:'USD/INR',        s:'USDINR=X',               iso:true },
-  {l:'Gold/oz',        s:'GC=F',                   iso:true },
+  {l:'Nifty 50',       s:'^NSEI',                  iso:false, skipGAS:false},
+  {l:'Sensex',         s:'^BSESN',                 iso:false, skipGAS:false},
+  {l:'Nifty Next 50',  s:'^NSEMDCP50',             iso:false, skipGAS:true },
+  {l:'Nifty Bank',     s:'^NSEBANK',               iso:false, skipGAS:false},
+  {l:'Nifty IT',       s:'^CNXIT',                 iso:false, skipGAS:false},
+  {l:'Nifty Auto',     s:'^CNXAUTO',               iso:false, skipGAS:false},
+  {l:'Nifty FMCG',     s:'^CNXFMCG',               iso:false, skipGAS:false},
+  {l:'Nifty Pharma',   s:'^CNXPHARMA',             iso:false, skipGAS:false},
+  {l:'Nifty Metal',    s:'^CNXMETAL',               iso:false, skipGAS:false},
+  {l:'Nifty Realty',   s:'^CNXREALTY',             iso:false, skipGAS:true },
+  {l:'Nifty Energy',   s:'^CNXENERGY',             iso:false, skipGAS:false},
+  {l:'Nifty PSE',      s:'^CNXPSE',                iso:false, skipGAS:false},
+  {l:'Nifty Defence',  s:'NIFTY_IND_DEFENCE.NS',   iso:false, skipGAS:false},
+  {l:'Nifty Midcap 150',s:'^CNXMIDCAP',            iso:false, skipGAS:true },
+  {l:'Nifty Smallcap', s:'^CNXSC',                 iso:false, skipGAS:true },
+  {l:'USD/INR',        s:'USDINR=X',               iso:true,  skipGAS:false},
+  {l:'Gold/oz',        s:'GC=F',                   iso:true,  skipGAS:false},
 ];
 
 // Overview state
@@ -754,9 +782,11 @@ const ov = {
   async loadAllTiles() {
     const promises = OV_INDICES.map(async (idx, i) => {
       try {
+        // Build URL list: skip GAS proxy for symbols it can't fetch (403 from Yahoo)
         const urls = [
-          BACKEND + '?symbol=' + encodeURIComponent(idx.s) + '&range=2d&interval=1d',
-          'https://query1.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(idx.s) + '?range=2d&interval=1d'
+          ...(idx.skipGAS ? [] : [BACKEND + '?symbol=' + encodeURIComponent(idx.s) + '&range=2d&interval=1d']),
+          'https://query1.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(idx.s) + '?range=2d&interval=1d',
+          'https://query2.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(idx.s) + '?range=2d&interval=1d',
         ];
         let meta = null;
         for (const url of urls) {
@@ -782,8 +812,10 @@ const ov = {
           chgEl.className = 'kpi-chg ' + (chg >= 0 ? 'up' : 'dn');
         }
         if (kpiEl) {
-          const base = kpiEl.classList.contains('sel1') ? ' sel1' : kpiEl.classList.contains('sel2') ? ' sel2' : '';
-          kpiEl.className = 'kpi ' + (chg >= 0 ? 'up-border' : 'dn-border') + base;
+          const sel = kpiEl.classList.contains('sel1') && kpiEl.classList.contains('sel2') ? ' sel1 sel2'
+                    : kpiEl.classList.contains('sel1') ? ' sel1'
+                    : kpiEl.classList.contains('sel2') ? ' sel2' : '';
+          kpiEl.className = 'kpi ' + (chg >= 0 ? 'up-border' : 'dn-border') + sel;
         }
       } catch(e) {}
     });
@@ -801,11 +833,12 @@ const ov = {
     document.getElementById('chart' + slot + 'Title').textContent = idx.l;
     document.getElementById('chart' + slot + 'Meta').textContent  = period + ' · loading…';
 
-    // Fetch (GAS first, Yahoo direct fallback)
+    // Fetch (skip GAS if flagged, then try query1 + query2 Yahoo)
     let pts = null, meta = null;
     const urls = [
-      BACKEND + '?symbol=' + encodeURIComponent(idx.s) + '&range=' + cfg.range + '&interval=' + cfg.interval,
+      ...(idx.skipGAS ? [] : [BACKEND + '?symbol=' + encodeURIComponent(idx.s) + '&range=' + cfg.range + '&interval=' + cfg.interval]),
       'https://query1.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(idx.s) + '?range=' + cfg.range + '&interval=' + cfg.interval,
+      'https://query2.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(idx.s) + '?range=' + cfg.range + '&interval=' + cfg.interval,
     ];
     for (const url of urls) {
       try {
@@ -996,46 +1029,51 @@ async function changePeriod(which, period, btn) {
    INDEX RATIOS
 ═══════════════════════════════════════════════ */
 const RATIO_SYMS = [
-  {name:'Nifty 50',     sym:'^NSEI'},
-  {name:'Nifty Bank',   sym:'^NSEBANK'},
-  {name:'Nifty IT',     sym:'^CNXIT'},
-  {name:'Nifty FMCG',   sym:'^CNXFMCG'},
-  {name:'Nifty Pharma', sym:'^CNXPHARMA'},
-  {name:'Nifty Auto',   sym:'^CNXAUTO'},
-  {name:'Nifty Metal',  sym:'^CNXMETAL'},
-  {name:'Nifty Realty', sym:'^CNXREALTY'},
-  {name:'Nifty Energy', sym:'^CNXENERGY'},
-  {name:'Nifty PSE',    sym:'^CNXPSE'},
-  {name:'Nifty Defence',sym:'NIFTY_IND_DEFENCE.NS'},
-  {name:'Nifty Midcap', sym:'^NSMIDCP50'},
+  {name:'Nifty 50',      sym:'^NSEI'},
+  {name:'Nifty Next 50', sym:'^NSEMDCP50'},
+  {name:'Nifty Bank',    sym:'^NSEBANK'},
+  {name:'Nifty IT',      sym:'^CNXIT'},
+  {name:'Nifty FMCG',    sym:'^CNXFMCG'},
+  {name:'Nifty Pharma',  sym:'^CNXPHARMA'},
+  {name:'Nifty Auto',    sym:'^CNXAUTO'},
+  {name:'Nifty Metal',   sym:'^CNXMETAL'},
+  {name:'Nifty Realty',  sym:'^CNXREALTY'},
+  {name:'Nifty Energy',  sym:'^CNXENERGY'},
+  {name:'Nifty PSE',     sym:'^CNXPSE'},
+  {name:'Nifty PSU Bank',sym:'^CNXPSUBANK'},
+  {name:'Nifty Defence', sym:'NIFTY_IND_DEFENCE.NS'},
+  {name:'Nifty Midcap 150',sym:'^CNXMIDCAP'},
   {name:'Nifty Smallcap',sym:'^CNXSC'},
-  {name:'Nifty Infra',  sym:'^CNXINFRA'},
+  {name:'Nifty Infra',   sym:'^CNXINFRA'},
   {name:'Nifty Financial',sym:'^CNXFINANCE'},
   {name:'Nifty Healthcare',sym:'^CNXHEALTH'},
   {name:'Nifty Oil & Gas',sym:'^CNXOILGAS'},
-  {name:'Nifty PSU Bank',sym:'^CNXPSUBANK'},
-  {name:'Sensex',       sym:'^BSESN'},
-  {name:'Nifty CPSE',   sym:'^CNXCPSE'},
+  {name:'Sensex',        sym:'^BSESN'},
+  {name:'Nifty CPSE',    sym:'^CNXCPSE'},
 ];
 
 let ratiosLoaded = false;
 
 async function fetchIndexRatio(sym) {
-  // Strategy: Yahoo quoteSummary (browser, not GAS) for PE/PB of index
-  // + Yahoo v8 chart for price/change (GAS first, direct Yahoo fallback)
+  // Skip-GAS symbols (Yahoo blocks GAS server IPs for these)
+  const skipGASSym = ['^NSEMDCP50','^CNXMIDCAP','^CNXSC','^CNXREALTY','NIFTY_IND_DEFENCE.NS'];
+  const useGAS = !skipGASSym.includes(sym);
+
   const [summaryRes, chartRes] = await Promise.allSettled([
-    // Source 1: quoteSummary for valuation
+    // Source 1: quoteSummary for valuation — try query1 then query2
     fetch('https://query1.finance.yahoo.com/v10/finance/quoteSummary/' + encodeURIComponent(sym) + '?modules=summaryDetail,defaultKeyStatistics,price')
-      .then(r => r.json()),
-    // Source 2: chart for live price
-    fetch(BACKEND + '?symbol=' + encodeURIComponent(sym) + '&range=2d&interval=1d')
-      .then(r => r.json())
+      .then(r => r.ok ? r.json() : fetch('https://query2.finance.yahoo.com/v10/finance/quoteSummary/' + encodeURIComponent(sym) + '?modules=summaryDetail,defaultKeyStatistics,price').then(r2 => r2.json()))
+      .catch(() => null),
+    // Source 2: chart for live price — GAS first (if allowed), then Yahoo
+    useGAS
+      ? fetch(BACKEND + '?symbol=' + encodeURIComponent(sym) + '&range=2d&interval=1d').then(r => r.json()).catch(() => null)
+      : Promise.resolve(null),
   ]);
 
   let pe = null, pb = null, price = null, chg = null, eps = null, divYield = null;
 
   // Parse quoteSummary
-  if (summaryRes.status === 'fulfilled') {
+  if (summaryRes.status === 'fulfilled' && summaryRes.value) {
     const res = summaryRes.value?.quoteSummary?.result?.[0];
     if (res) {
       const sd = res.summaryDetail || {};
@@ -1045,7 +1083,6 @@ async function fetchIndexRatio(sym) {
       pb       = sd.priceToBook?.raw ?? ks.priceToBook?.raw ?? null;
       divYield = sd.trailingAnnualDividendYield?.raw ?? sd.dividendYield?.raw ?? null;
       eps      = ks.trailingEps?.raw ?? null;
-      // Price from price module (most reliable)
       if (pr.regularMarketPrice?.raw) {
         price = pr.regularMarketPrice.raw;
         chg   = pr.regularMarketChangePercent?.raw ?? null;
@@ -1053,8 +1090,8 @@ async function fetchIndexRatio(sym) {
     }
   }
 
-  // Parse chart for price if quoteSummary didn't give it
-  if (price == null && chartRes.status === 'fulfilled') {
+  // Parse GAS chart for price if quoteSummary didn't give it
+  if (price == null && chartRes.status === 'fulfilled' && chartRes.value) {
     const meta = chartRes.value?.chart?.result?.[0]?.meta;
     if (meta?.regularMarketPrice) {
       price = meta.regularMarketPrice;
@@ -1063,18 +1100,21 @@ async function fetchIndexRatio(sym) {
     }
   }
 
-  // Fallback: direct Yahoo v8 if GAS chart also failed
+  // Final fallback: try both Yahoo query1 and query2 v8 chart
   if (price == null) {
-    try {
-      const r3 = await fetch('https://query1.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(sym) + '?range=2d&interval=1d');
-      const j3 = await r3.json();
-      const meta3 = j3.chart?.result?.[0]?.meta;
-      if (meta3?.regularMarketPrice) {
-        price = meta3.regularMarketPrice;
-        const prev3 = meta3.previousClose || meta3.chartPreviousClose;
-        chg = prev3 ? (price - prev3) / prev3 : null;
-      }
-    } catch(e) {}
+    for (const host of ['query1','query2']) {
+      try {
+        const r = await fetch(`https://${host}.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?range=2d&interval=1d`);
+        const j = await r.json();
+        const meta = j.chart?.result?.[0]?.meta;
+        if (meta?.regularMarketPrice) {
+          price = meta.regularMarketPrice;
+          const prev = meta.previousClose || meta.chartPreviousClose;
+          chg = prev ? (price - prev) / prev : null;
+          break;
+        }
+      } catch(e) {}
+    }
   }
 
   return { pe, pb, price, chg, eps, divYield };
