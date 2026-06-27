@@ -195,7 +195,7 @@ select:focus, input[type=text]:focus { border-color: #e8b94a; }
     <div class="sb-section">Modules</div>
     <div class="sb-tab active" data-panel="overview"  onclick="switchTab(this,'overview')"><span class="tab-icon">🏠</span>Overview</div>
     <div class="sb-tab" data-panel="ratios"    onclick="switchTab(this,'ratios')"><span class="tab-icon">📐</span>Index Ratios</div>
-    <div class="sb-tab" data-panel="svn"       onclick="switchTab(this,'svn')"><span class="tab-icon">⚡</span>Stock vs Nifty</div>
+    <div class="sb-tab" data-panel="svn"       onclick="switchTab(this,'svn')"><span class="tab-icon">⚡</span>Stock vs Index</div>
     <div class="sb-tab" data-panel="custom"    onclick="switchTab(this,'custom')"><span class="tab-icon">🔬</span>Custom Analysis</div>
     <div class="sb-tab" data-panel="idxstocks" onclick="switchTab(this,'idxstocks')"><span class="tab-icon">🏆</span>Index Stocks</div>
     <div class="sb-tab" data-panel="signallab" onclick="switchTab(this,'signallab')"><span class="tab-icon">⚗️</span>Signal Lab</div>
@@ -232,6 +232,7 @@ select:focus, input[type=text]:focus { border-color: #e8b94a; }
               <button class="period-btn" onclick="changePeriod('nifty','1W',this)">1W</button>
               <button class="period-btn" onclick="changePeriod('nifty','1M',this)">1M</button>
               <button class="period-btn active" onclick="changePeriod('nifty','1Y',this)">1Y</button>
+              <button class="period-btn" onclick="changePeriod('nifty','5Y',this)">5Y</button>
             </div>
           </div>
           <div class="card-body"><div class="chart-box"><canvas id="niftyChart"></canvas></div></div>
@@ -244,6 +245,7 @@ select:focus, input[type=text]:focus { border-color: #e8b94a; }
               <button class="period-btn" onclick="changePeriod('bank','1W',this)">1W</button>
               <button class="period-btn" onclick="changePeriod('bank','1M',this)">1M</button>
               <button class="period-btn active" onclick="changePeriod('bank','1Y',this)">1Y</button>
+              <button class="period-btn" onclick="changePeriod('bank','5Y',this)">5Y</button>
             </div>
           </div>
           <div class="card-body"><div class="chart-box"><canvas id="bankChart"></canvas></div></div>
@@ -251,15 +253,15 @@ select:focus, input[type=text]:focus { border-color: #e8b94a; }
       </div>
 
       <div class="card">
-        <div class="card-head"><div class="card-title">Market Gauges</div><div class="card-sub">Live derived metrics</div></div>
+        <div class="card-head"><div class="card-title">Market Gauges — Live</div><div class="card-sub">DMA levels from Nifty 50 · sector PEs reference</div></div>
         <div class="card-body">
           <div class="gauge-row">
-            <div class="gauge" id="gMcap"><div class="gauge-lbl">Nifty 50 PE</div><div class="gauge-val" id="niftyPE">–</div><div class="gauge-sub">trailing</div></div>
-            <div class="gauge" id="gPB"><div class="gauge-lbl">Nifty 50 PB</div><div class="gauge-val" id="niftyPB">–</div><div class="gauge-sub">book value</div></div>
-            <div class="gauge" id="gYield"><div class="gauge-lbl">Nifty Yield</div><div class="gauge-val" id="niftyYield">–</div><div class="gauge-sub">earnings</div></div>
-            <div class="gauge" id="gBeta"><div class="gauge-lbl">Nifty IT PE</div><div class="gauge-val" id="itPE">–</div><div class="gauge-sub">trailing</div></div>
-            <div class="gauge" id="gVol"><div class="gauge-lbl">Bank PE</div><div class="gauge-val" id="bankPE">–</div><div class="gauge-sub">trailing</div></div>
-            <div class="gauge" id="gDef"><div class="gauge-lbl">Defence PE</div><div class="gauge-val" id="defPE">–</div><div class="gauge-sub">sector avg</div></div>
+            <div class="gauge" id="gMcap"><div class="gauge-lbl">Nifty 50 PE</div><div class="gauge-val" id="niftyPE">…</div><div class="gauge-sub">trailing</div></div>
+            <div class="gauge" id="gPB"><div class="gauge-lbl">DMA 20</div><div class="gauge-val" id="dma20">…</div><div class="gauge-sub">EMA 20</div></div>
+            <div class="gauge" id="gYield"><div class="gauge-lbl">DMA 50</div><div class="gauge-val" id="dma50">…</div><div class="gauge-sub">EMA 50</div></div>
+            <div class="gauge" id="gBeta"><div class="gauge-lbl">DMA 200</div><div class="gauge-val" id="dma200">…</div><div class="gauge-sub">EMA 200</div></div>
+            <div class="gauge" id="gVol"><div class="gauge-lbl">Bank PE</div><div class="gauge-val" id="bankPE">…</div><div class="gauge-sub">trailing</div></div>
+            <div class="gauge" id="gDef"><div class="gauge-lbl">Defence PE</div><div class="gauge-val" id="defPE">~55x</div><div class="gauge-sub">sector avg</div></div>
           </div>
         </div>
       </div>
@@ -280,21 +282,51 @@ select:focus, input[type=text]:focus { border-color: #e8b94a; }
       </div>
     </div>
 
-    <!-- ══ STOCK vs NIFTY ══ -->
+    <!-- ══ STOCK vs INDEX ══ -->
     <div class="tab-panel" id="panel-svn">
       <div class="card">
-        <div class="card-head"><div class="card-title">Stock vs Nifty 50</div><div class="card-sub">Relative performance overlay</div></div>
+        <div class="card-head">
+          <div><div class="card-title" id="svnTitle">Stock vs Index</div><div class="card-sub" id="svnSub">Relative performance comparison · ratio-normalised</div></div>
+        </div>
         <div class="card-body">
-          <div class="controls" style="margin-bottom:14px">
-            <span class="ctrl-label">Symbol:</span>
-            <input type="text" id="svnInput" placeholder="e.g. HAL, BDL, TCS" style="width:140px">
-            <select id="svnPeriod" onchange="loadSVN()">
+          <div class="controls" style="margin-bottom:14px;flex-wrap:wrap;gap:8px">
+            <span class="ctrl-label">Stock:</span>
+            <input type="text" id="svnInput" placeholder="e.g. HAL, BDL, TCS" style="width:130px">
+            <span class="ctrl-label">vs</span>
+            <select id="svnIndex" style="width:175px">
+              <option value="^NSEI|Nifty 50">Nifty 50</option>
+              <option value="^NSEBANK|Nifty Bank">Nifty Bank</option>
+              <option value="^CNXIT|Nifty IT">Nifty IT</option>
+              <option value="^CNXAUTO|Nifty Auto">Nifty Auto</option>
+              <option value="^CNXFMCG|Nifty FMCG">Nifty FMCG</option>
+              <option value="^CNXPHARMA|Nifty Pharma">Nifty Pharma</option>
+              <option value="^CNXMETAL|Nifty Metal">Nifty Metal</option>
+              <option value="^CNXREALTY|Nifty Realty">Nifty Realty</option>
+              <option value="^CNXENERGY|Nifty Energy">Nifty Energy</option>
+              <option value="^CNXPSE|Nifty PSE">Nifty PSE</option>
+              <option value="NIFTY_IND_DEFENCE.NS|Nifty Defence">Nifty Defence</option>
+              <option value="^NSMIDCP50|Nifty Midcap 50">Nifty Midcap 50</option>
+              <option value="^NSMIDCP|Nifty Midcap 100">Nifty Midcap 100</option>
+              <option value="^CNXSC100|Nifty Smallcap 100">Nifty Smallcap 100</option>
+              <option value="^CNXFINANCE|Nifty Financial Services">Nifty Financial</option>
+              <option value="^CNXHEALTH|Nifty Healthcare">Nifty Healthcare</option>
+              <option value="^CNXOILGAS|Nifty Oil & Gas">Nifty Oil & Gas</option>
+              <option value="^CNXINFRA|Nifty Infra">Nifty Infra</option>
+              <option value="^CNXCPSE|Nifty CPSE">Nifty CPSE</option>
+              <option value="^BSESN|Sensex">Sensex</option>
+            </select>
+            <select id="svnPeriod">
               <option value="1D">1D</option>
               <option value="1W">1W</option>
               <option value="1M">1M</option>
               <option value="3M">3M</option>
               <option value="6M">6M</option>
               <option value="1Y" selected>1Y</option>
+              <option value="5Y">5Y</option>
+            </select>
+            <select id="svnMode">
+              <option value="ratio">Ratio (normalised to 100)</option>
+              <option value="price">Absolute Price</option>
             </select>
             <button class="btn btn-primary" onclick="loadSVN()">Compare →</button>
           </div>
@@ -314,17 +346,15 @@ select:focus, input[type=text]:focus { border-color: #e8b94a; }
               <label>NSE Symbol</label>
               <input type="text" id="caInput" placeholder="e.g. BDL, RELIANCE, TCS" style="width:100%">
             </div>
-            <div class="form-group">
-              <label>Period</label>
               <select id="caPeriod" style="width:100%">
-                <option value="1D">1D</option>
-                <option value="1W">1W</option>
-                <option value="1M">1M</option>
-                <option value="3M">3M</option>
-                <option value="6M">6M</option>
-                <option value="1Y" selected>1Y</option>
+                <option value="1D">1 Day</option>
+                <option value="1W">1 Week</option>
+                <option value="1M">1 Month</option>
+                <option value="3M">3 Months</option>
+                <option value="6M">6 Months</option>
+                <option value="1Y" selected>1 Year</option>
+                <option value="5Y">5 Years</option>
               </select>
-            </div>
           </div>
           <div style="display:flex;gap:8px;margin-bottom:14px">
             <button class="btn btn-primary" onclick="loadCustom()">Run Analysis →</button>
@@ -603,79 +633,256 @@ async function loadKPIs() {
 }
 
 const chartPeriods = { nifty:'1Y', bank:'1Y' };
+/* EMA helper */
+function calcEMA(arr, n) {
+  const k = 2 / (n + 1), res = [arr[0]];
+  for (let i = 1; i < arr.length; i++) res.push(arr[i] * k + res[i-1] * (1-k));
+  return res;
+}
+
+/* Gauges — live EMA-derived values from Nifty chart */
+async function loadGauges() {
+  const d = await fetchChart('^NSEI', '1y', '1d');
+  if (!d) {
+    document.getElementById('niftyPE').textContent = '~22x';
+    document.getElementById('niftyPB').textContent = '~3.8x';
+    document.getElementById('niftyYield').textContent = '~4.5%';
+    document.getElementById('itPE').textContent = '~27x';
+    document.getElementById('bankPE').textContent = '~16x';
+    document.getElementById('defPE').textContent = '~55x';
+    return;
+  }
+  const closes = d.pts.map(p => p.c).filter(c => c != null);
+  const last   = closes.at(-1);
+  const e20    = closes.length >= 20  ? calcEMA(closes, 20).at(-1)  : null;
+  const e50    = closes.length >= 50  ? calcEMA(closes, 50).at(-1)  : null;
+  const e200   = closes.length >= 200 ? calcEMA(closes, 200).at(-1) : null;
+  const niftyPEv = d.meta?.trailingPE ?? null;
+
+  document.getElementById('niftyPE').textContent    = niftyPEv ? niftyPEv.toFixed(1)+'x' : '~22x';
+  document.getElementById('niftyPB').textContent    = '~3.8x';
+  document.getElementById('niftyYield').textContent = '~4.5%';
+  document.getElementById('itPE').textContent       = '~27x';
+  document.getElementById('bankPE').textContent     = '~16x';
+  document.getElementById('defPE').textContent      = '~55x';
+
+  // Update DMA gauge tiles with live values
+  const dmaEls = { dma20: e20, dma50: e50, dma200: e200 };
+  Object.entries(dmaEls).forEach(([id, val]) => {
+    const el = document.getElementById(id);
+    if (el && val) el.textContent = '\u20b9' + Math.round(val).toLocaleString('en-IN');
+  });
+
+  // Colour gauges: green = above all DMAs, red = below
+  const state = (last && e20 && e50 && e200)
+    ? (last > e20 && last > e50 && last > e200 ? 'green' : last < e50 || last < e200 ? 'red' : 'amber')
+    : null;
+  ['gMcap','gBeta','gVol'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el && state) { el.classList.remove('green','red','amber'); el.classList.add(state); }
+  });
+}
+
+function buildChartWithEMAs(canvasId, labels, closes, mainLabel, mainColor, period) {
+  if (chartInstances[canvasId]) chartInstances[canvasId].destroy();
+  const ctx = document.getElementById(canvasId)?.getContext('2d');
+  if (!ctx) return;
+  const validCloses = closes.filter(c => c != null);
+  const datasets = [
+    { label: mainLabel, data: closes, borderColor: mainColor, borderWidth: 1.5, pointRadius: 0, fill: true, backgroundColor: mainColor === '#e8b94a' ? 'rgba(232,185,74,0.07)' : 'rgba(45,122,79,0.07)', tension: 0.2 }
+  ];
+  if (!['1D','1W'].includes(period) && validCloses.length >= 20) {
+    datasets.push({ label: 'EMA20', data: calcEMA(validCloses, 20), borderColor: '#2d7a4f', borderWidth: 1, pointRadius: 0, fill: false, borderDash: [4,3], tension: 0.1 });
+  }
+  if (!['1D','1W','1M'].includes(period) && validCloses.length >= 50) {
+    datasets.push({ label: 'EMA50', data: calcEMA(validCloses, 50), borderColor: '#4a90d9', borderWidth: 1, pointRadius: 0, fill: false, borderDash: [7,4], tension: 0.1 });
+  }
+  if (period === '5Y' && validCloses.length >= 200) {
+    datasets.push({ label: 'EMA200', data: calcEMA(validCloses, 200), borderColor: '#c0392b', borderWidth: 1, pointRadius: 0, fill: false, borderDash: [10,5], tension: 0.1 });
+  }
+  chartInstances[canvasId] = new Chart(ctx, {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: false,
+      plugins: {
+        legend: { display: datasets.length > 1, labels: { color: '#666', font: { size: 10 }, boxWidth: 12 } },
+        tooltip: { mode: 'index', intersect: false, callbacks: {
+          label: i => i.raw != null ? `${i.dataset.label}: \u20b9${Number(i.raw).toLocaleString('en-IN', {maximumFractionDigits:0})}` : ''
+        }}
+      },
+      scales: {
+        x: { grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { maxTicksLimit: 8, color: '#999', font: { size: 10 } }, border: { color: 'rgba(0,0,0,0.08)' } },
+        y: { grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { color: '#999', font: { size: 10 }, callback: v => '\u20b9' + Math.round(v).toLocaleString('en-IN') }, border: { color: 'rgba(0,0,0,0.08)' } }
+      }
+    }
+  });
+}
+
 async function loadOverviewCharts() {
   const nData = await fetchChart('^NSEI', '1y', '1d');
   if (nData) {
-    const lbl = nData.pts.map(p=>p.t.toLocaleDateString('en-IN',{day:'2-digit',month:'short'}));
-    drawLineChart('niftyChart', lbl, nData.pts.map(p=>p.c), 'Nifty 50');
+    const lbl = nData.pts.map(p => p.t.toLocaleDateString('en-IN', {day:'2-digit', month:'short'}));
+    buildChartWithEMAs('niftyChart', lbl, nData.pts.map(p => p.c), 'Nifty 50', '#e8b94a', '1Y');
   }
   const bData = await fetchChart('^NSEBANK', '1y', '1d');
   if (bData) {
-    const lbl = bData.pts.map(p=>p.t.toLocaleDateString('en-IN',{day:'2-digit',month:'short'}));
-    drawLineChart('bankChart', lbl, bData.pts.map(p=>p.c), 'Nifty Bank', '#2d7a4f');
+    const lbl = bData.pts.map(p => p.t.toLocaleDateString('en-IN', {day:'2-digit', month:'short'}));
+    buildChartWithEMAs('bankChart', lbl, bData.pts.map(p => p.c), 'Nifty Bank', '#2d7a4f', '1Y');
   }
 }
 
 async function changePeriod(which, period, btn) {
-  const sym = which==='nifty' ? '^NSEI' : '^NSEBANK';
-  const color = which==='nifty' ? '#e8b94a' : '#2d7a4f';
+  const sym   = which === 'nifty' ? '^NSEI' : '^NSEBANK';
+  const label = which === 'nifty' ? 'Nifty 50' : 'Nifty Bank';
+  const color = which === 'nifty' ? '#e8b94a' : '#2d7a4f';
   const cfg   = PERIOD_CFG[period];
-  btn.closest('.period-btns').querySelectorAll('.period-btn').forEach(b=>b.classList.remove('active'));
+
+  btn.closest('.period-btns').querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
+
   const d = await fetchChart(sym, cfg.range, cfg.interval);
   if (!d) return;
-  const fmtDate = p => period==='1D'
-    ? p.t.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})
-    : p.t.toLocaleDateString('en-IN',{day:'2-digit',month:'short'});
-  const lbl = d.pts.map(fmtDate);
-  drawLineChart(which+'Chart', lbl, d.pts.map(p=>p.c), which==='nifty'?'Nifty 50':'Nifty Bank', color);
-}
 
-/* Gauges — static reference values */
-function loadGauges() {
-  document.getElementById('niftyPE').textContent = '22.4x';
-  document.getElementById('niftyPB').textContent = '3.8x';
-  document.getElementById('niftyYield').textContent = '4.5%';
-  document.getElementById('itPE').textContent = '27.2x';
-  document.getElementById('bankPE').textContent = '15.8x';
-  document.getElementById('defPE').textContent = '~55x';
+  const fmtDate = p => {
+    if (period === '1D') return p.t.toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'});
+    if (period === '5Y') return p.t.toLocaleDateString('en-IN', {month:'short', year:'2-digit'});
+    return p.t.toLocaleDateString('en-IN', {day:'2-digit', month:'short'});
+  };
+  buildChartWithEMAs(which + 'Chart', d.pts.map(fmtDate), d.pts.map(p => p.c), label, color, period);
 }
 
 /* ═══════════════════════════════════════════════
    INDEX RATIOS
 ═══════════════════════════════════════════════ */
 const RATIO_SYMS = [
-  {name:'Nifty 50',sym:'^NSEI'},{name:'Nifty Bank',sym:'^NSEBANK'},
-  {name:'Nifty IT',sym:'^CNXIT'},{name:'Nifty FMCG',sym:'^CNXFMCG'},
-  {name:'Nifty Pharma',sym:'^CNXPHARMA'},{name:'Nifty Auto',sym:'^CNXAUTO'},
-  {name:'Nifty Metal',sym:'^CNXMETAL'},{name:'Nifty Realty',sym:'^CNXREALTY'},
-  {name:'Nifty Energy',sym:'^CNXENERGY'},{name:'Nifty PSE',sym:'^CNXPSE'},
-  {name:'Sensex',sym:'^BSESN'},{name:'Nifty Midcap',sym:'^NSMIDCP50'},
+  {name:'Nifty 50',     sym:'^NSEI'},
+  {name:'Nifty Bank',   sym:'^NSEBANK'},
+  {name:'Nifty IT',     sym:'^CNXIT'},
+  {name:'Nifty FMCG',   sym:'^CNXFMCG'},
+  {name:'Nifty Pharma', sym:'^CNXPHARMA'},
+  {name:'Nifty Auto',   sym:'^CNXAUTO'},
+  {name:'Nifty Metal',  sym:'^CNXMETAL'},
+  {name:'Nifty Realty', sym:'^CNXREALTY'},
+  {name:'Nifty Energy', sym:'^CNXENERGY'},
+  {name:'Nifty PSE',    sym:'^CNXPSE'},
+  {name:'Nifty Defence',sym:'NIFTY_IND_DEFENCE.NS'},
+  {name:'Nifty Midcap', sym:'^NSMIDCP50'},
+  {name:'Nifty Smallcap',sym:'^CNXSC'},
+  {name:'Nifty Infra',  sym:'^CNXINFRA'},
+  {name:'Nifty Financial',sym:'^CNXFINANCE'},
+  {name:'Nifty Healthcare',sym:'^CNXHEALTH'},
+  {name:'Nifty Oil & Gas',sym:'^CNXOILGAS'},
+  {name:'Nifty PSU Bank',sym:'^CNXPSUBANK'},
+  {name:'Sensex',       sym:'^BSESN'},
+  {name:'Nifty CPSE',   sym:'^CNXCPSE'},
 ];
+
 let ratiosLoaded = false;
+
+async function fetchIndexRatio(sym) {
+  // Strategy: Yahoo quoteSummary (browser, not GAS) for PE/PB of index
+  // + Yahoo v8 chart for price/change (GAS first, direct Yahoo fallback)
+  const [summaryRes, chartRes] = await Promise.allSettled([
+    // Source 1: quoteSummary for valuation
+    fetch('https://query1.finance.yahoo.com/v10/finance/quoteSummary/' + encodeURIComponent(sym) + '?modules=summaryDetail,defaultKeyStatistics,price')
+      .then(r => r.json()),
+    // Source 2: chart for live price
+    fetch(BACKEND + '?symbol=' + encodeURIComponent(sym) + '&range=2d&interval=1d')
+      .then(r => r.json())
+  ]);
+
+  let pe = null, pb = null, price = null, chg = null, eps = null, divYield = null;
+
+  // Parse quoteSummary
+  if (summaryRes.status === 'fulfilled') {
+    const res = summaryRes.value?.quoteSummary?.result?.[0];
+    if (res) {
+      const sd = res.summaryDetail || {};
+      const ks = res.defaultKeyStatistics || {};
+      const pr = res.price || {};
+      pe       = sd.trailingPE?.raw ?? ks.trailingPE?.raw ?? pr.trailingPE?.raw ?? null;
+      pb       = sd.priceToBook?.raw ?? ks.priceToBook?.raw ?? null;
+      divYield = sd.trailingAnnualDividendYield?.raw ?? sd.dividendYield?.raw ?? null;
+      eps      = ks.trailingEps?.raw ?? null;
+      // Price from price module (most reliable)
+      if (pr.regularMarketPrice?.raw) {
+        price = pr.regularMarketPrice.raw;
+        chg   = pr.regularMarketChangePercent?.raw ?? null;
+      }
+    }
+  }
+
+  // Parse chart for price if quoteSummary didn't give it
+  if (price == null && chartRes.status === 'fulfilled') {
+    const meta = chartRes.value?.chart?.result?.[0]?.meta;
+    if (meta?.regularMarketPrice) {
+      price = meta.regularMarketPrice;
+      const prev = meta.previousClose || meta.chartPreviousClose;
+      chg = prev ? (price - prev) / prev : null;
+    }
+  }
+
+  // Fallback: direct Yahoo v8 if GAS chart also failed
+  if (price == null) {
+    try {
+      const r3 = await fetch('https://query1.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(sym) + '?range=2d&interval=1d');
+      const j3 = await r3.json();
+      const meta3 = j3.chart?.result?.[0]?.meta;
+      if (meta3?.regularMarketPrice) {
+        price = meta3.regularMarketPrice;
+        const prev3 = meta3.previousClose || meta3.chartPreviousClose;
+        chg = prev3 ? (price - prev3) / prev3 : null;
+      }
+    } catch(e) {}
+  }
+
+  return { pe, pb, price, chg, eps, divYield };
+}
+
 async function loadRatios() {
   const grid = document.getElementById('ratioGrid');
-  grid.innerHTML = '<div class="loading"><div class="spinner"></div>Fetching index data…</div>';
+  grid.innerHTML = '<div class="loading"><div class="spinner"></div>Fetching from Yahoo Finance…</div>';
   ratiosLoaded = true;
+
   const results = await Promise.all(RATIO_SYMS.map(async rs => {
     try {
-      const r = await fetch(BACKEND + '?action=stock&symbol=' + encodeURIComponent(rs.sym));
-      const j = await r.json();
-      const s = j.summary;
-      if (!s) throw new Error();
-      return { name:rs.name, pe:s.trailingPE, pb:s.priceToBook, price:s.regularMarketPrice, chg:s.regularMarketChangePercent };
+      const d = await fetchIndexRatio(rs.sym);
+      return { name: rs.name, ...d, ok: true };
     } catch(e) {
-      return { name:rs.name, pe:null, pb:null, price:null, chg:null };
+      return { name: rs.name, pe: null, pb: null, price: null, chg: null, ok: false };
     }
   }));
+
+  function fmtPE(v)  { return v != null && v > 0 ? v.toFixed(1) + 'x' : '–'; }
+  function fmtPB(v)  { return v != null && v > 0 ? v.toFixed(2) + 'x' : '–'; }
+  function fmtPrc(v) { return v != null ? '₹' + Math.round(v).toLocaleString('en-IN') : '–'; }
+  function fmtChg(v) {
+    if (v == null) return '<span style="color:#888">–</span>';
+    const pct = (v * 100).toFixed(2);
+    return `<span class="${v >= 0 ? 'up-c' : 'dn-c'}">${v >= 0 ? '+' : ''}${pct}%</span>`;
+  }
+
   grid.innerHTML = results.map(r => `
     <div class="ratio-card">
       <div class="ratio-name">${r.name}</div>
       <div class="ratio-vals">
-        <div class="rv"><div class="rv-lbl">Trailing PE</div><div class="rv-val">${r.pe?r.pe.toFixed(1)+'x':'–'}</div></div>
-        <div class="rv"><div class="rv-lbl">PB Ratio</div><div class="rv-val">${r.pb?r.pb.toFixed(2)+'x':'–'}</div></div>
-        <div class="rv"><div class="rv-lbl">Price</div><div class="rv-val">${r.price?Math.round(r.price).toLocaleString('en-IN'):'–'}</div></div>
-        <div class="rv"><div class="rv-lbl">1D Chg</div><div class="rv-val ${r.chg>=0?'up-c':'dn-c'}">${r.chg!=null?(r.chg>=0?'+':'')+((r.chg||0)*100).toFixed(2)+'%':'–'}</div></div>
+        <div class="rv">
+          <div class="rv-lbl">Trailing PE</div>
+          <div class="rv-val" style="${r.pe && r.pe > 0 ? (r.pe > 40 ? 'color:#c0392b' : r.pe > 25 ? 'color:#e8b94a' : 'color:#2d7a4f') : ''}">${fmtPE(r.pe)}</div>
+        </div>
+        <div class="rv">
+          <div class="rv-lbl">PB Ratio</div>
+          <div class="rv-val">${fmtPB(r.pb)}</div>
+        </div>
+        <div class="rv">
+          <div class="rv-lbl">Price</div>
+          <div class="rv-val" style="font-size:12px">${fmtPrc(r.price)}</div>
+        </div>
+        <div class="rv">
+          <div class="rv-lbl">1D Change</div>
+          <div class="rv-val" style="font-size:12px">${fmtChg(r.chg)}</div>
+        </div>
       </div>
     </div>`
   ).join('');
@@ -687,39 +894,119 @@ async function loadRatios() {
 let svnChart = null;
 async function loadSVN() {
   const sym = document.getElementById('svnInput').value.trim().toUpperCase();
-  if (!sym) return alert('Enter a symbol');
-  const period = document.getElementById('svnPeriod').value;
-  const cfg    = PERIOD_CFG[period];
-  const yfSym  = getYF(sym);
+  if (!sym) return alert('Enter a stock symbol');
+  const idxVal    = document.getElementById('svnIndex').value;
+  const [idxSym, idxName] = idxVal.split('|');
+  const period    = document.getElementById('svnPeriod').value;
+  const mode      = document.getElementById('svnMode').value;
+  const cfg       = PERIOD_CFG[period];
+  const yfSym     = getYF(sym);
 
-  document.getElementById('svnStats').innerHTML = '<div class="loading"><div class="spinner"></div>Fetching…</div>';
-  document.getElementById('caToSteam').href = 'steam.html?stock=' + sym;
+  document.getElementById('svnTitle').textContent = sym + ' vs ' + idxName;
+  document.getElementById('svnSub').textContent   = mode === 'ratio' ? 'Both normalised to 100 at start — pure relative performance' : 'Absolute price overlay — dual Y-axis';
+  document.getElementById('svnStats').innerHTML   = '<div class="loading"><div class="spinner"></div>Fetching…</div>';
 
-  const [stockData, niftyData] = await Promise.all([
-    fetchChart(yfSym, cfg.range, cfg.interval),
-    fetchChart('^NSEI', cfg.range, cfg.interval)
+  const [stockData, idxData] = await Promise.all([
+    fetchChart(yfSym,  cfg.range, cfg.interval),
+    fetchChart(idxSym, cfg.range, cfg.interval),
   ]);
-  if (!stockData) { document.getElementById('svnStats').textContent = '⚠ Could not fetch data for ' + sym; return; }
 
-  const fmtDate = p => period==='1D' ? p.t.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}) : p.t.toLocaleDateString('en-IN',{day:'2-digit',month:'short'});
-  const lbl = stockData.pts.map(fmtDate);
-  const sClose = stockData.pts.map(p=>p.c);
-  const nClose = niftyData?.pts.map(p=>p.c) || [];
+  if (!stockData) {
+    document.getElementById('svnStats').innerHTML = `<span style="color:#c0392b">⚠ Could not fetch data for ${sym}. Check symbol.</span>`;
+    return;
+  }
 
-  drawDualChart('svnChart', lbl, sClose, nClose, sym, 'Nifty 50');
+  // Align timestamps — use stock as primary, interpolate index
+  const sPts  = stockData.pts;
+  const iPts  = idxData?.pts || [];
 
-  // Stats
-  const sRet = sClose.length>1 ? ((sClose.at(-1)-sClose[0])/sClose[0]*100).toFixed(1) : '–';
-  const nRet = nClose.length>1 ? ((nClose.at(-1)-nClose[0])/nClose[0]*100).toFixed(1) : '–';
-  const alpha = (sRet!=='–'&&nRet!=='–') ? (parseFloat(sRet)-parseFloat(nRet)).toFixed(1) : '–';
-  document.getElementById('svnStats').innerHTML =
-    `<strong>${sym}</strong> vs Nifty 50 over <strong>${period}</strong> — 
-     Stock return: <span class="${parseFloat(sRet)>=0?'up-c':'dn-c'}">${sRet}%</span> | 
-     Nifty return: <span class="${parseFloat(nRet)>=0?'up-c':'dn-c'}">${nRet}%</span> | 
-     Alpha: <span class="${parseFloat(alpha)>=0?'up-c':'dn-c'}">${alpha}%</span>
-     <a href="steam.html?stock=${sym}" class="steam-link" style="margin-left:10px">🔥 Steam Gauge</a>`;
+  // Build label from stock timestamps
+  const fmtDate = p => period === '1D'
+    ? p.t.toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'})
+    : period === '5Y'
+    ? p.t.toLocaleDateString('en-IN', {month:'short', year:'2-digit'})
+    : p.t.toLocaleDateString('en-IN', {day:'2-digit', month:'short'});
+
+  const labels = sPts.map(fmtDate);
+  const sClose = sPts.map(p => p.c);
+
+  // Align index data to stock timestamps by date string
+  const iMap = new Map();
+  iPts.forEach(p => { iMap.set(p.t.toDateString(), p.c); });
+  const iClose = sPts.map(p => iMap.get(p.t.toDateString()) ?? null);
+
+  let chartStock, chartIndex, yLabel;
+
+  if (mode === 'ratio') {
+    // Normalise both to 100 at the first valid point
+    const s0 = sClose.find(v => v != null);
+    const i0 = iClose.find(v => v != null);
+    chartStock = sClose.map(v => (v != null && s0) ? (v / s0 * 100) : null);
+    chartIndex = iClose.map(v => (v != null && i0) ? (v / i0 * 100) : null);
+    yLabel = 'Relative (base=100)';
+  } else {
+    chartStock = sClose;
+    chartIndex = iClose;
+    yLabel = 'Price ₹';
+  }
+
+  // Draw
+  if (chartInstances['svnChart']) chartInstances['svnChart'].destroy();
+  const ctx = document.getElementById('svnChart')?.getContext('2d');
+  if (ctx) {
+    chartInstances['svnChart'] = new Chart(ctx, {
+      type: 'line',
+      data: { labels, datasets: [
+        { label: sym,     data: chartStock, borderColor: '#e8b94a', borderWidth: 1.8, pointRadius: 0, fill: false, tension: 0.2, yAxisID: mode === 'ratio' ? 'y' : 'y' },
+        { label: idxName, data: chartIndex, borderColor: '#2d7a4f', borderWidth: 1.8, pointRadius: 0, fill: false, tension: 0.2, yAxisID: mode === 'ratio' ? 'y' : 'y2' },
+      ]},
+      options: {
+        responsive: true, maintainAspectRatio: false, animation: false,
+        plugins: {
+          legend: { display: true, labels: { color: '#666', font: { size: 11 }, boxWidth: 14 } },
+          tooltip: {
+            mode: 'index', intersect: false,
+            callbacks: {
+              label: item => {
+                const v = item.raw;
+                if (v == null) return '';
+                return mode === 'ratio'
+                  ? `${item.dataset.label}: ${v.toFixed(1)} (${v >= 100 ? '+' : ''}${(v-100).toFixed(1)}%)`
+                  : `${item.dataset.label}: ₹${Number(v).toLocaleString('en-IN', {maximumFractionDigits: 0})}`;
+              }
+            }
+          }
+        },
+        scales: {
+          x: { grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { maxTicksLimit: 10, color: '#999', font: { size: 10 } }, border: { color: 'rgba(0,0,0,0.08)' } },
+          y: {
+            grid: { color: 'rgba(0,0,0,0.04)' },
+            ticks: { color: '#e8b94a', font: { size: 10 }, callback: v => mode === 'ratio' ? v.toFixed(0) : '₹' + Number(v).toLocaleString('en-IN', {maximumFractionDigits:0}) },
+            border: { color: 'rgba(0,0,0,0.08)' }
+          },
+          ...(mode !== 'ratio' ? {
+            y2: { position: 'right', grid: { display: false }, ticks: { color: '#2d7a4f', font: { size: 10 }, callback: v => '₹' + Number(v).toLocaleString('en-IN', {maximumFractionDigits:0}) }, border: { color: 'rgba(0,0,0,0.08)' } }
+          } : {})
+        }
+      }
+    });
+  }
+
+  // Stats row
+  const sRet  = sClose.length > 1 && sClose[0] ? ((sClose.at(-1) - sClose[0]) / sClose[0] * 100).toFixed(1) : '–';
+  const iValid = iClose.filter(v => v != null);
+  const iRet  = iValid.length > 1 && iValid[0] ? ((iValid.at(-1) - iValid[0]) / iValid[0] * 100).toFixed(1) : '–';
+  const alpha = (sRet !== '–' && iRet !== '–') ? (parseFloat(sRet) - parseFloat(iRet)).toFixed(1) : '–';
+  const aClass = parseFloat(alpha) >= 0 ? 'up-c' : 'dn-c';
+  document.getElementById('svnStats').innerHTML = `
+    <strong>${sym}</strong> vs <strong>${idxName}</strong> · <strong>${period}</strong> window
+    &nbsp;|&nbsp; Stock: <span class="${parseFloat(sRet)>=0?'up-c':'dn-c'}">${sRet !== '–' ? (parseFloat(sRet)>=0?'+':'')+sRet+'%' : '–'}</span>
+    &nbsp;|&nbsp; Index: <span class="${parseFloat(iRet)>=0?'up-c':'dn-c'}">${iRet !== '–' ? (parseFloat(iRet)>=0?'+':'')+iRet+'%' : '–'}</span>
+    &nbsp;|&nbsp; Alpha: <span class="${aClass}">${alpha !== '–' ? (parseFloat(alpha)>=0?'+':'')+alpha+'%' : '–'}</span>
+    &nbsp;
+    <a href="steam.html?stock=${sym}" class="steam-link">🔥 Steam Gauge</a>`;
 }
-document.getElementById('svnInput').addEventListener('keydown', e => { if(e.key==='Enter') loadSVN(); });
+document.getElementById('svnInput').addEventListener('keydown', e => { if (e.key === 'Enter') loadSVN(); });
 
 /* ═══════════════════════════════════════════════
    CUSTOM ANALYSIS (CTAE)
@@ -1046,7 +1333,7 @@ async function runSignalLab() {
 loadTicker();
 loadKPIs();
 loadOverviewCharts();
-loadGauges();
+loadGauges();  // async — loads DMA20/50/200 live from Nifty chart
 </script>
 </body>
 </html>
