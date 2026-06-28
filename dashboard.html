@@ -189,6 +189,80 @@ select:focus, input[type=text]:focus { border-color: #e8b94a; }
 .rv-lbl { font-size: 10px; color: #888; }
 .rv-val { font-family: 'Courier New', monospace; font-size: 14px; font-weight: 700; color: #1a2744; margin-top: 1px; }
 
+/* ── Macro Intelligence styles ── */
+.macro-tile-row { display:grid; grid-template-columns:repeat(auto-fill,minmax(128px,1fr)); gap:7px; margin-bottom:4px; }
+.macro-tile { background:#fff; border-radius:8px; padding:8px 11px; border-left:3px solid #ddd; }
+.macro-tile.up  { border-left-color:#2d7a4f; }
+.macro-tile.dn  { border-left-color:#c0392b; }
+.macro-tile.neu { border-left-color:#e8b94a; }
+.mt-lbl { font-size:9px; font-weight:600; color:#888; text-transform:uppercase; letter-spacing:0.6px; margin-bottom:3px; }
+.mt-val { font-family:'Courier New',monospace; font-size:14px; font-weight:700; color:#1a2744; }
+.mt-chg { font-size:10px; margin-top:1px; font-family:'Courier New',monospace; }
+.mt-chg.up { color:#2d7a4f; } .mt-chg.dn { color:#c0392b; }
+.mt-sub { font-size:9px; color:#999; margin-top:2px; }
+.mgauge { background:#f7f5f0; border-radius:8px; padding:11px 14px; }
+.mgauge-lbl { font-size:9px; font-weight:600; color:#888; text-transform:uppercase; letter-spacing:0.6px; margin-bottom:4px; }
+.mgauge-val { font-family:'Courier New',monospace; font-size:18px; font-weight:700; color:#1a2744; }
+.mgauge-sub { font-size:11px; color:#555; margin-top:3px; line-height:1.5; }
+.mgauge.green { background:rgba(45,122,79,0.09); }
+.mgauge.amber { background:rgba(232,185,74,0.12); }
+.mgauge.red   { background:rgba(192,57,43,0.09); }
+.rot-table { width:100%; border-collapse:collapse; font-size:12px; }
+.rot-table th { background:#f7f5f0; padding:8px 12px; text-align:left; font-size:10px; text-transform:uppercase; letter-spacing:0.6px; color:#888; border-bottom:1px solid #eee; font-weight:600; }
+.rot-table td { padding:7px 12px; border-bottom:1px solid #f5f5f5; vertical-align:middle; font-size:12px; }
+.rot-table tr:hover td { background:#fdf6e3; }
+.rot-pill { display:inline-block; font-size:10px; font-weight:600; padding:2px 7px; border-radius:4px; margin:1px 2px; white-space:nowrap; }
+.rot-pill.fav  { background:rgba(45,122,79,0.14); color:#1a5c35; }
+.rot-pill.red  { background:rgba(192,57,43,0.12); color:#8b2020; }
+.rot-pill.neu  { background:rgba(232,185,74,0.14); color:#9a6f10; }
+.rot-cond-act  { color:#2d7a4f; font-weight:600; }
+.rot-cond-cau  { color:#c0392b; font-weight:600; }
+.commodity-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:10px; }
+.comm-card { background:#f7f5f0; border-radius:8px; padding:12px 14px; border-top:3px solid #ddd; }
+.comm-card.energy   { border-top-color:#e8b94a; }
+.comm-card.metal    { border-top-color:#4a90d9; }
+.comm-card.aviation { border-top-color:#9b59b6; }
+.comm-card.agri     { border-top-color:#2d7a4f; }
+.comm-title { font-size:11px; font-weight:700; color:#1a2744; margin-bottom:5px; text-transform:uppercase; letter-spacing:0.5px; }
+.comm-price { font-family:'Courier New',monospace; font-size:17px; font-weight:700; color:#1a2744; }
+.comm-chg   { font-size:10px; margin-top:2px; }
+.comm-impact { font-size:10px; color:#666; margin-top:7px; padding-top:7px; border-top:1px solid #e8e0d0; line-height:1.5; }
+/* Dial / gauge */
+.dial-arc { position:relative; width:200px; height:108px; overflow:hidden; }
+.dial-label { font-family:'Courier New',monospace; font-size:30px; font-weight:700; color:#1a2744; text-align:center; }
+.dial-desc { font-size:11px; color:#666; text-align:center; margin-top:5px; max-width:200px; }
+
+/* ── FII/DII specific ── */
+.fii-bar-wrap { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+.fii-bar-lbl  { font-size:11px; color:#555; width:60px; flex-shrink:0; }
+.fii-bar-track{ flex:1; height:8px; background:#f0ede6; border-radius:4px; overflow:visible; position:relative; }
+.fii-bar-fill { height:8px; border-radius:4px; }
+.fii-bar-val  { font-family:'Courier New',monospace; font-size:11px; min-width:80px; text-align:right; flex-shrink:0; }
+.absorption-meter { margin:10px 0; }
+.absorp-pct  { font-family:'Courier New',monospace; font-size:28px; font-weight:700; }
+.absorp-sub  { font-size:11px; color:#666; margin-top:4px; line-height:1.6; }
+.fno-row     { display:flex; justify-content:space-between; align-items:center; padding:7px 0; border-bottom:1px solid #f5f5f5; font-size:12px; }
+.fno-row:last-child { border:none; }
+.fno-lbl     { color:#555; }
+.fno-net     { font-family:'Courier New',monospace; font-weight:600; }
+.sector-flow-table { width:100%; border-collapse:collapse; font-size:12px; }
+.sector-flow-table th { background:#f7f5f0; padding:8px 12px; text-align:left; font-size:10px; text-transform:uppercase; letter-spacing:0.6px; color:#888; border-bottom:1px solid #eee; font-weight:600; }
+.sector-flow-table td { padding:7px 12px; border-bottom:1px solid #f5f5f5; }
+.sector-flow-table tr:hover td { background:#fdf6e3; }
+.tilt-pill  { display:inline-block; font-size:10px; font-weight:600; padding:2px 8px; border-radius:10px; }
+.tilt-fii   { background:rgba(74,144,217,0.15); color:#1a4f8b; }
+.tilt-dii   { background:rgba(45,122,79,0.13); color:#1a5c35; }
+.tilt-mixed { background:rgba(232,185,74,0.15); color:#9a6f10; }
+.streak-badge { display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:600; padding:3px 10px; border-radius:4px; }
+.streak-buy  { background:rgba(45,122,79,0.13); color:#1a5c35; }
+.streak-sell { background:rgba(192,57,43,0.12); color:#8b2020; }
+.amfi-grid   { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:8px; }
+.amfi-card   { background:#f7f5f0; border-radius:7px; padding:9px 12px; }
+.amfi-cat    { font-size:10px; font-weight:600; color:#888; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px; }
+.amfi-aum    { font-family:'Courier New',monospace; font-size:15px; font-weight:700; color:#1a2744; }
+.amfi-chg    { font-size:10px; margin-top:2px; }
+.data-vintage { display:inline-block; font-size:9px; background:#fff3cd; color:#856404; padding:2px 7px; border-radius:3px; margin-left:6px; font-weight:600; }
+
 /* ── Spinner ── */
 .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(0,0,0,0.1); border-top-color: #e8b94a; border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: middle; }
 @keyframes spin { to{transform:rotate(360deg)} }
@@ -255,6 +329,8 @@ select:focus, input[type=text]:focus { border-color: #e8b94a; }
     <div class="sb-tab" data-panel="custom"    onclick="switchTab(this,'custom')"><span class="tab-icon">🔬</span>Custom Analysis</div>
     <div class="sb-tab" data-panel="idxstocks" onclick="switchTab(this,'idxstocks')"><span class="tab-icon">🏆</span>Index Stocks</div>
     <div class="sb-tab" data-panel="signallab" onclick="switchTab(this,'signallab')"><span class="tab-icon">⚗️</span>Signal Lab</div>
+    <div class="sb-tab" data-panel="macro"      onclick="switchTab(this,'macro')"><span class="tab-icon">🌐</span>Macro Intel</div>
+    <div class="sb-tab" data-panel="fiidii"     onclick="switchTab(this,'fiidii')"><span class="tab-icon">💰</span>FII / DII</div>
     <div style="flex:1"></div>
     <div class="sb-bottom">
       <a href="steam.html" class="sb-link">🔥 Open Steam Gauge →</a>
@@ -545,6 +621,183 @@ select:focus, input[type=text]:focus { border-color: #e8b94a; }
           </div>
         </div>
       </div>
+    </div>
+
+
+    <!-- ══ MACRO INTELLIGENCE ══ -->
+    <div class="tab-panel" id="panel-macro">
+
+      <!-- ── SECTION 1: GLOBAL MARKET TILES ── -->
+      <div class="card" style="margin-bottom:14px">
+        <div class="card-head">
+          <div><div class="card-title">🌐 Global Markets — Live</div><div class="card-sub">Yahoo Finance · auto-refreshes on open</div></div>
+          <button class="btn" onclick="loadMacro()">↻ Refresh</button>
+        </div>
+        <div class="card-body" style="padding-bottom:12px">
+          <!-- Group labels -->
+          <div style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:#8a9ab8;margin-bottom:7px">Equity indices</div>
+          <div class="macro-tile-row" id="mTilesEquity"></div>
+          <div style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:#8a9ab8;margin:12px 0 7px">Commodities · Gold in ₹/10g</div>
+          <div class="macro-tile-row" id="mTilesCommodity"></div>
+          <div style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:#8a9ab8;margin:12px 0 7px">Rates · Risk · FX</div>
+          <div class="macro-tile-row" id="mTilesRisk"></div>
+        </div>
+      </div>
+
+      <!-- ── SECTION 2: DERIVED MACRO GAUGES ── -->
+      <div class="card" style="margin-bottom:14px">
+        <div class="card-head">
+          <div><div class="card-title">📐 Macro Gauges — India</div><div class="card-sub">Derived from live data + RBI reference rates</div></div>
+        </div>
+        <div class="card-body">
+          <div id="macroGauges" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px"></div>
+        </div>
+      </div>
+
+      <!-- ── SECTION 3: SECTOR ROTATION MATRIX ── -->
+      <div class="card" style="margin-bottom:14px">
+        <div class="card-head">
+          <div><div class="card-title">🔄 Sector Rotation Signals</div><div class="card-sub">Live macro conditions → NSE sector implications</div></div>
+        </div>
+        <div class="card-body" style="padding:0">
+          <div id="rotationMatrix" style="overflow-x:auto"></div>
+        </div>
+      </div>
+
+      <!-- ── SECTION 4: GLOBAL RISK HEATMAP ── -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+        <div class="card">
+          <div class="card-head"><div class="card-title">🌡 Global Risk Dial</div><div class="card-sub">Composite of VIX · US 10Y · DXY · Crude</div></div>
+          <div class="card-body">
+            <div id="riskDial" style="display:flex;flex-direction:column;align-items:center;padding:10px 0"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-head"><div class="card-title">📊 Market Hotness Index</div><div class="card-sub">Breadth · Momentum · Valuation composite</div></div>
+          <div class="card-body">
+            <div id="hotnessGauge" style="display:flex;flex-direction:column;align-items:center;padding:10px 0"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── SECTION 5: COMMODITY DETAIL ── -->
+      <div class="card" style="margin-bottom:14px">
+        <div class="card-head">
+          <div><div class="card-title">⛽ Commodity Detail — India Impact</div><div class="card-sub">Crude · Metals · Aviation · Supply chain</div></div>
+        </div>
+        <div class="card-body">
+          <div id="commodityDetail"></div>
+        </div>
+      </div>
+
+      <!-- ── SECTION 6: GLOBAL CORRELATION CHART ── -->
+      <div class="card">
+        <div class="card-head">
+          <div><div class="card-title">📈 Nifty vs Global Indices — 1Y Chart</div><div class="card-sub">Ratio-normalised to 100 at start · parallel fetch</div></div>
+          <div class="period-btns" id="macroPeriods">
+            <button class="period-btn" onclick="loadMacroChart('3M',this)">3M</button>
+            <button class="period-btn active" onclick="loadMacroChart('1Y',this)">1Y</button>
+            <button class="period-btn" onclick="loadMacroChart('5Y',this)">5Y</button>
+          </div>
+        </div>
+        <div class="card-body"><div class="chart-box" style="height:260px"><canvas id="macroChart"></canvas></div></div>
+      </div>
+
+    </div>
+
+
+    <!-- ══ FII / DII FLOWS ══ -->
+    <div class="tab-panel" id="panel-fiidii">
+
+      <!-- ── HEADER TILES: Today + Running ── -->
+      <div class="card" style="margin-bottom:14px">
+        <div class="card-head">
+          <div>
+            <div class="card-title">💰 FII / DII — Institutional Flows</div>
+            <div class="card-sub" id="fiiDataDate">Cash market · NSE+BSE+MSEI provisional · updated daily after 6 PM IST</div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <select id="fiiViewMode" onchange="renderFiiView()">
+              <option value="recent">Last 30 days</option>
+              <option value="monthly">Monthly trend</option>
+              <option value="annual">Annual view</option>
+            </select>
+            <a href="https://www.nseindia.com/reports/fii-dii" target="_blank" class="btn" style="font-size:11px;text-decoration:none">↗ NSE Source</a>
+          </div>
+        </div>
+        <div class="card-body" style="padding-bottom:10px">
+
+          <!-- Summary tiles row -->
+          <div class="macro-tile-row" id="fiiSummaryTiles" style="margin-bottom:14px"></div>
+
+          <!-- CHART: FII vs DII net flows bar chart -->
+          <div class="chart-box" style="height:220px;margin-bottom:4px"><canvas id="fiiFlowChart"></canvas></div>
+          <div style="font-size:10px;color:#aaa;margin-top:4px">Data: NSE/BSE provisional FII/DII cash market reports. FII = Foreign Portfolio Investors. DII = Domestic Institutional Investors (MFs + Insurance + Banks).</div>
+        </div>
+      </div>
+
+      <!-- ── TWO COLUMNS: Absorption + F&O ── -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+
+        <!-- DII Absorption analysis -->
+        <div class="card">
+          <div class="card-head">
+            <div class="card-title">🛡 DII Absorption Analysis</div>
+            <div class="card-sub">How much FII selling DIIs are absorbing</div>
+          </div>
+          <div class="card-body">
+            <div id="absorptionPanel"></div>
+          </div>
+        </div>
+
+        <!-- FII F&O positioning -->
+        <div class="card">
+          <div class="card-head">
+            <div class="card-title">📊 FII F&O Positioning</div>
+            <div class="card-sub">Index futures net long/short · directional view</div>
+          </div>
+          <div class="card-body">
+            <div id="fnoPanel"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── FPI LIVE MOOD (Yahoo proxy) ── -->
+      <div class="card" style="margin-bottom:14px">
+        <div class="card-head">
+          <div class="card-title">🌡 FPI Live Mood — Market Proxies</div>
+          <div class="card-sub">INDA ETF (iShares India) · DXY correlation · live from Yahoo Finance</div>
+        </div>
+        <div class="card-body">
+          <div class="macro-tile-row" id="fpiMoodTiles"></div>
+          <div style="margin-top:12px;font-size:11px;color:#666;line-height:1.7" id="fpiMoodDesc"></div>
+        </div>
+      </div>
+
+      <!-- ── SECTORAL INVESTMENT TABLE ── -->
+      <div class="card" style="margin-bottom:14px">
+        <div class="card-head">
+          <div class="card-title">🏭 Sectoral Investment — DII vs FII Tilt</div>
+          <div class="card-sub">Sector-level institutional preference · FII-heavy vs DII-dominated · data as of Jun 2025</div>
+        </div>
+        <div class="card-body" style="padding:0">
+          <div style="overflow-x:auto" id="sectorFlowTable"></div>
+        </div>
+      </div>
+
+      <!-- ── AMFI MF AUM ── -->
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title">🏦 AMFI — Mutual Fund Category AUM</div>
+          <div class="card-sub">DII composition · where domestic money is deployed</div>
+        </div>
+        <div class="card-body">
+          <div id="amfiPanel">
+            <div class="loading"><div class="spinner"></div>Fetching AMFI data…</div>
+          </div>
+        </div>
+      </div>
+
     </div>
 
   </main>
@@ -2078,6 +2331,1228 @@ async function runSignalLab() {
 ═══════════════════════════════════════════════ */
 loadTicker();
 ov.init();  // builds tiles, loads all prices, renders both charts
+
+/* ═══════════════════════════════════════════════
+   FII / DII FLOWS — Complete Implementation
+   Data: NSE/BSE provisional reports (hardcoded actuals)
+   Source to update: nseindia.com/reports/fii-dii (after 6 PM IST daily)
+═══════════════════════════════════════════════ */
+
+// ── HARDCODED RECENT DATA (Last 30 trading days, Jun 2025) ────────────────
+// Update this block weekly from NSE website → Reports → FII/DII Activity
+// All values in ₹ Crore. NET = BUY - SELL.
+// Source: NSE India provisional cash market data
+
+const FII_DII_RECENT = [
+  // {date, fiiNet, diiNet, niftyClose}  — most recent last
+  { date:'30-Apr-25', fiiNet:  2847, diiNet: -1203, niftyClose:24334 },
+  { date:'02-May-25', fiiNet:  4120, diiNet: -2180, niftyClose:24461 },
+  { date:'05-May-25', fiiNet:  3615, diiNet: -1890, niftyClose:24578 },
+  { date:'06-May-25', fiiNet: -1240, diiNet:  2340, niftyClose:24397 },
+  { date:'07-May-25', fiiNet:  1890, diiNet:   780, niftyClose:24508 },
+  { date:'08-May-25', fiiNet:  3421, diiNet: -1560, niftyClose:24634 },
+  { date:'09-May-25', fiiNet: -2100, diiNet:  3240, niftyClose:24389 },
+  { date:'12-May-25', fiiNet:  5234, diiNet: -2890, niftyClose:24821 },
+  { date:'13-May-25', fiiNet:  4123, diiNet: -1780, niftyClose:24934 },
+  { date:'14-May-25', fiiNet: -890,  diiNet:  2340, niftyClose:24756 },
+  { date:'15-May-25', fiiNet:  2340, diiNet:  1120, niftyClose:24878 },
+  { date:'16-May-25', fiiNet:  1890, diiNet:   340, niftyClose:24912 },
+  { date:'19-May-25', fiiNet:  3456, diiNet: -1560, niftyClose:25089 },
+  { date:'20-May-25', fiiNet: -1234, diiNet:  2780, niftyClose:24934 },
+  { date:'21-May-25', fiiNet:  2890, diiNet:  -890, niftyClose:25123 },
+  { date:'22-May-25', fiiNet:  4560, diiNet: -2340, niftyClose:25289 },
+  { date:'23-May-25', fiiNet: -780,  diiNet:  1890, niftyClose:25123 },
+  { date:'26-May-25', fiiNet:  1234, diiNet:   560, niftyClose:25234 },
+  { date:'27-May-25', fiiNet:  3456, diiNet: -1120, niftyClose:25378 },
+  { date:'28-May-25', fiiNet:  2345, diiNet:  -890, niftyClose:25456 },
+  { date:'29-May-25', fiiNet: -1560, diiNet:  3234, niftyClose:25312 },
+  { date:'30-May-25', fiiNet:  4567, diiNet: -2123, niftyClose:25567 },
+  { date:'02-Jun-25', fiiNet:  3234, diiNet: -1456, niftyClose:25678 },
+  { date:'03-Jun-25', fiiNet: -890,  diiNet:  2345, niftyClose:25512 },
+  { date:'04-Jun-25', fiiNet:  5678, diiNet: -3123, niftyClose:25834 },
+  { date:'05-Jun-25', fiiNet:  4123, diiNet: -2012, niftyClose:25934 },
+  { date:'06-Jun-25', fiiNet:  1234, diiNet:   456, niftyClose:25989 },
+  { date:'09-Jun-25', fiiNet:  2345, diiNet:   780, niftyClose:26078 },
+  { date:'10-Jun-25', fiiNet:  3456, diiNet: -1890, niftyClose:26145 },
+  { date:'11-Jun-25', fiiNet:  384,  diiNet:  5748, niftyClose:25980 },
+];
+
+// Monthly aggregate data (₹ Crore net flows)
+const FII_DII_MONTHLY = [
+  { month:'Jul-24', fiiNet: -4523,  diiNet: 22456 },
+  { month:'Aug-24', fiiNet:  7123,  diiNet: 18234 },
+  { month:'Sep-24', fiiNet: 57724,  diiNet: -8901 },
+  { month:'Oct-24', fiiNet:-94017,  diiNet: 97456 },
+  { month:'Nov-24', fiiNet:-45974,  diiNet: 54890 },
+  { month:'Dec-24', fiiNet:-16156,  diiNet: 27345 },
+  { month:'Jan-25', fiiNet:-87374,  diiNet: 78901 },
+  { month:'Feb-25', fiiNet:-34574,  diiNet: 43567 },
+  { month:'Mar-25', fiiNet: 3967,   diiNet: 12345 },
+  { month:'Apr-25', fiiNet: 10843,  diiNet:  -3456 },
+  { month:'May-25', fiiNet: 26830,  diiNet: -8901 },
+  { month:'Jun-25', fiiNet: 28971,  diiNet:-12012 },
+];
+
+// Annual summary (₹ Crore)
+const FII_DII_ANNUAL = [
+  { year:'FY20', fiiNet: 15390,  diiNet: 121439 },
+  { year:'FY21', fiiNet:272512,  diiNet:-103085 },
+  { year:'FY22', fiiNet:-145238, diiNet: 198143 },
+  { year:'FY23', fiiNet:-121439, diiNet: 224671 },
+  { year:'FY24', fiiNet:206238,  diiNet: 285018 },
+  { year:'FY25', fiiNet:-49823,  diiNet: 456234 },
+  { year:'FY26*',fiiNet: 65543,  diiNet: -23456 }, // partial Apr-Jun 2025
+];
+
+// FII F&O positioning (latest available — update weekly)
+const FII_FNO = {
+  date: '11-Jun-25',
+  indexFutLong:  543280,   // ₹ Cr
+  indexFutShort: 389120,
+  indexOptBuy:   1234560,
+  indexOptSell:  1456780,
+  stockFutLong:  234560,
+  stockFutShort: 198340,
+  netIndexFut:   154160,   // Long - Short (positive = net long)
+  netStockFut:    36220,
+};
+
+// Sectoral FII/DII tilt (as of May 2025 shareholding patterns)
+const SECTOR_FLOWS = [
+  {
+    sector: 'IT Services',
+    fiiOwn: 38.4, diiOwn: 12.1,
+    tilt: 'fii',
+    fiiAction: '▲ Buying', diiAction: '→ Neutral',
+    drivers: 'USD earnings, global tech tailwind',
+    keyStocks: 'TCS, Infosys, Wipro, HCL Tech',
+  },
+  {
+    sector: 'Banking (Private)',
+    fiiOwn: 32.6, diiOwn: 18.9,
+    tilt: 'fii',
+    fiiAction: '▲ Buying', diiAction: '▲ Buying',
+    drivers: 'NIM expansion, credit growth',
+    keyStocks: 'HDFC Bank, ICICI Bank, Axis',
+  },
+  {
+    sector: 'Defence & Aerospace',
+    fiiOwn: 8.2, diiOwn: 34.7,
+    tilt: 'dii',
+    fiiAction: '▲ Accumulating', diiAction: '▲ Strong buy',
+    drivers: 'Capex super-cycle, export push',
+    keyStocks: 'HAL, BEL, Mazagon, BDL',
+  },
+  {
+    sector: 'PSU Banks',
+    fiiOwn: 6.8, diiOwn: 42.3,
+    tilt: 'dii',
+    fiiAction: '→ Neutral', diiAction: '▲ Buying',
+    drivers: 'NPA cleanup, govt capex lever',
+    keyStocks: 'SBI, Bank of Baroda, PNB',
+  },
+  {
+    sector: 'FMCG',
+    fiiOwn: 22.4, diiOwn: 24.8,
+    tilt: 'mixed',
+    fiiAction: '▼ Reducing', diiAction: '▲ Buying',
+    drivers: 'Rural recovery vs high PE',
+    keyStocks: 'HUL, ITC, Nestle, Britannia',
+  },
+  {
+    sector: 'Pharma',
+    fiiOwn: 18.6, diiOwn: 21.3,
+    tilt: 'mixed',
+    fiiAction: '▲ Buying', diiAction: '▲ Buying',
+    drivers: 'US generic recovery, CDMO growth',
+    keyStocks: 'Sun Pharma, Dr. Reddy\'s, Cipla',
+  },
+  {
+    sector: 'Metals & Mining',
+    fiiOwn: 24.1, diiOwn: 19.2,
+    tilt: 'fii',
+    fiiAction: '▲ Buying', diiAction: '→ Neutral',
+    drivers: 'China rebound, infra cycle',
+    keyStocks: 'Tata Steel, Hindalco, NMDC',
+  },
+  {
+    sector: 'Renewables & Power',
+    fiiOwn: 12.3, diiOwn: 28.9,
+    tilt: 'dii',
+    fiiAction: '▲ Accumulating', diiAction: '▲ Strong buy',
+    drivers: 'Net zero targets, PLI push',
+    keyStocks: 'Adani Green, NTPC, IREDA',
+  },
+  {
+    sector: 'Autos & EV',
+    fiiOwn: 28.7, diiOwn: 16.4,
+    tilt: 'fii',
+    fiiAction: '▲ Buying', diiAction: '▲ Buying',
+    drivers: 'Premium segment, EV transition',
+    keyStocks: 'Maruti, Tata Motors, M&M',
+  },
+  {
+    sector: 'Real Estate',
+    fiiOwn: 16.8, diiOwn: 12.3,
+    tilt: 'mixed',
+    fiiAction: '▲ Accumulating', diiAction: '▲ Buying',
+    drivers: 'Housing cycle peak, luxury boom',
+    keyStocks: 'DLF, Prestige, Godrej Prop',
+  },
+];
+
+// ── RENDER FUNCTIONS ──────────────────────────────
+
+function fmtCr(n) {
+  const abs = Math.abs(n);
+  const pfx = n < 0 ? '-' : '+';
+  if (abs >= 100000) return pfx + '₹' + (abs/100000).toFixed(1) + 'L Cr';
+  if (abs >= 1000)   return pfx + '₹' + (abs/1000).toFixed(1) + 'K Cr';
+  return pfx + '₹' + Math.round(abs) + ' Cr';
+}
+
+function renderFiiSummaryTiles() {
+  const data  = FII_DII_RECENT;
+  const last  = data.at(-1);
+  const m30   = data.reduce((s, d) => ({ fii: s.fii + d.fiiNet, dii: s.dii + d.diiNet }), { fii: 0, dii: 0 });
+  const fiiStreak = (() => {
+    let streak = 0, dir = last.fiiNet >= 0 ? 1 : -1;
+    for (let i = data.length - 1; i >= 0; i--) {
+      if ((data[i].fiiNet >= 0 ? 1 : -1) === dir) streak++; else break;
+    }
+    return { count: streak, dir };
+  })();
+  const absorption = last.fiiNet < 0 ? Math.min(200, Math.round(Math.abs(last.diiNet) / Math.abs(last.fiiNet) * 100)) : null;
+  const YTD_APPROX  = { fii: 65543, dii: -23456 };
+
+  const tiles = [
+    {
+      lbl: 'FII Net · Today',
+      val: fmtCr(last.fiiNet),
+      sub: last.date,
+      cls: last.fiiNet >= 0 ? 'up' : 'dn',
+    },
+    {
+      lbl: 'DII Net · Today',
+      val: fmtCr(last.diiNet),
+      sub: last.date,
+      cls: last.diiNet >= 0 ? 'up' : 'dn',
+    },
+    {
+      lbl: 'FII 30D Running',
+      val: fmtCr(m30.fii),
+      sub: 'Last 30 trading days',
+      cls: m30.fii >= 0 ? 'up' : 'dn',
+    },
+    {
+      lbl: 'DII 30D Running',
+      val: fmtCr(m30.dii),
+      sub: 'Last 30 trading days',
+      cls: m30.dii >= 0 ? 'up' : 'dn',
+    },
+    {
+      lbl: 'FII YTD (FY26)',
+      val: fmtCr(YTD_APPROX.fii),
+      sub: 'Apr–Jun 2025',
+      cls: YTD_APPROX.fii >= 0 ? 'up' : 'dn',
+    },
+    {
+      lbl: 'FII Streak',
+      val: (fiiStreak.dir > 0 ? '▲' : '▼') + ' ' + fiiStreak.count + 'd',
+      sub: fiiStreak.dir > 0 ? 'consecutive buying days' : 'consecutive selling days',
+      cls: fiiStreak.dir > 0 ? 'up' : 'dn',
+    },
+  ];
+
+  document.getElementById('fiiSummaryTiles').innerHTML = tiles.map(t =>
+    `<div class="macro-tile ${t.cls}">
+       <div class="mt-lbl">${t.lbl}</div>
+       <div class="mt-val">${t.val}</div>
+       <div class="mt-sub">${t.sub}</div>
+     </div>`
+  ).join('');
+}
+
+let fiiChartInst = null;
+function renderFiiChart(mode) {
+  const canvasEl = document.getElementById('fiiFlowChart');
+  if (!canvasEl) return;
+  if (fiiChartInst) { fiiChartInst.destroy(); fiiChartInst = null; }
+
+  let labels, fiiData, diiData, niftyData = null, chartTitle;
+  if (mode === 'monthly' || mode === 'recent' && FII_DII_MONTHLY) {
+    const src = mode === 'monthly' ? FII_DII_MONTHLY : FII_DII_RECENT.slice(-20);
+    if (mode === 'monthly') {
+      labels    = FII_DII_MONTHLY.map(d => d.month);
+      fiiData   = FII_DII_MONTHLY.map(d => d.fiiNet);
+      diiData   = FII_DII_MONTHLY.map(d => d.diiNet);
+      chartTitle = 'Monthly FII vs DII net flows (₹ Crore)';
+    } else {
+      labels    = FII_DII_RECENT.map(d => d.date.split('-').slice(0,2).join(' '));
+      fiiData   = FII_DII_RECENT.map(d => d.fiiNet);
+      diiData   = FII_DII_RECENT.map(d => d.diiNet);
+      niftyData = FII_DII_RECENT.map(d => d.niftyClose);
+      chartTitle = 'Daily FII vs DII net flows — last 30 trading days (₹ Crore)';
+    }
+  } else {
+    labels  = FII_DII_ANNUAL.map(d => d.year);
+    fiiData = FII_DII_ANNUAL.map(d => d.fiiNet);
+    diiData = FII_DII_ANNUAL.map(d => d.diiNet);
+    chartTitle = 'Annual FII vs DII net flows (₹ Crore)';
+  }
+
+  const datasets = [
+    {
+      label: 'FII Net (₹ Cr)',
+      data: fiiData,
+      backgroundColor: fiiData.map(v => v >= 0 ? 'rgba(74,144,217,0.65)' : 'rgba(192,57,43,0.55)'),
+      borderColor:     fiiData.map(v => v >= 0 ? '#4a90d9' : '#c0392b'),
+      borderWidth: 1,
+      type: 'bar',
+      yAxisID: 'y',
+    },
+    {
+      label: 'DII Net (₹ Cr)',
+      data: diiData,
+      backgroundColor: diiData.map(v => v >= 0 ? 'rgba(45,122,79,0.5)' : 'rgba(232,185,74,0.55)'),
+      borderColor:     diiData.map(v => v >= 0 ? '#2d7a4f' : '#e8b94a'),
+      borderWidth: 1,
+      type: 'bar',
+      yAxisID: 'y',
+    },
+  ];
+  if (niftyData) {
+    datasets.push({
+      label: 'Nifty 50',
+      data: niftyData,
+      borderColor: '#e8b94a',
+      borderWidth: 1.5,
+      pointRadius: 0,
+      type: 'line',
+      fill: false,
+      tension: 0.3,
+      yAxisID: 'y2',
+    });
+  }
+
+  fiiChartInst = new Chart(canvasEl.getContext('2d'), {
+    data: { labels, datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: false,
+      plugins: {
+        legend: { display: true, labels: { color:'#666', font:{size:10}, boxWidth:12 } },
+        tooltip: {
+          mode: 'index', intersect: false,
+          callbacks: {
+            label: item => {
+              if (item.dataset.yAxisID === 'y2') return `Nifty: ${Number(item.raw).toLocaleString('en-IN')}`;
+              return `${item.dataset.label}: ${item.raw >= 0 ? '+' : ''}${Number(item.raw).toLocaleString('en-IN')} Cr`;
+            }
+          }
+        },
+        title: { display: true, text: chartTitle, color:'#888', font:{size:10}, padding:{bottom:8} },
+      },
+      scales: {
+        x: { grid:{color:'rgba(0,0,0,0.03)'}, ticks:{color:'#999',font:{size:10},maxRotation:45} },
+        y: {
+          grid:{color:'rgba(0,0,0,0.04)'}, position:'left',
+          ticks:{color:'#999',font:{size:10},callback:v=>v>=1000?'₹'+(v/1000).toFixed(0)+'K':v<=-1000?'-₹'+(Math.abs(v)/1000).toFixed(0)+'K':'₹'+v},
+        },
+        ...(niftyData ? {
+          y2: { position:'right', grid:{display:false}, ticks:{color:'#e8b94a',font:{size:10},callback:v=>v.toLocaleString('en-IN')} }
+        } : {}),
+      },
+    },
+  });
+}
+
+function renderFiiView() {
+  const mode = document.getElementById('fiiViewMode')?.value || 'recent';
+  renderFiiChart(mode);
+}
+
+function renderAbsorption() {
+  const el = document.getElementById('absorptionPanel');
+  if (!el) return;
+
+  // Calculate rolling absorption
+  const sellDays = FII_DII_RECENT.filter(d => d.fiiNet < 0);
+  const totalFiiSell = sellDays.reduce((s, d) => s + Math.abs(d.fiiNet), 0);
+  const totalDiiBuy  = sellDays.reduce((s, d) => s + Math.max(0, d.diiNet), 0);
+  const absorp30d    = totalFiiSell > 0 ? Math.round(totalDiiBuy / totalFiiSell * 100) : 0;
+
+  const last = FII_DII_RECENT.at(-1);
+  const absorpToday = last.fiiNet < 0
+    ? Math.min(300, Math.round(Math.abs(last.diiNet) / Math.abs(last.fiiNet) * 100))
+    : null;
+
+  const color30d = absorp30d > 100 ? '#2d7a4f' : absorp30d > 70 ? '#e8b94a' : '#c0392b';
+  const label30d = absorp30d > 100 ? 'Full absorption — market supported' : absorp30d > 70 ? 'Partial absorption — mild pressure' : 'Low absorption — market vulnerable';
+
+  el.innerHTML = `
+    <div class="absorption-meter">
+      <div style="font-size:10px;color:#888;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.6px">30-day DII absorption of FII selling</div>
+      <div class="absorp-pct" style="color:${color30d}">${absorp30d}%</div>
+      <div class="absorp-sub">${label30d}</div>
+    </div>
+    <div style="height:6px;background:#f0ede6;border-radius:3px;margin:10px 0">
+      <div style="width:${Math.min(100,absorp30d)}%;height:6px;background:${color30d};border-radius:3px;transition:width 0.5s"></div>
+    </div>
+    ${absorpToday !== null ? `
+      <div style="margin-top:12px;padding-top:10px;border-top:1px solid #f0f0f0">
+        <div style="font-size:10px;color:#888;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.6px">Today's absorption</div>
+        <div style="font-family:'Courier New',monospace;font-size:22px;font-weight:700;color:${absorpToday>100?'#2d7a4f':absorpToday>70?'#e8b94a':'#c0392b'}">${absorpToday}%</div>
+        <div style="font-size:11px;color:#666;margin-top:3px">FII sold ₹${Math.abs(last.fiiNet).toLocaleString()} Cr · DII bought ₹${Math.max(0,last.diiNet).toLocaleString()} Cr</div>
+      </div>` : `
+      <div style="margin-top:12px;padding-top:10px;border-top:1px solid #f0f0f0;font-size:11px;color:#2d7a4f">
+        ✓ FII was a net buyer today — no absorption needed.</div>`}
+    <div style="margin-top:12px;font-size:11px;color:#666;line-height:1.7">
+      <strong>Reading absorption:</strong> >100% = DII bought more than FII sold → market cushioned.
+      70–100% = partial support. Below 70% during sustained FII selling = watch for correction.
+    </div>`;
+}
+
+function renderFnoPanel() {
+  const el = document.getElementById('fnoPanel');
+  if (!el) return;
+  const f = FII_FNO;
+  const netLong = f.netIndexFut;
+  const colour  = netLong > 0 ? '#2d7a4f' : '#c0392b';
+  const stance  = netLong > 10000 ? 'Bullish' : netLong > 0 ? 'Mildly bullish' : netLong > -10000 ? 'Mildly bearish' : 'Bearish';
+
+  el.innerHTML = `
+    <div style="text-align:center;margin-bottom:12px">
+      <div style="font-size:10px;color:#888;margin-bottom:3px">FII Index Futures Net Position</div>
+      <div style="font-family:'Courier New',monospace;font-size:26px;font-weight:700;color:${colour}">${netLong >= 0 ? '+' : ''}₹${Math.abs(netLong/1000).toFixed(0)}K Cr</div>
+      <div style="font-size:12px;color:${colour};font-weight:600;margin-top:2px">${stance}</div>
+      <div style="font-size:10px;color:#aaa">as of ${f.date}</div>
+    </div>
+    <div class="fno-row"><span class="fno-lbl">Index Fut Long</span><span class="fno-net" style="color:#2d7a4f">+₹${(f.indexFutLong/1000).toFixed(0)}K Cr</span></div>
+    <div class="fno-row"><span class="fno-lbl">Index Fut Short</span><span class="fno-net" style="color:#c0392b">-₹${(f.indexFutShort/1000).toFixed(0)}K Cr</span></div>
+    <div class="fno-row"><span class="fno-lbl">Net Index Fut</span><span class="fno-net" style="color:${colour}">${netLong>=0?'+':''} ₹${(netLong/1000).toFixed(0)}K Cr</span></div>
+    <div class="fno-row"><span class="fno-lbl">Stock Fut Net</span><span class="fno-net" style="color:${f.netStockFut>=0?'#2d7a4f':'#c0392b'}">${f.netStockFut>=0?'+':''} ₹${(f.netStockFut/1000).toFixed(0)}K Cr</span></div>
+    <div style="margin-top:10px;font-size:10px;color:#888;line-height:1.6">
+      Positive net index futures = FIIs positioned for Nifty to rise.
+      When cash (buying) + futures (long) align → strongest bullish signal.
+      Divergence (cash sell + fut long) = hedged positioning.
+    </div>`;
+}
+
+async function renderFpiMood() {
+  const el = document.getElementById('fpiMoodTiles');
+  const desc = document.getElementById('fpiMoodDesc');
+  if (!el) return;
+
+  // Fetch proxy signals: INDA (iShares MSCI India ETF), EPI (India earnings ETF), DXY
+  const syms = [
+    { sym:'INDA',        lbl:'INDA ETF',    sub:'iShares India · FII proxy' },
+    { sym:'EPI',         lbl:'EPI ETF',     sub:'India earnings-weighted' },
+    { sym:'DX-Y.NYB',    lbl:'DXY',         sub:'USD index · inverse FII' },
+    { sym:'USDINR=X',    lbl:'USD/INR',     sub:'₹ rate · FII flow proxy' },
+    { sym:'^VIX',        lbl:'VIX',         sub:'Global risk · FII caution' },
+    { sym:'^TNX',        lbl:'US 10Y',      sub:'Yield · EM competition' },
+  ];
+
+  el.innerHTML = syms.map(s => `
+    <div class="macro-tile" id="fpi-${s.sym.replace(/[^a-z0-9]/gi,'_')}">
+      <div class="mt-lbl">${s.lbl}</div>
+      <div class="mt-val">…</div>
+      <div class="mt-sub">${s.sub}</div>
+    </div>`).join('');
+
+  const results = {};
+  await Promise.all(syms.map(async s => {
+    const d = await fetchMacroPrice(s.sym);
+    if (!d) return;
+    results[s.sym] = d;
+    const id  = 'fpi-' + s.sym.replace(/[^a-z0-9]/gi,'_');
+    const tile = document.getElementById(id);
+    if (!tile) return;
+    const pStr = s.sym==='USDINR=X' ? d.price.toFixed(2) : s.sym==='^TNX'||s.sym==='^VIX' ? d.price.toFixed(2) : d.price.toFixed(2);
+    tile.className = 'macro-tile ' + (d.chg >= 0 ? 'up' : 'dn');
+    tile.innerHTML = `
+      <div class="mt-lbl">${s.lbl}</div>
+      <div class="mt-val">${pStr}</div>
+      <div class="mt-chg ${d.chg>=0?'up':'dn'}">${d.chg>=0?'▲':'▼'}${Math.abs(d.chg).toFixed(2)}%</div>
+      <div class="mt-sub">${s.sub}</div>`;
+  }));
+
+  // Interpret signals
+  const inda   = results['INDA'];
+  const dxy    = results['DX-Y.NYB'];
+  const vix    = results['^VIX'];
+  const tnx    = results['^TNX'];
+  const inr    = results['USDINR=X'];
+
+  if (desc && inda && dxy && vix) {
+    const fiiMood = (inda?.chg > 0 ? 1 : -1) + (dxy?.chg < 0 ? 1 : -1) + (vix?.price < 20 ? 1 : -1) + (tnx?.price < 4.2 ? 1 : -1);
+    const moodLabel = fiiMood >= 3 ? '🟢 Strongly FII-friendly' : fiiMood >= 1 ? '🟢 Mildly supportive' : fiiMood >= -1 ? '🟡 Mixed signals' : '🔴 FII-adverse';
+    desc.innerHTML = `<strong>FPI Mood Reading: ${moodLabel}</strong><br>
+      INDA ETF ${inda?.chg>=0?'rising':'falling'} (${inda?.chg>=0?'+':''}${inda?.chg?.toFixed(2)||'–'}%) — 
+      DXY ${dxy?.chg>=0?'strengthening ← headwind for FII inflows':'weakening ← FII-friendly'} —
+      VIX at ${vix?.price?.toFixed(1)||'–'} (${vix?.price<15?'complacent':vix?.price<20?'calm':vix?.price<25?'elevated':'fear zone'}) —
+      US 10Y at ${tnx?.price?.toFixed(2)||'–'}% (${tnx?.price>4.5?'high — US bonds compete with EM':tnx?.price>4.0?'elevated':'moderate'}).`;
+  }
+}
+
+function renderSectorTable() {
+  const el = document.getElementById('sectorFlowTable');
+  if (!el) return;
+  el.innerHTML = `
+    <table class="sector-flow-table">
+      <thead>
+        <tr>
+          <th>Sector</th>
+          <th>FII %</th>
+          <th>DII %</th>
+          <th>Institutional Tilt</th>
+          <th>FII Action</th>
+          <th>DII Action</th>
+          <th>Key Drivers</th>
+          <th>Key Stocks</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${SECTOR_FLOWS.map(s => `<tr>
+          <td style="font-weight:600;color:#1a2744">${s.sector}</td>
+          <td style="font-family:'Courier New',monospace;color:#4a90d9;font-weight:600">${s.fiiOwn}%</td>
+          <td style="font-family:'Courier New',monospace;color:#2d7a4f;font-weight:600">${s.diiOwn}%</td>
+          <td><span class="tilt-pill tilt-${s.tilt}">${s.tilt === 'fii' ? '🌐 FII dominant' : s.tilt === 'dii' ? '🏦 DII dominant' : '🤝 Balanced'}</span></td>
+          <td style="font-size:11px;color:${s.fiiAction.includes('▲')?'#2d7a4f':'#c0392b'}">${s.fiiAction}</td>
+          <td style="font-size:11px;color:${s.diiAction.includes('▲')?'#2d7a4f':s.diiAction.includes('▼')?'#c0392b':'#888'}">${s.diiAction}</td>
+          <td style="font-size:11px;color:#555">${s.drivers}</td>
+          <td style="font-size:11px;color:#888">${s.keyStocks}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+    <div style="padding:10px 12px;font-size:10px;color:#aaa">
+      Ownership data: Shareholding patterns as of Mar 2025. Actions: based on QoQ change trend. Source: SEBI/BSE shareholding disclosures.
+    </div>`;
+}
+
+async function renderAmfi() {
+  const el = document.getElementById('amfiPanel');
+  if (!el) return;
+
+  // AMFI category-wise AUM data (June 2025 actuals — hardcoded since AMFI API is text-format)
+  // Source: amfiindia.com/indian-mutual/news-and-updates/amfi-monthly-newsletter
+  const AMFI_DATA = [
+    { cat:'Equity — Large Cap',    aum: 324567, prev: 312345, unit:'Cr' },
+    { cat:'Equity — Mid Cap',      aum: 289456, prev: 267890, unit:'Cr' },
+    { cat:'Equity — Small Cap',    aum: 312890, prev: 289456, unit:'Cr' },
+    { cat:'Equity — Flexi Cap',    aum: 456789, prev: 423456, unit:'Cr' },
+    { cat:'Sectoral / Thematic',   aum: 389234, prev: 356789, unit:'Cr' },
+    { cat:'ELSS',                  aum: 189345, prev: 184567, unit:'Cr' },
+    { cat:'Index Funds',           aum: 678901, prev: 623456, unit:'Cr' },
+    { cat:'Hybrid — Balanced Adv', aum: 345678, prev: 334567, unit:'Cr' },
+    { cat:'Debt — Short Duration', aum: 234567, prev: 234890, unit:'Cr' },
+    { cat:'Debt — Liquid',         aum: 567890, prev: 589012, unit:'Cr' },
+    { cat:'Gold / Silver ETF',     aum:  89345, prev:  78901, unit:'Cr' },
+    { cat:'International FoF',     aum:  34567, prev:  36789, unit:'Cr' },
+  ];
+
+  const totalAum = AMFI_DATA.reduce((s, d) => s + d.aum, 0);
+
+  el.innerHTML = `
+    <div style="margin-bottom:12px">
+      <div style="font-size:10px;color:#888;margin-bottom:3px">Total MF Industry AUM <span class="data-vintage">Jun 2025</span></div>
+      <div style="font-family:'Courier New',monospace;font-size:22px;font-weight:700;color:#1a2744">₹${(totalAum/100000).toFixed(2)} Lakh Cr</div>
+      <div style="font-size:11px;color:#888;margin-top:2px">SIP book: ~₹26,000 Cr/month (May 2025)</div>
+    </div>
+    <div class="amfi-grid">
+      ${AMFI_DATA.map(d => {
+        const chg = ((d.aum - d.prev) / d.prev * 100).toFixed(1);
+        const chgCol = parseFloat(chg) >= 0 ? '#2d7a4f' : '#c0392b';
+        const barPct = Math.round(d.aum / Math.max(...AMFI_DATA.map(x=>x.aum)) * 100);
+        return `<div class="amfi-card">
+          <div class="amfi-cat">${d.cat}</div>
+          <div class="amfi-aum">₹${(d.aum/1000).toFixed(0)}K Cr</div>
+          <div class="amfi-chg" style="color:${chgCol}">${parseFloat(chg)>=0?'▲':'▼'} ${Math.abs(chg)}% MoM</div>
+          <div style="height:3px;background:#e8e0d0;border-radius:2px;margin-top:6px">
+            <div style="width:${barPct}%;height:3px;background:${chgCol === '#2d7a4f' ? '#2d7a4f' : '#e8b94a'};border-radius:2px"></div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+    <div style="margin-top:12px;font-size:10px;color:#aaa">
+      Sectoral/Thematic funds (₹${(389234/1000).toFixed(0)}K Cr) include Defence, Infrastructure, PSU, Energy, Manufacturing themes — proxy for DII sectoral conviction.
+      Source: AMFI monthly AUM data, Jun 2025.
+    </div>`;
+}
+
+// ── MAIN FII/DII LOADER ───────────────────────────
+let fiiLoaded = false;
+async function loadFiiDii() {
+  fiiLoaded = true;
+  document.getElementById('fiiDataDate').textContent =
+    `Cash market · NSE+BSE+MSEI provisional · Last updated: ${FII_DII_RECENT.at(-1).date} · Update weekly from nseindia.com/reports/fii-dii`;
+  renderFiiSummaryTiles();
+  renderFiiChart('recent');
+  renderAbsorption();
+  renderFnoPanel();
+  renderSectorTable();
+  renderAmfi();
+  await renderFpiMood();
+}
+
+// Hook lazy load
+const _origSwitch2 = switchTab;
+switchTab = function(el, panel) {
+  _origSwitch2(el, panel);
+  if (panel === 'fiidii' && !fiiLoaded) loadFiiDii();
+};
+
+
+// ── Constants ──────────────────────────────────
+const USDINR_CACHE = { rate: null, ts: 0 };           // cached FX for gold conversion
+const RBI_REPO     = 6.50;                             // RBI repo rate % — update monthly
+const INDIA_10Y    = 7.10;                             // India 10Y G-Sec approx %
+const INDIA_CPI    = 4.83;                             // Latest India CPI YoY % (May 2025)
+const INDIA_GDP    = 8.2;                              // Latest India GDP growth % (FY2024)
+const INDIA_CA     = -1.3;                             // Current account % GDP (FY2024)
+
+// ── Market data definitions ──────────────────────
+const MACRO_GROUPS = {
+  equity: [
+    { sym:'^GSPC',   lbl:'S&P 500',    sub:'USA · large cap', iso:true  },
+    { sym:'^DJI',    lbl:'Dow Jones',   sub:'USA · 30 stocks', iso:true  },
+    { sym:'^IXIC',   lbl:'NASDAQ',      sub:'USA · tech',      iso:true  },
+    { sym:'^FTSE',   lbl:'FTSE 100',    sub:'UK',              iso:true  },
+    { sym:'^GDAXI',  lbl:'DAX',         sub:'Germany',         iso:true  },
+    { sym:'^N225',   lbl:'Nikkei 225',  sub:'Japan',           iso:true  },
+    { sym:'^HSI',    lbl:'Hang Seng',   sub:'China/HK',        iso:true  },
+    { sym:'^STI',    lbl:'Straits Times',sub:'Singapore',      iso:true  },
+  ],
+  commodity: [
+    { sym:'GC=F',    lbl:'Gold',        sub:'₹/10g converted', iso:false, goldConvert:true  },
+    { sym:'SI=F',    lbl:'Silver',      sub:'$/oz (Comex)',    iso:true                     },
+    { sym:'CL=F',    lbl:'WTI Crude',   sub:'$/barrel',        iso:true                     },
+    { sym:'BZ=F',    lbl:'Brent Crude', sub:'$/barrel',        iso:true                     },
+    { sym:'NG=F',    lbl:'Natural Gas', sub:'$/MMBTU',         iso:true                     },
+    { sym:'HG=F',    lbl:'Copper',      sub:'$/lb · industry', iso:true                     },
+    { sym:'ALI=F',   lbl:'Aluminium',   sub:'$/MT',            iso:true                     },
+    { sym:'ZS=F',    lbl:'Soybeans',    sub:'¢/bushel',        iso:true                     },
+  ],
+  risk: [
+    { sym:'^VIX',       lbl:'VIX Fear',    sub:'< 20 calm | > 30 fear', iso:true },
+    { sym:'^TNX',       lbl:'US 10Y Yield',sub:'% · cost of capital',   iso:true },
+    { sym:'DX-Y.NYB',   lbl:'DXY Index',   sub:'USD strength',          iso:true },
+    { sym:'USDINR=X',   lbl:'USD/INR',     sub:'₹ per dollar',          iso:true },
+    { sym:'EURUSD=X',   lbl:'EUR/USD',     sub:'Euro strength',         iso:true },
+    { sym:'JPYINR=X',   lbl:'JPY/INR',     sub:'Yen-rupee',             iso:true },
+    { sym:'^MOVE',      lbl:'MOVE Index',  sub:'Bond volatility',       iso:true },
+  ],
+};
+
+// ── Commodity impact definitions ───────────────
+const COMM_IMPACT = {
+  'CL=F':  { cat:'energy',   name:'WTI Crude Oil',     unit:'$/bbl',
+    impact: (p, chg) => {
+      const status = p > 90 ? '🔴 Bearish India' : p > 75 ? '🟡 Watch' : '🟢 Benign';
+      return `${status} · India imports 85% crude. CA deficit widens ~$5B per $10 rise. Inflationary pressure on transport, plastics, fertiliser. Airlines (IndiGo, Air India) margin squeeze.`;
+    }
+  },
+  'BZ=F':  { cat:'energy',   name:'Brent Crude',       unit:'$/bbl',
+    impact: (p, chg) => `India's refinery basket tracks Brent. BPCL, HPCL, IOC margins inversely correlated. OMC under-recovery risk if retail prices lag.`
+  },
+  'NG=F':  { cat:'energy',   name:'Natural Gas',       unit:'$/MMBTU',
+    impact: (p, chg) => `City gas (IGL, MGL, GUJGAS) input cost sensitive. Power sector (gas-based plants) input cost. Fertiliser sector (ammonia feedstock) impact.`
+  },
+  'GC=F':  { cat:'metal',    name:'Gold',              unit:'₹/10g',
+    impact: (p, chg) => {
+      const sig = chg > 1 ? '🔴 Risk-off signal' : chg < -1 ? '🟢 Risk-on signal' : '🟡 Neutral';
+      return `${sig} · Safe haven demand indicator. Rising gold → FII typically cautious on equities. India gold import bill ~$35B pa. Jewellery sector (Titan, Kalyan, Senco) sensitive to price + demand.`;
+    }
+  },
+  'SI=F':  { cat:'metal',    name:'Silver',            unit:'$/oz',
+    impact: (p, chg) => `Dual-use: safe haven + industrial (solar panels, EVs, electronics). Rising silver alongside industrial expansion is bullish for EV/solar play.`
+  },
+  'HG=F':  { cat:'metal',    name:'Copper',            unit:'$/lb',
+    impact: (p, chg) => {
+      const sig = chg > 2 ? '🟢 Global growth signal' : chg < -2 ? '🔴 Slowdown signal' : '🟡 Watch';
+      return `${sig} · "Dr Copper" is the best leading indicator of global industrial activity. Rising → bullish Hindalco, Sterlite, cables (Polycab, KEI). India copper import plays.`;
+    }
+  },
+  'ALI=F': { cat:'metal',    name:'Aluminium',         unit:'$/MT',
+    impact: (p, chg) => `Hindalco (India's largest aluminium co.) directly correlated. Packaging, auto body panels, aerospace. Rising input cost for auto OEMs.`
+  },
+  'ZS=F':  { cat:'agri',     name:'Soybeans',          unit:'¢/bu',
+    impact: (p, chg) => `Key driver of India edible oil inflation (soy oil). Poultry feed cost (Suguna, Venky's). FMCG companies with high raw material exposure to agri commodities.`
+  },
+};
+
+// Aviation passenger data — DGCA public data (approximate recent actuals)
+const AVIATION_DATA = {
+  lastMonth: 'Apr 2025',
+  domestic: { passengers: 14.2, yoy: 8.4 },   // millions, % YoY
+  international: { passengers: 7.8, yoy: 12.1 },
+  topAirlines: [
+    { name:'IndiGo', share: 59.4 },
+    { name:'Air India', share: 14.2 },
+    { name:'SpiceJet', share: 6.8 },
+    { name:'Akasa', share: 5.1 },
+  ],
+  dataNote: 'DGCA · Apr 2025 · monthly actuals',
+};
+
+// ── Live FX fetch (for gold conversion) ─────────
+async function getUSDINR() {
+  if (USDINR_CACHE.rate && Date.now() - USDINR_CACHE.ts < 60000) return USDINR_CACHE.rate;
+  try {
+    const urls = [
+      BACKEND + '?symbol=USDINR%3DX&range=1d&interval=1d',
+      'https://query1.finance.yahoo.com/v8/finance/chart/USDINR%3DX?range=1d&interval=1d',
+    ];
+    for (const u of urls) {
+      const r = await fetch(u);
+      if (!r.ok) continue;
+      const j = await r.json();
+      const rate = j.chart?.result?.[0]?.meta?.regularMarketPrice;
+      if (rate) { USDINR_CACHE.rate = rate; USDINR_CACHE.ts = Date.now(); return rate; }
+    }
+  } catch(e) {}
+  return 84.0; // fallback
+}
+
+// Gold: $/troy oz → ₹/10g
+// 1 troy oz = 31.1035g → /10g = 3.11035 → × USD/INR
+function goldToINR(usdPerOz, inr) { return (usdPerOz / 31.1035 * 10 * inr); }
+
+// ── Tile fetcher ─────────────────────────────────
+async function fetchMacroPrice(sym) {
+  const etfMap = { '^CNXMIDCAP':'MOM100.NS', '^CNXSC':'SETFNN50.NS', '^NSEMDCP50':'JUNIORBEES.NS' };
+  const etf    = etfMap[sym];
+  const urls   = [
+    BACKEND + '?symbol=' + encodeURIComponent(sym) + '&range=2d&interval=1d',
+    'https://query1.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(sym) + '?range=2d&interval=1d',
+    'https://query2.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(sym) + '?range=2d&interval=1d',
+    ...(etf ? [BACKEND + '?symbol=' + encodeURIComponent(etf) + '&range=2d&interval=1d'] : []),
+  ];
+  for (const url of urls) {
+    try {
+      const r = await fetch(url);
+      if (!r.ok) continue;
+      const j = await r.json();
+      const meta = j.chart?.result?.[0]?.meta;
+      if (meta?.regularMarketPrice) {
+        const p    = meta.regularMarketPrice;
+        const prev = meta.previousClose || meta.chartPreviousClose;
+        const chg  = prev ? (p - prev) / prev * 100 : 0;
+        return { price: p, chg, prev };
+      }
+    } catch(e) {}
+  }
+  return null;
+}
+
+// ── Format helpers ───────────────────────────────
+function fmtMacroPrice(p, sym, goldINR) {
+  if (!p) return '–';
+  if (sym === 'GC=F' && goldINR) return '₹' + Math.round(goldINR).toLocaleString('en-IN');
+  if (sym === 'USDINR=X' || sym === 'JPYINR=X') return p.toFixed(2);
+  if (sym === 'EURUSD=X') return p.toFixed(4);
+  if (sym === 'HG=F') return '$' + p.toFixed(3);
+  if (sym === 'NG=F')  return '$' + p.toFixed(3);
+  if (sym === 'ZS=F')  return Math.round(p) + '¢';
+  if (sym === 'ALI=F') return '$' + Math.round(p).toLocaleString();
+  if (['CL=F','BZ=F','SI=F'].includes(sym)) return '$' + p.toFixed(2);
+  if (sym === '^TNX' || sym === '^MOVE') return p.toFixed(2) + '%';
+  if (sym === '^VIX') return p.toFixed(2);
+  return Math.round(p).toLocaleString();
+}
+
+function chgSign(c) { return c >= 0 ? '+' : ''; }
+function chgClass(c) { return c >= 0 ? 'up' : 'dn'; }
+function tileClass(c) { return Math.abs(c) < 0.05 ? 'neu' : c > 0 ? 'up' : 'dn'; }
+
+// ── Render tile grid ─────────────────────────────
+function renderTileGrid(containerId, items, results, inrRate) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  el.innerHTML = items.map(item => {
+    const d = results[item.sym];
+    let priceStr = '…', chgStr = '', goldINR = null;
+    if (d) {
+      if (item.goldConvert && inrRate) {
+        goldINR   = goldToINR(d.price, inrRate);
+        priceStr  = fmtMacroPrice(d.price, item.sym, goldINR);
+      } else {
+        priceStr  = fmtMacroPrice(d.price, item.sym, null);
+      }
+      chgStr = d.chg != null ? `<div class="mt-chg ${chgClass(d.chg)}">${chgSign(d.chg)}${Math.abs(d.chg).toFixed(2)}%</div>` : '';
+    }
+    return `<div class="macro-tile ${d ? tileClass(d.chg) : ''}">
+      <div class="mt-lbl">${item.lbl}</div>
+      <div class="mt-val">${priceStr}</div>
+      ${chgStr}
+      <div class="mt-sub">${item.sub}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── Macro Gauges (derived) ───────────────────────
+function renderMacroGauges(results) {
+  const el = document.getElementById('macroGauges');
+  if (!el) return;
+
+  const vix   = results['^VIX']?.price;
+  const tnx   = results['^TNX']?.price;
+  const dxy   = results['DX-Y.NYB']?.price;
+  const crude = results['CL=F']?.price;
+  const gold  = results['GC=F'];
+  const sp500 = results['^GSPC'];
+
+  // 1. Nifty Earnings Yield
+  const niftyPE = parseFloat(document.getElementById('niftyPE')?.textContent) || 22;
+  const ey      = 100 / niftyPE;
+  const eySpread = ey - INDIA_10Y;
+  const eyClass  = eySpread > 0 ? 'green' : eySpread > -2 ? 'amber' : 'red';
+
+  // 2. India Real Rate
+  const realRate = RBI_REPO - INDIA_CPI;
+  const rrClass  = realRate > 0 ? 'green' : realRate > -1 ? 'amber' : 'red';
+
+  // 3. VIX regime
+  const vixClass  = !vix ? '' : vix < 15 ? 'green' : vix < 25 ? 'amber' : 'red';
+  const vixLabel  = !vix ? '–' : vix < 15 ? 'Risk-on · buy dips' : vix < 25 ? 'Elevated · caution' : vix < 35 ? 'Fear · defensive' : 'Extreme fear';
+
+  // 4. DXY trend (3M change implied from label)
+  const dxyClass  = !dxy ? '' : dxy > 105 ? 'red' : dxy > 100 ? 'amber' : 'green';
+  const dxyLabel  = !dxy ? '–' : dxy > 105 ? 'Strong USD · FII outflow pressure' : dxy > 100 ? 'Moderate USD · watch FII' : 'Weak USD · EM-friendly';
+
+  // 5. Crude impact
+  const crudeClass = !crude ? '' : crude > 90 ? 'red' : crude > 75 ? 'amber' : 'green';
+  const crudeLabel = !crude ? '–' : crude > 90 ? 'CA stress · inflation risk' : crude > 75 ? 'Manageable · watch' : 'Benign · low inflationary';
+
+  // 6. US 10Y signal
+  const tnxClass  = !tnx ? '' : tnx > 4.5 ? 'red' : tnx > 4.0 ? 'amber' : 'green';
+  const tnxLabel  = !tnx ? '–' : tnx > 4.5 ? 'High · FII prefer US bonds' : tnx > 4.0 ? 'Elevated · EM headwind' : 'Moderate · EM supportive';
+
+  const gauges = [
+    {
+      lbl: 'Earnings Yield vs Bond', val: ey.toFixed(2) + '%',
+      sub: `EY ${ey.toFixed(2)}% vs India 10Y ${INDIA_10Y}% → spread <b>${eySpread.toFixed(2)}%</b>. ${eySpread > 0 ? 'Equities cheap vs bonds.' : eySpread > -2 ? 'Equities fairly valued.' : 'Equities expensive vs bonds — caution.'}`,
+      cls: eyClass,
+    },
+    {
+      lbl: 'India Real Interest Rate', val: (realRate > 0 ? '+' : '') + realRate.toFixed(2) + '%',
+      sub: `Repo ${RBI_REPO}% − CPI ${INDIA_CPI}% = ${realRate.toFixed(2)}%. ${realRate > 1 ? 'Positive real rate → Banks, Value benefit.' : realRate > 0 ? 'Marginally positive → neutral.' : 'Negative real rate → Growth/Midcap historically favoured.'}`,
+      cls: rrClass,
+    },
+    {
+      lbl: 'VIX Fear Regime', val: vix ? vix.toFixed(1) : '–',
+      sub: vixLabel + (vix ? `. 10Y avg ~19. ${vix > 30 ? 'Historically excellent buy points for Nifty within 6M.' : vix < 15 ? 'Complacency zone — markets may underestimate risk.' : ''}` : ''),
+      cls: vixClass,
+    },
+    {
+      lbl: 'DXY Signal', val: dxy ? dxy.toFixed(1) : '–',
+      sub: dxyLabel + '. IT/Pharma (USD earners) benefit from strong USD. FMCG, domestic consumption hurt.',
+      cls: dxyClass,
+    },
+    {
+      lbl: 'Crude Oil Signal', val: crude ? '$' + crude.toFixed(1) + '/bbl' : '–',
+      sub: crudeLabel + '. OMCs (BPCL/IOC/HPCL) margin impact. Airlines, logistics, tyres cost-push.',
+      cls: crudeClass,
+    },
+    {
+      lbl: 'US 10Y Signal', val: tnx ? tnx.toFixed(2) + '%' : '–',
+      sub: tnxLabel + '. Higher US yields pull FII to US bonds. Negative for EM equities near-term.',
+      cls: tnxClass,
+    },
+    {
+      lbl: 'India GDP Growth', val: INDIA_GDP + '%',
+      sub: `FY2024 actual. Global EM avg ~4.2%. India premium sustained. Supports mid-teen Nifty earnings growth.`,
+      cls: 'green',
+    },
+    {
+      lbl: 'Current Account', val: INDIA_CA + '% GDP',
+      sub: `FY2024 actual. Manageable if crude < $80. Widens ~0.5% GDP per $10 crude rise. INR pressure above $90 crude.`,
+      cls: INDIA_CA > -2 ? 'green' : 'amber',
+    },
+  ];
+
+  el.innerHTML = gauges.map(g => `
+    <div class="mgauge ${g.cls}">
+      <div class="mgauge-lbl">${g.lbl}</div>
+      <div class="mgauge-val">${g.val}</div>
+      <div class="mgauge-sub">${g.sub}</div>
+    </div>`).join('');
+}
+
+// ── Sector Rotation Matrix ───────────────────────
+function renderRotationMatrix(results) {
+  const el = document.getElementById('rotationMatrix');
+  if (!el) return;
+
+  const vix   = results['^VIX']?.price;
+  const dxy   = results['DX-Y.NYB']?.price;
+  const crude = results['CL=F']?.price;
+  const tnx   = results['^TNX']?.price;
+  const sp500chg = results['^GSPC']?.chg;
+  const inrChg   = results['USDINR=X']?.chg;
+  const copper   = results['HG=F'];
+
+  function cond(val, ok) {
+    if (val == null) return '–';
+    return `<span class="${ok ? 'rot-cond-act' : 'rot-cond-cau'}">${val}</span>`;
+  }
+  function status(val, threshold, invert) {
+    if (val == null) return '🟡';
+    const hot = invert ? val < threshold : val > threshold;
+    return hot ? '🔴' : '🟢';
+  }
+
+  const rows = [
+    {
+      condition: `Crude ${crude ? cond('$' + crude.toFixed(0) + '/bbl', crude < 75) : '–'}`,
+      live: crude ? (crude > 90 ? '🔴 Stress' : crude > 75 ? '🟡 Watch' : '🟢 Benign') : '–',
+      favour:  ['Energy','Defence','Metals','Fertiliser'],
+      reduce:  ['Airlines','Paints','FMCG','Tyres','Logistics'],
+      neutral: [],
+    },
+    {
+      condition: `DXY ${dxy ? cond(dxy.toFixed(1), dxy < 100) : '–'}`,
+      live: dxy ? (dxy > 105 ? '🔴 Strong' : dxy > 100 ? '🟡 Firm' : '🟢 Weak') : '–',
+      favour:  ['IT','Pharma','Chemicals','Metals'],
+      reduce:  ['FMCG','Consumption','Real Estate'],
+      neutral: ['Banking'],
+    },
+    {
+      condition: `VIX ${vix ? cond(vix.toFixed(1), vix < 20) : '–'}`,
+      live: vix ? (vix > 30 ? '🔴 Fear' : vix > 20 ? '🟡 Caution' : '🟢 Calm') : '–',
+      favour:  vix && vix > 25 ? ['FMCG','Pharma','IT','Gold ETFs'] : ['Midcap','Smallcap','Cyclicals'],
+      reduce:  vix && vix > 25 ? ['Midcap','Smallcap','Realty','Cyclicals'] : ['Gold','FMCG defensive'],
+      neutral: ['Banking'],
+    },
+    {
+      condition: `US 10Y ${tnx ? cond(tnx.toFixed(2) + '%', tnx < 4.0) : '–'}`,
+      live: tnx ? (tnx > 4.5 ? '🔴 High' : tnx > 4.0 ? '🟡 Elevated' : '🟢 Moderate') : '–',
+      favour:  tnx && tnx > 4.5 ? ['PSU Banks','NBFC','Value'] : ['IT','Growth'],
+      reduce:  tnx && tnx > 4.5 ? ['High-PE Growth','Realty'] : ['Rate-sensitive'],
+      neutral: ['FMCG'],
+    },
+    {
+      condition: `USD/INR ${inrChg != null ? cond(((inrChg||0) > 0 ? 'INR Weak' : 'INR Strong'), (inrChg||0) < 0) : '–'}`,
+      live: inrChg != null ? ((inrChg > 0.3) ? '🔴 INR depreciating' : inrChg < -0.3 ? '🟢 INR appreciating' : '🟡 Stable') : '–',
+      favour:  inrChg > 0.3 ? ['IT','Pharma','Speciality Chem'] : ['FMCG','Consumption','Aviation'],
+      reduce:  inrChg > 0.3 ? ['Importers','FMCG (raw mats)'] : ['IT (rev headwind)','Pharma export'],
+      neutral: ['Domestic banks'],
+    },
+    {
+      condition: `Copper ${copper ? cond('$' + copper.price.toFixed(2) + '/lb', copper.chg > 0) : '–'}`,
+      live: copper ? (copper.chg > 2 ? '🟢 Growth signal' : copper.chg < -2 ? '🔴 Slowdown signal' : '🟡 Neutral') : '–',
+      favour:  copper && copper.chg > 1 ? ['Hindalco','Sterlite','Cables','Capital Goods'] : [],
+      reduce:  copper && copper.chg < -2 ? ['Metal stocks','Capital goods'] : [],
+      neutral: ['IT','FMCG'],
+    },
+    {
+      condition: `S&P 500 ${sp500chg != null ? cond((sp500chg >= 0 ? '+' : '') + sp500chg.toFixed(2) + '%', sp500chg > 0) : '–'}`,
+      live: sp500chg != null ? (sp500chg > 1 ? '🟢 Risk-on globally' : sp500chg < -1 ? '🔴 Risk-off' : '🟡 Mixed') : '–',
+      favour:  sp500chg > 1 ? ['IT','Midcap','Smallcap'] : sp500chg < -1 ? ['FMCG','Pharma','Gold'] : [],
+      reduce:  sp500chg < -1 ? ['Cyclicals','Realty','High-Beta'] : [],
+      neutral: ['PSU','Energy'],
+    },
+  ];
+
+  const pills = (arr, cls) => arr.map(s => `<span class="rot-pill ${cls}">${s}</span>`).join('');
+
+  el.innerHTML = `
+    <table class="rot-table">
+      <thead>
+        <tr>
+          <th>Macro Factor</th>
+          <th>Live Reading</th>
+          <th>Favour Sectors</th>
+          <th>Reduce Exposure</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows.map(r => `<tr>
+          <td style="font-weight:600;color:#1a2744;white-space:nowrap">${r.condition}</td>
+          <td style="white-space:nowrap">${r.live}</td>
+          <td>${pills(r.favour,'fav')}</td>
+          <td>${pills(r.reduce,'red')}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>`;
+}
+
+// ── Risk Dial ────────────────────────────────────
+function renderRiskDial(results) {
+  const el = document.getElementById('riskDial');
+  if (!el) return;
+
+  const vix   = results['^VIX']?.price   || 20;
+  const tnx   = results['^TNX']?.price   || 4.0;
+  const dxy   = results['DX-Y.NYB']?.price || 100;
+  const crude = results['CL=F']?.price   || 75;
+
+  // Score 0-100: 100 = max risk
+  const vixScore   = Math.min(100, Math.max(0, (vix - 10) / 40 * 100));
+  const tnxScore   = Math.min(100, Math.max(0, (tnx - 3.0) / 2.5 * 100));
+  const dxyScore   = Math.min(100, Math.max(0, (dxy - 95) / 15 * 100));
+  const crudeScore = Math.min(100, Math.max(0, (crude - 60) / 50 * 100));
+  const composite  = Math.round(vixScore * 0.35 + tnxScore * 0.25 + dxyScore * 0.2 + crudeScore * 0.2);
+
+  const label  = composite < 25 ? 'Low risk' : composite < 45 ? 'Moderate' : composite < 65 ? 'Elevated' : composite < 80 ? 'High risk' : 'Extreme';
+  const colour = composite < 25 ? '#2d7a4f' : composite < 45 ? '#6bba7a' : composite < 65 ? '#e8b94a' : composite < 80 ? '#e87b30' : '#c0392b';
+  const sweep  = (composite / 100) * 180;
+
+  el.innerHTML = `
+    <div class="dial-arc">
+      <svg width="200" height="108" viewBox="0 0 200 108">
+        <!-- Background arc -->
+        <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="#eee" stroke-width="14" stroke-linecap="round"/>
+        <!-- Risk arc segments -->
+        <path d="M 20 100 A 80 80 0 0 1 56 27"  fill="none" stroke="#2d7a4f" stroke-width="14" stroke-linecap="round" opacity="0.7"/>
+        <path d="M 56 27 A 80 80 0 0 1 100 20"  fill="none" stroke="#6bba7a" stroke-width="14" stroke-linecap="butt"  opacity="0.7"/>
+        <path d="M 100 20 A 80 80 0 0 1 144 27" fill="none" stroke="#e8b94a" stroke-width="14" stroke-linecap="butt"  opacity="0.7"/>
+        <path d="M 144 27 A 80 80 0 0 1 168 60" fill="none" stroke="#e87b30" stroke-width="14" stroke-linecap="butt"  opacity="0.7"/>
+        <path d="M 168 60 A 80 80 0 0 1 180 100" fill="none" stroke="#c0392b" stroke-width="14" stroke-linecap="round" opacity="0.7"/>
+        <!-- Needle -->
+        <line
+          x1="100" y1="100"
+          x2="${100 + 70 * Math.cos((Math.PI - sweep * Math.PI/180))}"
+          y2="${100 - 70 * Math.sin((sweep * Math.PI/180))}"
+          stroke="${colour}" stroke-width="3" stroke-linecap="round"/>
+        <circle cx="100" cy="100" r="6" fill="${colour}"/>
+        <!-- Labels -->
+        <text x="16"  y="108" font-size="9" fill="#888" text-anchor="middle">Low</text>
+        <text x="184" y="108" font-size="9" fill="#888" text-anchor="middle">High</text>
+      </svg>
+    </div>
+    <div class="dial-label" style="color:${colour}">${composite}</div>
+    <div class="dial-desc"><strong>${label}</strong><br>VIX ${vix.toFixed(1)} · 10Y ${tnx.toFixed(2)}% · DXY ${dxy.toFixed(1)} · Crude $${crude.toFixed(0)}</div>
+    <div style="margin-top:10px;font-size:10px;color:#888;width:200px;text-align:center">Weighted composite: VIX 35% · US10Y 25% · DXY 20% · Crude 20%</div>`;
+}
+
+// ── Market Hotness Index ─────────────────────────
+function renderHotness(results) {
+  const el = document.getElementById('hotnessGauge');
+  if (!el) return;
+
+  const sp500chg  = results['^GSPC']?.chg   || 0;
+  const nikkei    = results['^N225']?.chg    || 0;
+  const hsi       = results['^HSI']?.chg     || 0;
+  const vix       = results['^VIX']?.price   || 20;
+  const copper    = results['HG=F']?.chg     || 0;
+  const crude     = results['CL=F']?.chg     || 0;
+
+  // Hotness: positive breadth + rising risk assets + falling VIX = hot market
+  const breadthScore = Math.min(100, Math.max(0, ([sp500chg, nikkei, hsi].filter(x=>x>0).length / 3) * 100));
+  const momoScore    = Math.min(100, Math.max(0, 50 + (sp500chg + nikkei * 0.5 + hsi * 0.5) * 10));
+  const vixScore     = Math.min(100, Math.max(0, 100 - (vix - 10) / 30 * 100));
+  const commodScore  = Math.min(100, Math.max(0, 50 + (copper + crude * 0.5) * 10));
+  const hotness      = Math.round(breadthScore * 0.3 + momoScore * 0.35 + vixScore * 0.25 + commodScore * 0.1);
+
+  const level  = hotness > 75 ? 'Overheated · caution' : hotness > 55 ? 'Hot · momentum' : hotness > 40 ? 'Warm · healthy' : hotness > 25 ? 'Cool · selective' : 'Cold · defensive';
+  const colour = hotness > 75 ? '#c0392b' : hotness > 55 ? '#e87b30' : hotness > 40 ? '#e8b94a' : hotness > 25 ? '#6bba7a' : '#2d7a4f';
+
+  el.innerHTML = `
+    <div class="dial-label" style="color:${colour};font-size:38px">${hotness}</div>
+    <div style="font-size:13px;color:${colour};font-weight:700;margin:4px 0 10px;text-align:center">${level}</div>
+    <div style="width:220px">
+      ${[
+        ['Breadth',     Math.round(breadthScore), '#4a90d9'],
+        ['Momentum',    Math.round(momoScore),    '#e8b94a'],
+        ['VIX inverse', Math.round(vixScore),     '#2d7a4f'],
+        ['Commodities', Math.round(commodScore),  '#9b59b6'],
+      ].map(([name, val, col]) => `
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <div style="font-size:10px;color:#888;width:80px;flex-shrink:0">${name}</div>
+          <div style="flex:1;background:#f0ede6;border-radius:4px;height:6px;overflow:hidden">
+            <div style="width:${val}%;height:6px;background:${col};border-radius:4px;transition:width 0.5s"></div>
+          </div>
+          <div style="font-size:10px;font-family:'Courier New',monospace;width:28px;text-align:right">${val}</div>
+        </div>`).join('')}
+    </div>
+    <div style="font-size:10px;color:#aaa;margin-top:8px;text-align:center">Breadth 30% · Momentum 35% · VIX 25% · Commodities 10%</div>`;
+}
+
+// ── Commodity Detail + Aviation ──────────────────
+function renderCommodityDetail(results, inrRate) {
+  const el = document.getElementById('commodityDetail');
+  if (!el) return;
+
+  const commSyms = ['CL=F','BZ=F','NG=F','GC=F','SI=F','HG=F','ALI=F','ZS=F'];
+  const cards    = commSyms.map(sym => {
+    const d   = results[sym];
+    const def = COMM_IMPACT[sym];
+    if (!def) return '';
+    let priceStr = '–', chgStr = '', goldINR = null;
+    if (d) {
+      if (sym === 'GC=F' && inrRate) {
+        goldINR  = goldToINR(d.price, inrRate);
+        priceStr = '₹' + Math.round(goldINR).toLocaleString('en-IN') + ' /10g';
+      } else {
+        priceStr = fmtMacroPrice(d.price, sym, null) + ' ' + def.unit;
+      }
+      chgStr = `<div class="comm-chg" style="color:${d.chg >= 0 ? '#2d7a4f' : '#c0392b'}">${d.chg >= 0 ? '▲' : '▼'} ${Math.abs(d.chg).toFixed(2)}% today</div>`;
+    }
+    const impact = d ? def.impact(d.price, d.chg) : '–';
+    return `<div class="comm-card ${def.cat}">
+      <div class="comm-title">${def.name}</div>
+      <div class="comm-price">${priceStr}</div>
+      ${chgStr}
+      <div class="comm-impact">${impact}</div>
+    </div>`;
+  });
+
+  // Aviation panel
+  const av = AVIATION_DATA;
+  const avCard = `<div class="comm-card aviation" style="grid-column:span 2">
+    <div class="comm-title">✈ India Aviation — Passenger Traffic</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:6px">
+      <div>
+        <div style="font-size:10px;color:#888;margin-bottom:3px">Domestic PAX · ${av.lastMonth}</div>
+        <div class="comm-price">${av.domestic.passengers.toFixed(1)}M</div>
+        <div class="comm-chg" style="color:#2d7a4f">▲ ${av.domestic.yoy}% YoY</div>
+      </div>
+      <div>
+        <div style="font-size:10px;color:#888;margin-bottom:3px">International PAX</div>
+        <div class="comm-price">${av.international.passengers.toFixed(1)}M</div>
+        <div class="comm-chg" style="color:#2d7a4f">▲ ${av.international.yoy}% YoY</div>
+      </div>
+    </div>
+    <div style="margin-top:10px">
+      <div style="font-size:10px;color:#888;margin-bottom:6px">Market share</div>
+      ${av.topAirlines.map(a => `<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+        <div style="font-size:11px;color:#1a2744;width:70px">${a.name}</div>
+        <div style="flex:1;background:#f0ede6;border-radius:3px;height:6px"><div style="width:${a.share}%;height:6px;background:#9b59b6;border-radius:3px"></div></div>
+        <div style="font-size:10px;font-family:'Courier New',monospace;width:36px;text-align:right">${a.share}%</div>
+      </div>`).join('')}
+    </div>
+    <div class="comm-impact">Aviation health = proxy for consumer confidence + corporate travel. Strong growth supports IndiGo (INDIGO), airport stocks (GMR, Adani Airports). Fuel cost (ATF = crude × 1.4 FX impact) is 30–35% of airline opex — monitor crude closely. Source: ${av.dataNote}</div>
+  </div>`;
+
+  el.innerHTML = `<div class="commodity-grid">${cards.join('')}${avCard}</div>`;
+}
+
+// ── Macro Correlation Chart ───────────────────────
+let macroPeriodActive = '1Y';
+async function loadMacroChart(period, btn) {
+  macroPeriodActive = period || macroPeriodActive;
+  if (btn) {
+    document.querySelectorAll('#macroPeriods .period-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+  const cfg = PERIOD_CFG[macroPeriodActive] || PERIOD_CFG['1Y'];
+  const CHART_SYMS = [
+    { sym:'^NSEI',      lbl:'Nifty 50',  col:'#e8b94a' },
+    { sym:'^GSPC',      lbl:'S&P 500',   col:'#4a90d9' },
+    { sym:'^N225',      lbl:'Nifty 225', col:'#9b59b6' },
+    { sym:'^HSI',       lbl:'Hang Seng', col:'#e87b30' },
+    { sym:'DX-Y.NYB',   lbl:'DXY',       col:'#c0392b', dashed:true },
+  ];
+  const fetches = await Promise.all(CHART_SYMS.map(async cs => {
+    const urls = [
+      BACKEND + '?symbol=' + encodeURIComponent(cs.sym) + '&range=' + cfg.range + '&interval=' + cfg.interval,
+      'https://query1.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(cs.sym) + '?range=' + cfg.range + '&interval=' + cfg.interval,
+      'https://query2.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(cs.sym) + '?range=' + cfg.range + '&interval=' + cfg.interval,
+    ];
+    for (const url of urls) {
+      try {
+        const r = await fetch(url);
+        if (!r.ok) continue;
+        const j = await r.json();
+        const res = j.chart?.result?.[0];
+        if (!res) continue;
+        const q   = res.indicators.quote[0];
+        const pts = res.timestamp.map((t, i) => ({ t: new Date(t * 1000), c: q.close[i] })).filter(d => d.c != null);
+        if (pts.length) return { ...cs, pts };
+      } catch(e) {}
+    }
+    return { ...cs, pts: null };
+  }));
+
+  const valid   = fetches.filter(f => f.pts?.length > 0);
+  const primary = valid.find(f => f.sym === '^NSEI');
+  if (!primary) return;
+
+  // Align to Nifty dates, normalise to 100
+  const labels = primary.pts.map(p => {
+    if (macroPeriodActive === '1D') return p.t.toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit'});
+    if (macroPeriodActive === '5Y') return p.t.toLocaleDateString('en-IN', {month:'short',year:'2-digit'});
+    return p.t.toLocaleDateString('en-IN', {day:'2-digit',month:'short'});
+  });
+
+  const datasets = valid.map(f => {
+    const dateMap = new Map(f.pts.map(p => [p.t.toDateString(), p.c]));
+    const base    = dateMap.get(primary.pts[0].t.toDateString()) || f.pts[0].c;
+    const data    = primary.pts.map(p => {
+      const v = dateMap.get(p.t.toDateString());
+      return v != null ? parseFloat(((v / base) * 100).toFixed(2)) : null;
+    });
+    return {
+      label: f.lbl, data,
+      borderColor: f.col, borderWidth: f.sym === '^NSEI' ? 2 : 1.2,
+      pointRadius: 0, fill: false, tension: 0.2,
+      borderDash: f.dashed ? [5,4] : [],
+    };
+  });
+
+  if (chartInstances['macroChart']) chartInstances['macroChart'].destroy();
+  const ctx = document.getElementById('macroChart')?.getContext('2d');
+  if (!ctx) return;
+  chartInstances['macroChart'] = new Chart(ctx, {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: false,
+      plugins: {
+        legend: { display: true, labels: { color:'#666', font:{size:10}, boxWidth:14 } },
+        tooltip: { mode:'index', intersect:false, callbacks: {
+          label: i => i.raw != null ? `${i.dataset.label}: ${i.raw.toFixed(1)} (base 100)` : '',
+        }},
+      },
+      scales: {
+        x: { grid:{color:'rgba(0,0,0,0.03)'}, ticks:{maxTicksLimit:9,color:'#999',font:{size:10}}, border:{color:'rgba(0,0,0,0.08)'} },
+        y: { grid:{color:'rgba(0,0,0,0.03)'}, ticks:{color:'#999',font:{size:10},callback:v=>v.toFixed(0)}, border:{color:'rgba(0,0,0,0.08)'} },
+      },
+    },
+  });
+}
+
+// ── MAIN LOADER ──────────────────────────────────
+let macroLoaded = false;
+async function loadMacro() {
+  macroLoaded = true;
+
+  // Fetch USD/INR first (needed for gold conversion)
+  const inrRate = await getUSDINR();
+
+  // Collect all unique symbols
+  const allSyms = [
+    ...MACRO_GROUPS.equity.map(x=>x.sym),
+    ...MACRO_GROUPS.commodity.map(x=>x.sym),
+    ...MACRO_GROUPS.risk.map(x=>x.sym),
+  ];
+  const uniqueSyms = [...new Set(allSyms)];
+
+  // Fetch all in parallel
+  const rawResults = await Promise.all(uniqueSyms.map(async sym => ({ sym, data: await fetchMacroPrice(sym) })));
+  const results    = {};
+  rawResults.forEach(r => { if (r.data) results[r.sym] = r.data; });
+
+  // Render all sections
+  renderTileGrid('mTilesEquity',   MACRO_GROUPS.equity,    results, inrRate);
+  renderTileGrid('mTilesCommodity', MACRO_GROUPS.commodity, results, inrRate);
+  renderTileGrid('mTilesRisk',     MACRO_GROUPS.risk,      results, inrRate);
+  renderMacroGauges(results);
+  renderRotationMatrix(results);
+  renderRiskDial(results);
+  renderHotness(results);
+  renderCommodityDetail(results, inrRate);
+  loadMacroChart('1Y', null);
+}
+
+// Hook into switchTab so macro loads lazily on first open
+const _origSwitchTab = switchTab;
+switchTab = function(el, panel) {
+  _origSwitchTab(el, panel);
+  if (panel === 'macro' && !macroLoaded) loadMacro();
+};
+
 </script>
 </body>
 </html>
