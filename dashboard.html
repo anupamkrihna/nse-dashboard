@@ -21,6 +21,51 @@ body { background: #f0ede6; color: #1a2744; font-family: Arial, sans-serif; font
 @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
 .h-clock { font-family: 'Courier New', monospace; font-size: 12px; color: #8a9ab8; }
 
+/* ── Stock search autocomplete ── */
+.stock-search-wrap { position:relative; display:inline-block; }
+.stock-search-wrap input {
+  width:240px; background:#f7f5f0; border:1px solid #ddd; border-radius:6px;
+  padding:6px 10px; font-size:12px; color:#1a2744; font-family:Arial,sans-serif;
+  outline:none; transition:border 0.15s;
+}
+.stock-search-wrap input:focus { border-color:#e8b94a; background:#fff; }
+.stock-dropdown {
+  display:none; position:absolute; top:calc(100% + 3px); left:0; right:0;
+  background:#fff; border:1px solid rgba(0,0,0,0.12); border-radius:7px;
+  z-index:500; box-shadow:0 8px 24px rgba(0,0,0,0.14);
+  max-height:280px; overflow-y:auto;
+}
+.stock-dropdown.open { display:block; }
+.sd-item {
+  padding:8px 12px; cursor:pointer; display:flex; align-items:center;
+  gap:10px; border-bottom:1px solid #f5f5f5; transition:background 0.1s;
+}
+.sd-item:hover { background:rgba(232,185,74,0.08); }
+.sd-item:last-child { border:none; }
+.sd-sym  { font-family:'Courier New',monospace; font-size:12px; font-weight:700; color:#e8b94a; min-width:100px; }
+.sd-name { color:#555; font-size:12px; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.sd-sect { font-size:10px; color:#999; background:#f5f5f5; padding:2px 6px; border-radius:3px; flex-shrink:0; white-space:nowrap; }
+/* Watchlist chips */
+.wl-chip {
+  display:inline-flex; align-items:center; gap:5px;
+  background:#fff; border:1px solid rgba(232,185,74,0.35);
+  border-radius:20px; padding:4px 10px 4px 12px; font-size:11px;
+  font-weight:600; color:#1a2744; font-family:'Courier New',monospace;
+  cursor:default; transition:background 0.15s;
+}
+.wl-chip:hover { background:rgba(232,185,74,0.08); }
+.wl-chip-remove {
+  color:#c0392b; cursor:pointer; font-size:13px; line-height:1;
+  margin-left:1px; font-family:Arial; font-weight:400;
+}
+.wl-chip-remove:hover { color:#8b0000; }
+.wl-preset-btn {
+  font-size:10px; padding:4px 10px; background:#f7f5f0;
+  border:1px solid #ddd; border-radius:4px; cursor:pointer; color:#555;
+  transition:all 0.15s;
+}
+.wl-preset-btn:hover { background:#e8b94a; color:#1a2744; border-color:#e8b94a; }
+
 /* ── Ticker ── */
 .u-ticker { background: #233354; height: 26px; overflow: hidden; border-bottom: 1px solid rgba(255,255,255,0.05); }
 .ticker-track { display: flex; align-items: center; height: 26px; white-space: nowrap; animation: scroll 50s linear infinite; width: max-content; }
@@ -494,7 +539,10 @@ select:focus, input[type=text]:focus { border-color: #e8b94a; }
         <div class="card-body">
           <div class="controls" style="margin-bottom:14px;flex-wrap:wrap;gap:8px">
             <span class="ctrl-label">Stock:</span>
-            <input type="text" id="svnInput" placeholder="e.g. HAL, BDL, TCS" style="width:130px">
+            <div class="stock-search-wrap" id="svnSearchWrap">
+              <input type="text" id="svnInput" placeholder="Search — YESBANK, HAL, TCS…" autocomplete="off">
+              <div class="stock-dropdown" id="svnDrop"></div>
+            </div>
             <span class="ctrl-label">vs</span>
             <select id="svnIndex" style="width:175px">
               <option value="^NSEI|Nifty 50">Nifty 50</option>
@@ -515,7 +563,7 @@ select:focus, input[type=text]:focus { border-color: #e8b94a; }
               <option value="^CNXSC|Nifty Smallcap">Nifty Smallcap</option>
               <option value="^CNXFINANCE|Nifty Financial Services">Nifty Financial</option>
               <option value="^CNXHEALTH|Nifty Healthcare">Nifty Healthcare</option>
-              <option value="^CNXOILGAS|Nifty Oil & Gas">Nifty Oil & Gas</option>
+              <option value="^CNXOILGAS|Nifty Oil &amp; Gas">Nifty Oil &amp; Gas</option>
               <option value="^CNXINFRA|Nifty Infra">Nifty Infra</option>
               <option value="^CNXCPSE|Nifty CPSE">Nifty CPSE</option>
             </select>
@@ -547,9 +595,14 @@ select:focus, input[type=text]:focus { border-color: #e8b94a; }
         <div class="card-body">
           <div class="custom-form">
             <div class="form-group">
-              <label>NSE Symbol</label>
-              <input type="text" id="caInput" placeholder="e.g. BDL, RELIANCE, TCS" style="width:100%">
+              <label>Search NSE Stock</label>
+              <div class="stock-search-wrap" id="caSearchWrap" style="width:100%">
+                <input type="text" id="caInput" placeholder="Search — YESBANK, HAL, RELIANCE, TCS…" autocomplete="off" style="width:100%">
+                <div class="stock-dropdown" id="caDrop"></div>
+              </div>
             </div>
+            <div class="form-group">
+              <label>Period</label>
               <select id="caPeriod" style="width:100%">
                 <option value="1D">1 Day</option>
                 <option value="1W">1 Week</option>
@@ -559,13 +612,14 @@ select:focus, input[type=text]:focus { border-color: #e8b94a; }
                 <option value="1Y" selected>1 Year</option>
                 <option value="5Y">5 Years</option>
               </select>
+            </div>
           </div>
           <div style="display:flex;gap:8px;margin-bottom:14px">
             <button class="btn btn-primary" onclick="loadCustom()">Run Analysis →</button>
             <a id="caToSteam" href="steam.html" class="btn" style="display:none;text-decoration:none">🔥 Open in Steam Gauge</a>
           </div>
           <div class="chart-box" style="margin-bottom:14px"><canvas id="caChart"></canvas></div>
-          <div id="ctaeOutput" class="custom-result">Enter an NSE symbol above and click Run Analysis to see CTAE technical indicators.</div>
+          <div id="ctaeOutput" class="custom-result">Search a stock above and click Run Analysis to see CTAE technical indicators.</div>
         </div>
       </div>
     </div>
@@ -598,10 +652,10 @@ select:focus, input[type=text]:focus { border-color: #e8b94a; }
 
     <!-- ══ SIGNAL LAB ══ -->
     <div class="tab-panel" id="panel-signallab">
-      <div class="card">
+      <div class="card" style="margin-bottom:14px">
         <div class="card-head">
           <div><div class="card-title">Signal Lab — CTAE</div><div class="card-sub">Core Technical Analysis Engine · Multi-stock screener</div></div>
-          <div style="display:flex;gap:8px;align-items:center">
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
             <select id="slUniverse">
               <option value="nifty50">Nifty 50</option>
               <option value="defence">Nifty Defence</option>
@@ -609,7 +663,7 @@ select:focus, input[type=text]:focus { border-color: #e8b94a; }
               <option value="banking">Nifty Bank</option>
               <option value="pharma">Nifty Pharma</option>
               <option value="pse">Nifty PSE</option>
-              <option value="watchlist">My Watchlist</option>
+              <option value="watchlist">⭐ My Watchlist</option>
             </select>
             <button class="btn btn-primary" onclick="runSignalLab()">Run Screener →</button>
           </div>
@@ -618,6 +672,43 @@ select:focus, input[type=text]:focus { border-color: #e8b94a; }
           <div id="slLoading" style="display:none" class="loading"><div class="spinner"></div><span id="slStatus">Scanning…</span></div>
           <div id="slOutput">
             <div style="color:#999;font-size:12px;padding:20px 0;text-align:center">Select a universe and run the screener to see signals.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── MY WATCHLIST MANAGER ── -->
+      <div class="card">
+        <div class="card-head">
+          <div><div class="card-title">⭐ My Watchlist — Edit</div><div class="card-sub">Saved in your browser · used by Signal Lab screener</div></div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <button class="btn" onclick="clearWatchlist()">Clear all</button>
+            <button class="btn btn-primary" onclick="runSignalLab(); document.getElementById('slUniverse').value='watchlist'">▶ Scan watchlist</button>
+          </div>
+        </div>
+        <div class="card-body">
+          <!-- Add stock -->
+          <div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:14px">
+            <div class="stock-search-wrap" id="wlSearchWrap" style="flex:1;max-width:340px">
+              <input type="text" id="wlInput" placeholder="Search stock to add — YESBANK, HAL, BDL…" autocomplete="off">
+              <div class="stock-dropdown" id="wlDrop"></div>
+            </div>
+            <button class="btn btn-primary" onclick="addToWatchlist()">+ Add</button>
+          </div>
+          <!-- Current watchlist chips -->
+          <div id="wlChips" style="display:flex;flex-wrap:wrap;gap:6px;min-height:36px;margin-bottom:10px"></div>
+          <!-- Bulk edit -->
+          <div style="margin-top:12px;border-top:1px solid #f0f0f0;padding-top:12px">
+            <div style="font-size:11px;color:#888;margin-bottom:6px">Bulk edit (comma-separated symbols):</div>
+            <div style="display:flex;gap:8px">
+              <textarea id="wlBulk" rows="2" style="flex:1;background:#f7f5f0;border:1px solid #ddd;border-radius:5px;padding:7px 10px;font-size:12px;font-family:'Courier New',monospace;resize:vertical"></textarea>
+              <button class="btn" onclick="applyBulkWatchlist()" style="align-self:flex-end">Apply</button>
+            </div>
+            <div style="font-size:10px;color:#aaa;margin-top:4px">e.g. HAL, BEL, BDL, YESBANK, RELIANCE, TCS, HDFCBANK</div>
+          </div>
+          <!-- Quick-add presets -->
+          <div style="margin-top:12px;border-top:1px solid #f0f0f0;padding-top:12px">
+            <div style="font-size:10px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px">Quick-add preset groups</div>
+            <div style="display:flex;flex-wrap:wrap;gap:6px" id="wlPresets"></div>
           </div>
         </div>
       </div>
@@ -835,21 +926,483 @@ const ALL_INDICES = {
 };
 
 // Signal Lab universes
-const SL_UNIVERSES = {
-  nifty50:   ALL_INDICES['Nifty 50'].stocks.slice(0,30),
-  defence:   ALL_INDICES['Nifty Defence'].stocks,
-  it:        ALL_INDICES['Nifty IT'].stocks,
-  banking:   ALL_INDICES['Nifty Bank'].stocks,
-  pharma:    ALL_INDICES['Nifty Pharma'].stocks,
-  pse:       ALL_INDICES['Nifty PSE'].stocks.slice(0,25),
-  watchlist: ['HAL','BEL','BDL','MAZAGON','COCHINSHIP','GRSE','TCS','INFY','RELIANCE','HDFCBANK','SBIN','ICICIBANK','ONGC','NTPC','IRFC','RVNL','IREDA','PERSISTENT','KPITTECH','CUMMINSIND'],
+// ── Comprehensive NSE Stock Master (500+ stocks, all major NSE listed) ──
+// Format: 'SYMBOL': { n: 'Company Name', s: 'Sector', yf: 'Yahoo.NS' }
+const STOCK_MASTER = {
+  'AARTIIND':   {n:'Aarti Industries',          s:'Chemicals',          yf:'AARTIIND.NS'},
+  'ABB':        {n:'ABB India',                  s:'Industrial',         yf:'ABB.NS'},
+  'ABBOTINDIA': {n:'Abbott India',               s:'Pharma',             yf:'ABBOTINDIA.NS'},
+  'ABCAPITAL':  {n:'Aditya Birla Capital',       s:'Financial Services', yf:'ABCAPITAL.NS'},
+  'ABFRL':      {n:'Aditya Birla Fashion',       s:'Retail',             yf:'ABFRL.NS'},
+  'ADANIENT':   {n:'Adani Enterprises',          s:'Conglomerate',       yf:'ADANIENT.NS'},
+  'ADANIGREEN': {n:'Adani Green Energy',         s:'Renewable Energy',   yf:'ADANIGREEN.NS'},
+  'ADANIPORTS': {n:'Adani Ports & SEZ',          s:'Infrastructure',     yf:'ADANIPORTS.NS'},
+  'ADANIPOWER': {n:'Adani Power',                s:'Power',              yf:'ADANIPOWER.NS'},
+  'AIAENG':     {n:'AIA Engineering',            s:'Industrial',         yf:'AIAENG.NS'},
+  'AJANTPHARM': {n:'Ajanta Pharma',              s:'Pharma',             yf:'AJANTPHARM.NS'},
+  'ALKEM':      {n:'Alkem Laboratories',         s:'Pharma',             yf:'ALKEM.NS'},
+  'AMBUJACEM':  {n:'Ambuja Cements',             s:'Cement',             yf:'AMBUJACEM.NS'},
+  'ANANTRAJ':   {n:'Anant Raj',                  s:'Realty',             yf:'ANANTRAJ.NS'},
+  'ANGELONE':   {n:'Angel One',                  s:'Financial Services', yf:'ANGELONE.NS'},
+  'APLAPOLLO':  {n:'APL Apollo Tubes',           s:'Metal',              yf:'APLAPOLLO.NS'},
+  'APOLLOHOSP': {n:'Apollo Hospitals',           s:'Healthcare',         yf:'APOLLOHOSP.NS'},
+  'APOLLOMIC':  {n:'Apollo Micro Systems',       s:'Defence',            yf:'APOLLOMIC.NS'},
+  'APOLLOTYRE': {n:'Apollo Tyres',               s:'Auto Ancillary',     yf:'APOLLOTYRE.NS'},
+  'APTUS':      {n:'Aptus Value Housing',        s:'NBFC',               yf:'APTUS.NS'},
+  'ASHOKLEY':   {n:'Ashok Leyland',              s:'Auto',               yf:'ASHOKLEY.NS'},
+  'ASIANPAINT': {n:'Asian Paints',               s:'Consumer',           yf:'ASIANPAINT.NS'},
+  'ASTRAMICRO': {n:'Astra Microwave Products',   s:'Defence',            yf:'ASTRAMICRO.NS'},
+  'ASTRAL':     {n:'Astral',                     s:'Plastics',           yf:'ASTRAL.NS'},
+  'ATGL':       {n:'Adani Total Gas',            s:'Gas Distribution',   yf:'ATGL.NS'},
+  'AUBANK':     {n:'AU Small Finance Bank',      s:'Banking',            yf:'AUBANK.NS'},
+  'AUROPHARMA': {n:'Aurobindo Pharma',           s:'Pharma',             yf:'AUROPHARMA.NS'},
+  'AXISBANK':   {n:'Axis Bank',                  s:'Banking',            yf:'AXISBANK.NS'},
+  'BAJAJ-AUTO': {n:'Bajaj Auto',                 s:'Auto',               yf:'BAJAJ-AUTO.NS'},
+  'BAJAJFINSV': {n:'Bajaj Finserv',              s:'Financial Services', yf:'BAJAJFINSV.NS'},
+  'BAJAJHFL':   {n:'Bajaj Housing Finance',      s:'Housing Finance',    yf:'BAJAJHFL.NS'},
+  'BAJFINANCE': {n:'Bajaj Finance',              s:'NBFC',               yf:'BAJFINANCE.NS'},
+  'BALRAMCHIN': {n:'Balrampur Chini Mills',      s:'Sugar',              yf:'BALRAMCHIN.NS'},
+  'BANDHANBNK': {n:'Bandhan Bank',               s:'Banking',            yf:'BANDHANBNK.NS'},
+  'BANKBARODA': {n:'Bank of Baroda',             s:'Banking/PSU',        yf:'BANKBARODA.NS'},
+  'BATAINDIA':  {n:'Bata India',                 s:'Consumer',           yf:'BATAINDIA.NS'},
+  'BDL':        {n:'Bharat Dynamics',            s:'Defence',            yf:'BDL.NS'},
+  'BEL':        {n:'Bharat Electronics',         s:'Defence',            yf:'BEL.NS'},
+  'BEML':       {n:'BEML',                       s:'Defence',            yf:'BEML.NS'},
+  'BHARATFORG': {n:'Bharat Forge',               s:'Auto Ancillary',     yf:'BHARATFORG.NS'},
+  'BHARTIARTL': {n:'Bharti Airtel',              s:'Telecom',            yf:'BHARTIARTL.NS'},
+  'BHEL':       {n:'Bharat Heavy Electricals',   s:'Power/Defence',      yf:'BHEL.NS'},
+  'BIKAJI':     {n:'Bikaji Foods',               s:'FMCG',               yf:'BIKAJI.NS'},
+  'BIOCON':     {n:'Biocon',                     s:'Pharma',             yf:'BIOCON.NS'},
+  'BOSCHLTD':   {n:'Bosch',                      s:'Auto Ancillary',     yf:'BOSCHLTD.NS'},
+  'BPCL':       {n:'Bharat Petroleum',           s:'Oil & Gas/PSU',      yf:'BPCL.NS'},
+  'BRIGADE':    {n:'Brigade Enterprises',        s:'Realty',             yf:'BRIGADE.NS'},
+  'BRITANNIA':  {n:'Britannia Industries',       s:'FMCG',               yf:'BRITANNIA.NS'},
+  'BSE':        {n:'BSE',                        s:'Financial Services', yf:'BSE.NS'},
+  'CAMS':       {n:'CAMS',                       s:'Financial Services', yf:'CAMS.NS'},
+  'CANBK':      {n:'Canara Bank',                s:'Banking/PSU',        yf:'CANBK.NS'},
+  'CANFINHOME': {n:'Can Fin Homes',              s:'Housing Finance',    yf:'CANFINHOME.NS'},
+  'CDSL':       {n:'CDSL',                       s:'Financial Services', yf:'CDSL.NS'},
+  'CEATLTD':    {n:'CEAT',                       s:'Auto Ancillary',     yf:'CEATLTD.NS'},
+  'CENTRALBK':  {n:'Central Bank of India',      s:'Banking/PSU',        yf:'CENTRALBK.NS'},
+  'CENTURYPLY': {n:'Century Plyboards',          s:'Building Materials', yf:'CENTURYPLY.NS'},
+  'CENTURYTEX': {n:'Century Textiles',           s:'Textile',            yf:'CENTURYTEX.NS'},
+  'CESC':       {n:'CESC',                       s:'Power',              yf:'CESC.NS'},
+  'CGPOWER':    {n:'CG Power & Industrial',      s:'Industrial',         yf:'CGPOWER.NS'},
+  'CHALET':     {n:'Chalet Hotels',              s:'Hospitality',        yf:'CHALET.NS'},
+  'CHOLAFIN':   {n:'Cholamandalam Investment',   s:'NBFC',               yf:'CHOLAFIN.NS'},
+  'CIPLA':      {n:'Cipla',                      s:'Pharma',             yf:'CIPLA.NS'},
+  'COALINDIA':  {n:'Coal India',                 s:'Mining',             yf:'COALINDIA.NS'},
+  'COCHINSHIP': {n:'Cochin Shipyard',            s:'Defence',            yf:'COCHINSHIP.NS'},
+  'COFORGE':    {n:'Coforge',                    s:'IT',                 yf:'COFORGE.NS'},
+  'COLPAL':     {n:'Colgate-Palmolive India',    s:'FMCG',               yf:'COLPAL.NS'},
+  'CONCOR':     {n:'Container Corp of India',    s:'Logistics/PSU',      yf:'CONCOR.NS'},
+  'CRISIL':     {n:'CRISIL',                     s:'Financial Services', yf:'CRISIL.NS'},
+  'CUB':        {n:'City Union Bank',            s:'Banking',            yf:'CUB.NS'},
+  'CUMMINSIND': {n:'Cummins India',              s:'Industrial Machinery',yf:'CUMMINSIND.NS'},
+  'CYIENT':     {n:'Cyient',                     s:'IT',                 yf:'CYIENT.NS'},
+  'DABUR':      {n:'Dabur India',                s:'FMCG',               yf:'DABUR.NS'},
+  'DATAPATTNS': {n:'Data Patterns India',        s:'Defence',            yf:'DATAPATTNS.NS'},
+  'DCXINDIA':   {n:'DCX Systems',               s:'Defence',            yf:'DCXINDIA.NS'},
+  'DEEPAKFERT': {n:'Deepak Fertilisers',         s:'Chemicals',          yf:'DEEPAKFERT.NS'},
+  'DELHIVERY':  {n:'Delhivery',                  s:'Logistics',          yf:'DELHIVERY.NS'},
+  'DIVISLAB':   {n:"Divi's Laboratories",        s:'Pharma',             yf:'DIVISLAB.NS'},
+  'DIXON':      {n:'Dixon Technologies',         s:'Electronics',        yf:'DIXON.NS'},
+  'DLF':        {n:'DLF',                        s:'Realty',             yf:'DLF.NS'},
+  'DMART':      {n:'Avenue Supermarts (DMart)',   s:'Retail',             yf:'DMART.NS'},
+  'DRREDDY':    {n:"Dr. Reddy's Laboratories",   s:'Pharma',             yf:'DRREDDY.NS'},
+  'EICHERMOT':  {n:'Eicher Motors',              s:'Auto',               yf:'EICHERMOT.NS'},
+  'ELGIEQUIP':  {n:'Elgi Equipments',            s:'Industrial',         yf:'ELGIEQUIP.NS'},
+  'EMAMILTD':   {n:'Emami',                      s:'FMCG',               yf:'EMAMILTD.NS'},
+  'ENDURANCE':  {n:'Endurance Technologies',     s:'Auto Ancillary',     yf:'ENDURANCE.NS'},
+  'ENGINERSIN': {n:'Engineers India',            s:'Consulting/PSU',     yf:'ENGINERSIN.NS'},
+  'EQUITASBNK': {n:'Equitas Small Finance Bank', s:'Banking',            yf:'EQUITASBNK.NS'},
+  'ESCORTS':    {n:'Escorts Kubota',             s:'Farm Equipment',     yf:'ESCORTS.NS'},
+  'EXIDEIND':   {n:'Exide Industries',           s:'Auto Ancillary',     yf:'EXIDEIND.NS'},
+  'FEDERALBNK': {n:'Federal Bank',               s:'Banking',            yf:'FEDERALBNK.NS'},
+  'FINCABLES':  {n:'Finolex Cables',             s:'Electrical',         yf:'FINCABLES.NS'},
+  'FIVESTAR':   {n:'Five-Star Business Finance', s:'NBFC',               yf:'FIVESTAR.NS'},
+  'FORTIS':     {n:'Fortis Healthcare',          s:'Healthcare',         yf:'FORTIS.NS'},
+  'GAIL':       {n:'GAIL India',                 s:'Oil & Gas/PSU',      yf:'GAIL.NS'},
+  'GESHIP':     {n:'Great Eastern Shipping',     s:'Shipping',           yf:'GESHIP.NS'},
+  'GLAND':      {n:'Gland Pharma',               s:'Pharma',             yf:'GLAND.NS'},
+  'GLENMARK':   {n:'Glenmark Pharmaceuticals',   s:'Pharma',             yf:'GLENMARK.NS'},
+  'GMRINFRA':   {n:'GMR Airports Infrastructure',s:'Infrastructure',     yf:'GMRINFRA.NS'},
+  'GNFC':       {n:'GNFC',                       s:'Chemicals',          yf:'GNFC.NS'},
+  'GODREJCP':   {n:'Godrej Consumer Products',   s:'FMCG',               yf:'GODREJCP.NS'},
+  'GODREJIND':  {n:'Godrej Industries',          s:'Diversified',        yf:'GODREJIND.NS'},
+  'GODREJPROP': {n:'Godrej Properties',          s:'Realty',             yf:'GODREJPROP.NS'},
+  'GRAPHITE':   {n:'Graphite India',             s:'Metal',              yf:'GRAPHITE.NS'},
+  'GRASIM':     {n:'Grasim Industries',          s:'Diversified',        yf:'GRASIM.NS'},
+  'GRINDWELL':  {n:'Grindwell Norton',           s:'Industrial',         yf:'GRINDWELL.NS'},
+  'GRSE':       {n:'Garden Reach Shipbuilders',  s:'Defence',            yf:'GRSE.NS'},
+  'GSPL':       {n:'Gujarat State Petronet',     s:'Gas Distribution',   yf:'GSPL.NS'},
+  'GUJGASLTD':  {n:'Gujarat Gas',               s:'Gas Distribution',   yf:'GUJGASLTD.NS'},
+  'HAL':        {n:'Hindustan Aeronautics',      s:'Defence',            yf:'HAL.NS'},
+  'HAPPSTMNDS': {n:'Happiest Minds Technologies',s:'IT',                 yf:'HAPPSTMNDS.NS'},
+  'HAVELLS':    {n:'Havells India',              s:'Electrical',         yf:'HAVELLS.NS'},
+  'HCLTECH':    {n:'HCL Technologies',           s:'IT',                 yf:'HCLTECH.NS'},
+  'HDFCAMC':    {n:'HDFC AMC',                   s:'Asset Management',   yf:'HDFCAMC.NS'},
+  'HDFCBANK':   {n:'HDFC Bank',                  s:'Banking',            yf:'HDFCBANK.NS'},
+  'HDFCLIFE':   {n:'HDFC Life Insurance',        s:'Insurance',          yf:'HDFCLIFE.NS'},
+  'HEROMOTOCO': {n:'Hero MotoCorp',              s:'Auto',               yf:'HEROMOTOCO.NS'},
+  'HFCL':       {n:'HFCL',                       s:'Telecom',            yf:'HFCL.NS'},
+  'HINDALCO':   {n:'Hindalco Industries',        s:'Metal',              yf:'HINDALCO.NS'},
+  'HINDPETRO':  {n:'Hindustan Petroleum',        s:'Oil & Gas/PSU',      yf:'HINDPETRO.NS'},
+  'HINDUNILVR': {n:'Hindustan Unilever',         s:'FMCG',               yf:'HINDUNILVR.NS'},
+  'HUDCO':      {n:'HUDCO',                      s:'NBFC/PSU',           yf:'HUDCO.NS'},
+  'ICICIBANK':  {n:'ICICI Bank',                 s:'Banking',            yf:'ICICIBANK.NS'},
+  'ICICIPRULI': {n:'ICICI Prudential Life',      s:'Insurance',          yf:'ICICIPRULI.NS'},
+  'IDEAFORGE':  {n:'ideaForge Technology',       s:'Defence/Drone',      yf:'IDEAFORGE.NS'},
+  'IDFCFIRSTB': {n:'IDFC First Bank',            s:'Banking',            yf:'IDFCFIRSTB.NS'},
+  'IEX':        {n:'Indian Energy Exchange',     s:'Financial Services', yf:'IEX.NS'},
+  'IGL':        {n:'Indraprastha Gas',           s:'Gas Distribution',   yf:'IGL.NS'},
+  'IIFL':       {n:'IIFL Finance',               s:'NBFC',               yf:'IIFL.NS'},
+  'INDHOTEL':   {n:'Indian Hotels Company',      s:'Hospitality',        yf:'INDHOTEL.NS'},
+  'INDIANB':    {n:'Indian Bank',                s:'Banking/PSU',        yf:'INDIANB.NS'},
+  'INDIGO':     {n:'IndiGo (InterGlobe Aviation)',s:'Aviation',           yf:'INDIGO.NS'},
+  'INDUSINDBK': {n:'IndusInd Bank',              s:'Banking',            yf:'INDUSINDBK.NS'},
+  'INDUSTOWER': {n:'Indus Towers',               s:'Telecom Infra',      yf:'INDUSTOWER.NS'},
+  'INFY':       {n:'Infosys',                    s:'IT',                 yf:'INFY.NS'},
+  'INTELLECT':  {n:'Intellect Design Arena',     s:'IT',                 yf:'INTELLECT.NS'},
+  'IOB':        {n:'Indian Overseas Bank',       s:'Banking/PSU',        yf:'IOB.NS'},
+  'IOC':        {n:'Indian Oil Corporation',     s:'Oil & Gas/PSU',      yf:'IOC.NS'},
+  'IPCALAB':    {n:'IPCA Laboratories',          s:'Pharma',             yf:'IPCALAB.NS'},
+  'IRCON':      {n:'IRCON International',        s:'Infrastructure/PSU', yf:'IRCON.NS'},
+  'IRCTC':      {n:'Indian Railway Catering',    s:'Services/PSU',       yf:'IRCTC.NS'},
+  'IREDA':      {n:'IREDA',                      s:'NBFC/PSU',           yf:'IREDA.NS'},
+  'IRFC':       {n:'Indian Railway Finance Corp',s:'NBFC/PSU',           yf:'IRFC.NS'},
+  'ITC':        {n:'ITC',                        s:'FMCG',               yf:'ITC.NS'},
+  'JINDALSTEL': {n:'Jindal Steel & Power',       s:'Metal',              yf:'JINDALSTEL.NS'},
+  'JKCEMENT':   {n:'JK Cement',                  s:'Cement',             yf:'JKCEMENT.NS'},
+  'JSL':        {n:'Jindal Stainless',           s:'Metal',              yf:'JSL.NS'},
+  'JSWENERGY':  {n:'JSW Energy',                 s:'Power',              yf:'JSWENERGY.NS'},
+  'JSWSTEEL':   {n:'JSW Steel',                  s:'Metal',              yf:'JSWSTEEL.NS'},
+  'JUBLFOOD':   {n:'Jubilant FoodWorks',         s:'Consumer',           yf:'JUBLFOOD.NS'},
+  'JUSTDIAL':   {n:'Just Dial',                  s:'Internet',           yf:'JUSTDIAL.NS'},
+  'JYOTHYLAB':  {n:'Jyothy Labs',                s:'FMCG',               yf:'JYOTHYLAB.NS'},
+  'KAJARIACER': {n:'Kajaria Ceramics',           s:'Building Materials', yf:'KAJARIACER.NS'},
+  'KALYANKJIL': {n:'Kalyan Jewellers',           s:'Jewellery',          yf:'KALYANKJIL.NS'},
+  'KAYNES':     {n:'Kaynes Technology',          s:'Electronics',        yf:'KAYNES.NS'},
+  'KIMS':       {n:'KIMS',                       s:'Healthcare',         yf:'KIMS.NS'},
+  'KIRLOSENG':  {n:'Kirloskar Oil Engines',      s:'Industrial Machinery',yf:'KIRLOSENG.NS'},
+  'KNRCON':     {n:'KNR Constructions',          s:'Infrastructure',     yf:'KNRCON.NS'},
+  'KOTAKBANK':  {n:'Kotak Mahindra Bank',        s:'Banking',            yf:'KOTAKBANK.NS'},
+  'KPITTECH':   {n:'KPIT Technologies',          s:'IT',                 yf:'KPITTECH.NS'},
+  'LALPATHLAB': {n:'Dr Lal PathLabs',            s:'Diagnostics',        yf:'LALPATHLAB.NS'},
+  'LAURUSLABS': {n:'Laurus Labs',                s:'Pharma',             yf:'LAURUSLABS.NS'},
+  'LICHSGFIN':  {n:'LIC Housing Finance',        s:'Housing Finance',    yf:'LICHSGFIN.NS'},
+  'LICI':       {n:'Life Insurance Corp (LIC)',  s:'Insurance/PSU',      yf:'LICI.NS'},
+  'LT':         {n:'Larsen & Toubro',            s:'Infrastructure',     yf:'LT.NS'},
+  'LTIM':       {n:'LTIMindtree',                s:'IT',                 yf:'LTIM.NS'},
+  'LTTS':       {n:'L&T Technology Services',    s:'IT',                 yf:'LTTS.NS'},
+  'LUPIN':      {n:'Lupin',                      s:'Pharma',             yf:'LUPIN.NS'},
+  'M&M':        {n:'Mahindra & Mahindra',        s:'Auto',               yf:'M&M.NS'},
+  'MAHABANK':   {n:'Bank of Maharashtra',        s:'Banking/PSU',        yf:'MAHABANK.NS'},
+  'MANAPPURAM': {n:'Manappuram Finance',         s:'NBFC',               yf:'MANAPPURAM.NS'},
+  'MANKIND':    {n:'Mankind Pharma',             s:'Pharma',             yf:'MANKIND.NS'},
+  'MARICO':     {n:'Marico',                     s:'FMCG',               yf:'MARICO.NS'},
+  'MARUTI':     {n:'Maruti Suzuki',              s:'Auto',               yf:'MARUTI.NS'},
+  'MASTEK':     {n:'Mastek',                     s:'IT',                 yf:'MASTEK.NS'},
+  'MAXHEALTH':  {n:'Max Healthcare',             s:'Healthcare',         yf:'MAXHEALTH.NS'},
+  'MAZAGON':    {n:'Mazagon Dock Shipbuilders',  s:'Defence',            yf:'MAZDOCK.NS'},
+  'MCX':        {n:'Multi Commodity Exchange',   s:'Financial Services', yf:'MCX.NS'},
+  'MEDANTA':    {n:'Global Health (Medanta)',     s:'Healthcare',         yf:'MEDANTA.NS'},
+  'METROPOLIS': {n:'Metropolis Healthcare',      s:'Diagnostics',        yf:'METROPOLIS.NS'},
+  'MFSL':       {n:'Max Financial Services',     s:'Insurance',          yf:'MFSL.NS'},
+  'MGL':        {n:'Mahanagar Gas',              s:'Gas Distribution',   yf:'MGL.NS'},
+  'MIDHANI':    {n:'Mishra Dhatu Nigam',         s:'Defence',            yf:'MIDHANI.NS'},
+  'MOIL':       {n:'MOIL',                       s:'Mining/PSU',         yf:'MOIL.NS'},
+  'MOTHERSON':  {n:'Samvardhana Motherson',      s:'Auto Ancillary',     yf:'MOTHERSON.NS'},
+  'MPHASIS':    {n:'Mphasis',                    s:'IT',                 yf:'MPHASIS.NS'},
+  'MTAR':       {n:'MTAR Technologies',          s:'Defence/Space',      yf:'MTAR.NS'},
+  'MUTHOOTFIN': {n:'Muthoot Finance',            s:'NBFC',               yf:'MUTHOOTFIN.NS'},
+  'NATCOPHARM': {n:'Natco Pharma',               s:'Pharma',             yf:'NATCOPHARM.NS'},
+  'NATIONALUM': {n:'National Aluminium',         s:'Metal/PSU',          yf:'NATIONALUM.NS'},
+  'NAUKRI':     {n:'Info Edge (India)',           s:'Internet',           yf:'NAUKRI.NS'},
+  'NAVINFLUOR': {n:'Navin Fluorine',             s:'Chemicals',          yf:'NAVINFLUOR.NS'},
+  'NCC':        {n:'NCC',                        s:'Infrastructure',     yf:'NCC.NS'},
+  'NESTLEIND':  {n:'Nestle India',               s:'FMCG',               yf:'NESTLEIND.NS'},
+  'NHPC':       {n:'NHPC',                       s:'Power/PSU',          yf:'NHPC.NS'},
+  'NLC':        {n:'NLC India',                  s:'Power/PSU',          yf:'NLC.NS'},
+  'NMDC':       {n:'NMDC',                       s:'Mining/PSU',         yf:'NMDC.NS'},
+  'NTPC':       {n:'NTPC',                       s:'Power',              yf:'NTPC.NS'},
+  'NYKAA':      {n:'FSN E-Commerce (Nykaa)',     s:'Consumer Tech',      yf:'NYKAA.NS'},
+  'OBEROIRLTY': {n:'Oberoi Realty',              s:'Realty',             yf:'OBEROIRLTY.NS'},
+  'OFSS':       {n:'Oracle Financial Services',  s:'IT',                 yf:'OFSS.NS'},
+  'OLECTRA':    {n:'Olectra Greentech',          s:'EV/Bus',             yf:'OLECTRA.NS'},
+  'ONGC':       {n:'Oil & Natural Gas Corp',     s:'Oil & Gas',          yf:'ONGC.NS'},
+  'PAGEIND':    {n:'Page Industries',            s:'Textile',            yf:'PAGEIND.NS'},
+  'PARAS':      {n:'Paras Defence & Space',      s:'Defence',            yf:'PARAS.NS'},
+  'PERSISTENT': {n:'Persistent Systems',         s:'IT',                 yf:'PERSISTENT.NS'},
+  'PETRONET':   {n:'Petronet LNG',               s:'Oil & Gas',          yf:'PETRONET.NS'},
+  'PHOENIXLTD': {n:'Phoenix Mills',              s:'Realty',             yf:'PHOENIXLTD.NS'},
+  'PIIND':      {n:'PI Industries',              s:'Agrochem',           yf:'PIIND.NS'},
+  'PNB':        {n:'Punjab National Bank',       s:'Banking/PSU',        yf:'PNB.NS'},
+  'POLICYBZR':  {n:'PB Fintech (Policybazaar)',  s:'Fintech',            yf:'POLICYBZR.NS'},
+  'POLYCAB':    {n:'Polycab India',              s:'Electrical',         yf:'POLYCAB.NS'},
+  'POONAWALLA': {n:'Poonawalla Fincorp',         s:'NBFC',               yf:'POONAWALLA.NS'},
+  'POWERGRID':  {n:'Power Grid Corp',            s:'Power/PSU',          yf:'POWERGRID.NS'},
+  'PRESTIGE':   {n:'Prestige Estates',           s:'Realty',             yf:'PRESTIGE.NS'},
+  'RADICO':     {n:'Radico Khaitan',             s:'Beverages',          yf:'RADICO.NS'},
+  'RECLTD':     {n:'REC',                        s:'NBFC/PSU',           yf:'RECLTD.NS'},
+  'RELIANCE':   {n:'Reliance Industries',        s:'Energy',             yf:'RELIANCE.NS'},
+  'RVNL':       {n:'Rail Vikas Nigam',           s:'Infrastructure/PSU', yf:'RVNL.NS'},
+  'SAFARI':     {n:'Safari Industries',          s:'Consumer',           yf:'SAFARI.NS'},
+  'SAIL':       {n:'Steel Authority of India',   s:'Metal/PSU',          yf:'SAIL.NS'},
+  'SBICARD':    {n:'SBI Cards & Payment',        s:'Financial Services', yf:'SBICARD.NS'},
+  'SBILIFE':    {n:'SBI Life Insurance',         s:'Insurance',          yf:'SBILIFE.NS'},
+  'SBIN':       {n:'State Bank of India',        s:'Banking',            yf:'SBIN.NS'},
+  'SHREECEM':   {n:'Shree Cement',               s:'Cement',             yf:'SHREECEM.NS'},
+  'SHRIRAMFIN': {n:'Shriram Finance',            s:'NBFC',               yf:'SHRIRAMFIN.NS'},
+  'SIEMENS':    {n:'Siemens',                    s:'Industrial',         yf:'SIEMENS.NS'},
+  'SJVN':       {n:'SJVN',                       s:'Power/PSU',          yf:'SJVN.NS'},
+  'SOBHA':      {n:'Sobha',                      s:'Realty',             yf:'SOBHA.NS'},
+  'SOLARINDS':  {n:'Solar Industries India',     s:'Defence/Explosive',  yf:'SOLARINDS.NS'},
+  'SONACOMS':   {n:'Sona BLW Precision Forgings',s:'Auto Ancillary',     yf:'SONACOMS.NS'},
+  'SUNDARMFIN': {n:'Sundaram Finance',           s:'NBFC',               yf:'SUNDARMFIN.NS'},
+  'SUNPHARMA':  {n:'Sun Pharma',                 s:'Pharma',             yf:'SUNPHARMA.NS'},
+  'SUPREMEIND': {n:'Supreme Industries',         s:'Plastics',           yf:'SUPREMEIND.NS'},
+  'SURYAROSNI': {n:'Surya Roshni',               s:'Electrical',         yf:'SURYAROSNI.NS'},
+  'SYNGENE':    {n:'Syngene International',      s:'Pharma/CRO',         yf:'SYNGENE.NS'},
+  'TATACOMM':   {n:'Tata Communications',        s:'Telecom',            yf:'TATACOMM.NS'},
+  'TATACONSUM': {n:'Tata Consumer Products',     s:'FMCG',               yf:'TATACONSUM.NS'},
+  'TATAELXSI':  {n:'Tata Elxsi',                 s:'IT',                 yf:'TATAELXSI.NS'},
+  'TATAMOTORS': {n:'Tata Motors',                s:'Auto',               yf:'TATAMOTORS.NS'},
+  'TATAPOWER':  {n:'Tata Power',                 s:'Power',              yf:'TATAPOWER.NS'},
+  'TATASTEEL':  {n:'Tata Steel',                 s:'Metal',              yf:'TATASTEEL.NS'},
+  'TCS':        {n:'Tata Consultancy Services',  s:'IT',                 yf:'TCS.NS'},
+  'TECHM':      {n:'Tech Mahindra',              s:'IT',                 yf:'TECHM.NS'},
+  'THERMAX':    {n:'Thermax',                    s:'Industrial',         yf:'THERMAX.NS'},
+  'TIINDIA':    {n:'Tube Investments of India',  s:'Auto Ancillary',     yf:'TIINDIA.NS'},
+  'TITAN':      {n:'Titan Company',              s:'Consumer',           yf:'TITAN.NS'},
+  'TORNTPHARM': {n:'Torrent Pharmaceuticals',    s:'Pharma',             yf:'TORNTPHARM.NS'},
+  'TORNTPOWER': {n:'Torrent Power',              s:'Power',              yf:'TORNTPOWER.NS'},
+  'TRENT':      {n:'Trent',                      s:'Retail',             yf:'TRENT.NS'},
+  'TRIDENT':    {n:'Trident',                    s:'Textile',            yf:'TRIDENT.NS'},
+  'UCOBANK':    {n:'UCO Bank',                   s:'Banking/PSU',        yf:'UCOBANK.NS'},
+  'UJJIVANSFB': {n:'Ujjivan Small Finance Bank', s:'Banking',            yf:'UJJIVANSFB.NS'},
+  'ULTRACEMCO': {n:'UltraTech Cement',           s:'Cement',             yf:'ULTRACEMCO.NS'},
+  'UNIONBANK':  {n:'Union Bank of India',        s:'Banking/PSU',        yf:'UNIONBANK.NS'},
+  'UNITDSPR':   {n:'United Spirits',             s:'Beverages',          yf:'UNITDSPR.NS'},
+  'UNOMINDA':   {n:'Uno Minda',                  s:'Auto Ancillary',     yf:'UNOMINDA.NS'},
+  'UPL':        {n:'UPL',                        s:'Agrochem',           yf:'UPL.NS'},
+  'VBL':        {n:'Varun Beverages',            s:'FMCG',               yf:'VBL.NS'},
+  'VEDL':       {n:'Vedanta',                    s:'Metal',              yf:'VEDL.NS'},
+  'VGUARD':     {n:'V-Guard Industries',         s:'Electrical',         yf:'VGUARD.NS'},
+  'VOLTAS':     {n:'Voltas',                     s:'Consumer Durables',  yf:'VOLTAS.NS'},
+  'WELCORP':    {n:'Welspun Corp',               s:'Metal',              yf:'WELCORP.NS'},
+  'WELSPUNLIV': {n:'Welspun Living',             s:'Textile',            yf:'WELSPUNLIV.NS'},
+  'WIPRO':      {n:'Wipro',                      s:'IT',                 yf:'WIPRO.NS'},
+  'YESBANK':    {n:'Yes Bank',                   s:'Banking',            yf:'YESBANK.NS'},
+  'ZEEL':       {n:'Zee Entertainment',          s:'Media',              yf:'ZEEL.NS'},
+  'ZENSARTECH': {n:'Zensar Technologies',        s:'IT',                 yf:'ZENSARTECH.NS'},
+  'ZENTEC':     {n:'Zen Technologies',           s:'Defence',            yf:'ZENTEC.NS'},
+  'ZOMATO':     {n:'Zomato',                     s:'Consumer Tech',      yf:'ZOMATO.NS'},
+  'ZYDUSLIFE':  {n:'Zydus Lifesciences',         s:'Pharma',             yf:'ZYDUSLIFE.NS'},
+  // Extra popular stocks
+  'ADANIGAS':   {n:'Adani Gas (ATGL)',            s:'Gas Distribution',   yf:'ATGL.NS'},
+  'AFFLE':      {n:'Affle India',                s:'Ad Tech',            yf:'AFFLE.NS'},
+  'AKZOINDIA':  {n:'Akzo Nobel India',           s:'Paints',             yf:'AKZOINDIA.NS'},
+  'ALKYLAMINE': {n:'Alkyl Amines Chemicals',     s:'Chemicals',          yf:'ALKYLAMINE.NS'},
+  'ALOKTEXT':   {n:'Alok Industries',            s:'Textile',            yf:'ALOKTEXT.NS'},
+  'AMBER':      {n:'Amber Enterprises',          s:'Electronics',        yf:'AMBER.NS'},
+  'ANURAS':     {n:'Anurag Rubber',              s:'Industrial',         yf:'ANURAS.NS'},
+  'APARINDS':   {n:'Apar Industries',            s:'Electrical',         yf:'APARINDS.NS'},
+  'APOLLOMIC':  {n:'Apollo Micro Systems',       s:'Defence',            yf:'APOLLOMIC.NS'},
+  'ARCHIES':    {n:'Archies',                    s:'Consumer',           yf:'ARCHIES.NS'},
+  'ASAHIINDIA': {n:'Asahi India Glass',          s:'Auto Ancillary',     yf:'ASAHIINDIA.NS'},
+  'ASHOKA':     {n:'Ashoka Buildcon',            s:'Infrastructure',     yf:'ASHOKA.NS'},
+  'ASTRAZEN':   {n:'AstraZeneca Pharma',         s:'Pharma',             yf:'ASTRAZEN.NS'},
+  'AVANTIFEED': {n:'Avanti Feeds',               s:'Aquaculture',        yf:'AVANTIFEED.NS'},
+  'BALRAMCHIN': {n:'Balrampur Chini',            s:'Sugar',              yf:'BALRAMCHIN.NS'},
+  'BCG':        {n:'Bengal & Assam Company',     s:'Diversified',        yf:'BCG.NS'},
+  'BERGEPAINT': {n:'Berger Paints',              s:'Paints',             yf:'BERGEPAINT.NS'},
+  'BLUESTARCO': {n:'Blue Star',                  s:'Consumer Durables',  yf:'BLUESTARCO.NS'},
+  'BOROLT':     {n:'Borosil',                    s:'Consumer',           yf:'BOROLT.NS'},
+  'CANTABIL':   {n:'Cantabil Retail India',      s:'Retail',             yf:'CANTABIL.NS'},
+  'CARBORUNIV':  {n:'Carborundum Universal',     s:'Industrial',         yf:'CARBORUNIV.NS'},
+  'CARTRADE':   {n:'CarTrade Tech',              s:'Internet',           yf:'CARTRADE.NS'},
+  'CASTROLIND': {n:'Castrol India',              s:'Lubricants',         yf:'CASTROLIND.NS'},
+  'CCL':        {n:'CCL Products India',         s:'FMCG',               yf:'CCL.NS'},
+  'CERA':       {n:'Cera Sanitaryware',          s:'Building Materials', yf:'CERA.NS'},
+  'CHAMBLFERT': {n:'Chambal Fertilisers',        s:'Chemicals',          yf:'CHAMBLFERT.NS'},
+  'CHEMPLASTS': {n:'Chemplast Sanmar',           s:'Chemicals',          yf:'CHEMPLASTS.NS'},
+  'CLEAN':      {n:'Clean Science Technology',   s:'Chemicals',          yf:'CLEAN.NS'},
+  'COMPUSOFT':  {n:'Compusoft',                  s:'IT',                 yf:'COMPUSOFT.NS'},
+  'CROMPTON':   {n:'Crompton Greaves Consumer',  s:'Consumer Durables',  yf:'CROMPTON.NS'},
+  'CSBBANK':    {n:'CSB Bank',                   s:'Banking',            yf:'CSBBANK.NS'},
+  'DATAMATICS': {n:'Datamatics Global Services', s:'IT',                 yf:'DATAMATICS.NS'},
+  'DBREALTY':   {n:'D B Realty',                 s:'Realty',             yf:'DBREALTY.NS'},
+  'DCBBANK':    {n:'DCB Bank',                   s:'Banking',            yf:'DCBBANK.NS'},
+  'DEEPAKNTR':  {n:'Deepak Nitrite',             s:'Chemicals',          yf:'DEEPAKNTR.NS'},
+  'DELTACORP':  {n:'Delta Corp',                 s:'Entertainment',      yf:'DELTACORP.NS'},
+  'DODLA':      {n:'Dodla Dairy',                s:'FMCG',               yf:'DODLA.NS'},
+  'EDELWEISS':  {n:'Edelweiss Financial',        s:'Financial Services', yf:'EDELWEISS.NS'},
+  'ENIL':       {n:'Entertainment Network India',s:'Media',              yf:'ENIL.NS'},
+  'EMCURE':     {n:'Emcure Pharmaceuticals',     s:'Pharma',             yf:'EMCURE.NS'},
+  'EQUITAS':    {n:'Equitas Holdings',           s:'Financial Services', yf:'EQUITAS.NS'},
+  'ESABINDIA':  {n:'ESAB India',                 s:'Industrial',         yf:'ESABINDIA.NS'},
+  'FINEORG':    {n:'Fine Organic Industries',    s:'Chemicals',          yf:'FINEORG.NS'},
+  'FLUOROCHEM': {n:'Gujarat Fluorochemicals',    s:'Chemicals',          yf:'FLUOROCHEM.NS'},
+  'GAEL':       {n:'Gujarat Ambuja Exports',     s:'Agri',               yf:'GAEL.NS'},
+  'GALLANTT':   {n:'Gallantt Ispat',             s:'Metal',              yf:'GALLANTT.NS'},
+  'GATEWAY':    {n:'Gateway Distriparks',        s:'Logistics',          yf:'GATEWAY.NS'},
+  'GICRE':      {n:'General Insurance Corp',     s:'Insurance',          yf:'GICRE.NS'},
+  'GIPCL':      {n:'Gujarat Industries Power',   s:'Power',              yf:'GIPCL.NS'},
+  'GLAXO':      {n:'GSK Pharmaceuticals',        s:'Pharma',             yf:'GLAXO.NS'},
+  'GPPL':       {n:'Gujarat Pipavav Port',       s:'Logistics',          yf:'GPPL.NS'},
+  'HAPPYFORGE': {n:'Happy Forgings',             s:'Auto Ancillary',     yf:'HAPPYFORGE.NS'},
+  'HEG':        {n:'HEG',                        s:'Metal',              yf:'HEG.NS'},
+  'HFCL':       {n:'HFCL',                       s:'Telecom',            yf:'HFCL.NS'},
+  'HIMATSEIDE': {n:'Himatsingka Seide',          s:'Textile',            yf:'HIMATSEIDE.NS'},
+  'HINDCOPPER': {n:'Hindustan Copper',           s:'Metal',              yf:'HINDCOPPER.NS'},
+  'HUDCO':      {n:'HUDCO',                      s:'NBFC/PSU',           yf:'HUDCO.NS'},
+  'IBULHSGFIN': {n:'Indiabulls Housing Finance', s:'Housing Finance',    yf:'IBULHSGFIN.NS'},
+  'ICICLOMBRD': {n:'ICICI Lombard GIC',          s:'Insurance',          yf:'ICICLOMBRD.NS'},
+  'IFBIND':     {n:'IFB Industries',             s:'Consumer Durables',  yf:'IFBIND.NS'},
+  'IGPL':       {n:'IG Petrochemicals',          s:'Chemicals',          yf:'IGPL.NS'},
+  'INDIAMART':  {n:'IndiaMart InterMesh',        s:'Internet',           yf:'INDIAMART.NS'},
+  'INDIGOPNTS': {n:'Indigo Paints',              s:'Paints',             yf:'INDIGOPNTS.NS'},
+  'INOXGREEN':  {n:'INOX Green Energy',          s:'Renewable Energy',   yf:'INOXGREEN.NS'},
+  'ION':        {n:'ION Exchange',               s:'Chemicals',          yf:'ION.NS'},
+  'JTEKTINDIA': {n:'JTEKT India',                s:'Auto Ancillary',     yf:'JTEKTINDIA.NS'},
+  'JUBLINGREA':  {n:'Jubilant Ingrevia',         s:'Chemicals',          yf:'JUBLINGREA.NS'},
+  'KANSAINER':  {n:'Kansai Nerolac Paints',      s:'Paints',             yf:'KANSAINER.NS'},
+  'KARTIKAYS':  {n:'Kartik',                     s:'Chemicals',          yf:'KARTIKAYS.NS'},
+  'KEEI':       {n:'KEI Industries',             s:'Electrical',         yf:'KEI.NS'},
+  'KEILTD':     {n:'KEI Industries',             s:'Electrical',         yf:'KEI.NS'},
+  'KEI':        {n:'KEI Industries',             s:'Electrical',         yf:'KEI.NS'},
+  'KENNAMETAL': {n:'Kennametal India',           s:'Industrial',         yf:'KENNAMETAL.NS'},
+  'KMSUGAR':    {n:'KM Sugar Mills',             s:'Sugar',              yf:'KMSUGAR.NS'},
+  'KRBL':       {n:'KRBL (India Gate Rice)',     s:'FMCG',               yf:'KRBL.NS'},
+  'KSCL':       {n:'Kaveri Seed Company',        s:'Agri',               yf:'KSCL.NS'},
+  'LATENTVIEW': {n:'LatentView Analytics',       s:'IT',                 yf:'LATENTVIEW.NS'},
+  'LAXMIMACH':  {n:'Lakshmi Machine Works',      s:'Industrial',         yf:'LAXMIMACH.NS'},
+  'LICHSGFIN':  {n:'LIC Housing Finance',        s:'Housing Finance',    yf:'LICHSGFIN.NS'},
+  'LINDEINDIA': {n:'Linde India',                s:'Industrial Gases',   yf:'LINDEINDIA.NS'},
+  'LLOYDSME':   {n:'Lloyds Metals & Energy',     s:'Metal',              yf:'LLOYDSME.NS'},
+  'LODHA':      {n:'Lodha (Macrotech Dev)',       s:'Realty',             yf:'MACROTECH.NS'},
+  'MAHSCOOTER': {n:'Maharashtra Scooters',       s:'Auto',               yf:'MAHSCOOTER.NS'},
+  'MAHSEAMLES': {n:'Maharashtra Seamless',       s:'Metal',              yf:'MAHSEAMLES.NS'},
+  'MASFIN':     {n:'MAS Financial Services',     s:'NBFC',               yf:'MASFIN.NS'},
+  'MAXESTATES': {n:'Max Estates',                s:'Realty',             yf:'MAXESTATES.NS'},
+  'MCX':        {n:'Multi Commodity Exchange',   s:'Financial Services', yf:'MCX.NS'},
+  'MEDPLUS':    {n:'Medplus Health Services',    s:'Healthcare Retail',  yf:'MEDPLUS.NS'},
+  'METROBRAND': {n:'Metro Brands',               s:'Retail',             yf:'METROBRAND.NS'},
+  'MMTC':       {n:'MMTC',                       s:'Trading/PSU',        yf:'MMTC.NS'},
+  'MOLDTKPAC':  {n:'Mold-Tek Packaging',         s:'Packaging',          yf:'MOLDTKPAC.NS'},
+  'MOTHERSON':  {n:'Samvardhana Motherson',      s:'Auto Ancillary',     yf:'MOTHERSON.NS'},
+  'MUKKA':      {n:'Mukka Proteins',             s:'Aquaculture',        yf:'MUKKA.NS'},
+  'MUTHOOTMF':  {n:'Muthoot Microfin',           s:'NBFC',               yf:'MUTHOOTMF.NS'},
+  'NACLIND':    {n:'NACL Industries',            s:'Agrochem',           yf:'NACLIND.NS'},
+  'NATIONALUM': {n:'National Aluminium',         s:'Metal/PSU',          yf:'NATIONALUM.NS'},
+  'NAVNETEDUL': {n:'Navneet Education',          s:'Education',          yf:'NAVNETEDUL.NS'},
+  'NAYARA':     {n:'Nayara Energy (Essar Oil)',  s:'Oil & Gas',          yf:'NAYARA.NS'},
+  'NESCO':      {n:'NESCO',                      s:'Exhibitions',        yf:'NESCO.NS'},
+  'NETWORK18':  {n:'Network18 Media',            s:'Media',              yf:'NETWORK18.NS'},
+  'NIACL':      {n:'New India Assurance',        s:'Insurance/PSU',      yf:'NIACL.NS'},
+  'NOCIL':      {n:'NOCIL',                      s:'Chemicals',          yf:'NOCIL.NS'},
+  'NSLNISP':    {n:'Nuvoco Vistas',              s:'Cement',             yf:'NUVOCO.NS'},
+  'NUVOCO':     {n:'Nuvoco Vistas',              s:'Cement',             yf:'NUVOCO.NS'},
+  'OLAELEC':    {n:'Ola Electric Mobility',      s:'EV',                 yf:'OLAELEC.NS'},
+  'ONCOSIL':    {n:'OncoSil Medical',            s:'Medical Devices',    yf:'ONCOSIL.NS'},
+  'OPTIEMUS':   {n:'Optiemus Infracom',          s:'Telecom',            yf:'OPTIEMUS.NS'},
+  'PGHH':       {n:"P&G Hygiene & Health",       s:'FMCG',               yf:'PGHH.NS'},
+  'PFC':        {n:'Power Finance Corp',         s:'NBFC/PSU',           yf:'PFC.NS'},
+  'PFIZER':     {n:'Pfizer',                     s:'Pharma',             yf:'PFIZER.NS'},
+  'PHILIPCARB': {n:'Phillips Carbon Black',      s:'Chemicals',          yf:'PHILIPCARB.NS'},
+  'PIDILITIND': {n:'Pidilite Industries',        s:'Adhesives',          yf:'PIDILITIND.NS'},
+  'PILANIINVS': {n:'Pilani Investment',          s:'Investment',         yf:'PILANIINVS.NS'},
+  'PILOTSQUAD': {n:'Pilot Industries',           s:'Industrial',         yf:'PILOTSQUAD.NS'},
+  'PNB':        {n:'Punjab National Bank',       s:'Banking/PSU',        yf:'PNB.NS'},
+  'PNBHOUSING': {n:'PNB Housing Finance',        s:'Housing Finance',    yf:'PNBHOUSING.NS'},
+  'POKARNA':    {n:'Pokarna',                    s:'Building Materials', yf:'POKARNA.NS'},
+  'POLPHARMA':  {n:'Poly Medicure',              s:'Medical Devices',    yf:'POLMED.NS'},
+  'PRAXIS':     {n:'Praxis Home Retail',         s:'Retail',             yf:'PRAXIS.NS'},
+  'PRICOL':     {n:'Pricol',                     s:'Auto Ancillary',     yf:'PRICOL.NS'},
+  'PRINCEPIPE': {n:'Prince Pipes & Fittings',    s:'Plastics',           yf:'PRINCEPIPE.NS'},
+  'PRISM':      {n:'Prism Johnson',              s:'Cement',             yf:'PRISMJOHNS.NS'},
+  'PVRINOX':    {n:'PVR INOX',                   s:'Entertainment',      yf:'PVRINOX.NS'},
+  'RITES':      {n:'RITES',                      s:'Infrastructure/PSU', yf:'RITES.NS'},
+  'RPGLIFE':    {n:'RPG Life Sciences',          s:'Pharma',             yf:'RPGLIFE.NS'},
+  'RTNPOWER':   {n:'Rattanindia Power',          s:'Power',              yf:'RTNPOWER.NS'},
+  'SAKSOFT':    {n:'Saksoft',                    s:'IT',                 yf:'SAKSOFT.NS'},
+  'SANOFI':     {n:'Sanofi India',               s:'Pharma',             yf:'SANOFI.NS'},
+  'SAPPHIRE':   {n:'Sapphire Foods',             s:'QSR',                yf:'SAPPHIRE.NS'},
+  'SAREGAMA':   {n:'Saregama India',             s:'Media',              yf:'SAREGAMA.NS'},
+  'SARDAEN':    {n:'Sarda Energy & Minerals',    s:'Metal',              yf:'SARDAEN.NS'},
+  'SCI':        {n:'Shipping Corp of India',     s:'Shipping/PSU',       yf:'SCI.NS'},
+  'SENCO':      {n:'Senco Gold',                 s:'Jewellery',          yf:'SENCO.NS'},
+  'SEQUENT':    {n:'Sequent Scientific',         s:'Pharma',             yf:'SEQUENT.NS'},
+  'SHARDAMOTR': {n:'Sharda Motor Industries',   s:'Auto Ancillary',     yf:'SHARDAMOTR.NS'},
+  'SHAREINDIA': {n:'Share India Securities',     s:'Broking',            yf:'SHAREINDIA.NS'},
+  'SHOPERSTOP': {n:"Shoppers Stop",              s:'Retail',             yf:'SHOPERSTOP.NS'},
+  'SHYAMMETL':  {n:'Shyam Metalics & Energy',   s:'Metal',              yf:'SHYAMMETL.NS'},
+  'SKIPPER':    {n:'Skipper',                    s:'Electrical',         yf:'SKIPPER.NS'},
+  'SMLISUZU':   {n:'SML Isuzu',                  s:'Auto',               yf:'SMLISUZU.NS'},
+  'SOBHA':      {n:'Sobha',                      s:'Realty',             yf:'SOBHA.NS'},
+  'SOLARA':     {n:'Solara Active Pharma',       s:'Pharma',             yf:'SOLARA.NS'},
+  'SONACOMS':   {n:'Sona BLW Precision Forgings',s:'Auto Ancillary',    yf:'SONACOMS.NS'},
+  'SPARC':      {n:'Sun Pharma Advanced Research',s:'Pharma',           yf:'SPARC.NS'},
+  'STARCEMENT': {n:'Star Cement',                s:'Cement',             yf:'STARCEMENT.NS'},
+  'STLTECH':    {n:'Sterlite Technologies',      s:'Telecom Infra',      yf:'STLTECH.NS'},
+  'SUBROS':     {n:'Subros',                     s:'Auto Ancillary',     yf:'SUBROS.NS'},
+  'SUMICHEM':   {n:'Sumitomo Chemical India',    s:'Agrochem',           yf:'SUMICHEM.NS'},
+  'SUNTECK':    {n:'Sunteck Realty',             s:'Realty',             yf:'SUNTECK.NS'},
+  'SURYODAY':   {n:'Suryoday Small Finance Bank',s:'Banking',            yf:'SURYODAY.NS'},
+  'SUTLEJTEX':  {n:'Sutlej Textiles',            s:'Textile',            yf:'SUTLEJTEX.NS'},
+  'SWSOLAR':    {n:'Sterling & Wilson Renewable',s:'Renewable Energy',   yf:'SWSOLAR.NS'},
+  'SYMPHONY':   {n:'Symphony',                   s:'Consumer Durables',  yf:'SYMPHONY.NS'},
+  'TAKE':       {n:'Take Solutions',             s:'IT',                 yf:'TAKE.NS'},
+  'TANLA':      {n:'Tanla Platforms',            s:'IT',                 yf:'TANLA.NS'},
+  'TASTYBITE':  {n:'Tasty Bite Eatables',        s:'FMCG',               yf:'TASTYBITE.NS'},
+  'TBOTEK':     {n:'TBO Tek',                    s:'Internet',           yf:'TBOTEK.NS'},
+  'THANGAMAYL': {n:'Thangamayil Jewellery',      s:'Jewellery',          yf:'THANGAMAYL.NS'},
+  'THYROCARE':  {n:'Thyrocare Technologies',     s:'Diagnostics',        yf:'THYROCARE.NS'},
+  'TIMETECHNO': {n:'Time Technoplast',           s:'Plastics',           yf:'TIMETECHNO.NS'},
+  'TIPSINDLTD': {n:'Tips Industries',            s:'Media',              yf:'TIPSINDLTD.NS'},
+  'TORNTPHARM': {n:'Torrent Pharmaceuticals',    s:'Pharma',             yf:'TORNTPHARM.NS'},
+  'TTML':       {n:'Tata Teleservices Maharashtra',s:'Telecom',          yf:'TTML.NS'},
+  'TV18BRDCST': {n:'TV18 Broadcast',             s:'Media',              yf:'TV18BRDCST.NS'},
+  'TVSL':       {n:'TVS Logistics Services',     s:'Logistics',          yf:'TVSL.NS'},
+  'TVSSCS':     {n:'TVS Supply Chain Solutions', s:'Logistics',          yf:'TVSSCS.NS'},
+  'TVSMOTOR':   {n:'TVS Motor Company',          s:'Auto',               yf:'TVSMOTOR.NS'},
+  'UJJIVAN':    {n:'Ujjivan Financial Services', s:'Financial Services', yf:'UJJIVAN.NS'},
+  'UTIAMC':     {n:'UTI AMC',                    s:'Asset Management',   yf:'UTIAMC.NS'},
+  'VAIBHAVGBL': {n:'Vaibhav Global',             s:'Retail/Gems',        yf:'VAIBHAVGBL.NS'},
+  'VARUNBEV':   {n:'Varun Beverages',            s:'FMCG',               yf:'VBL.NS'},
+  'VENKEYS':    {n:"Venky's (India)",            s:'Poultry',            yf:'VENKEYS.NS'},
+  'VIJAYA':     {n:'Vijaya Diagnostic Centre',   s:'Healthcare',         yf:'VIJAYA.NS'},
+  'VSTTILLERS': {n:'V.S.T Tillers Tractors',     s:'Farm Equipment',     yf:'VSTTILLERS.NS'},
+  'VSTIND':     {n:'VST Industries',             s:'FMCG',               yf:'VSTIND.NS'},
+  'WABAG':      {n:'VA Tech Wabag',              s:'Infrastructure',     yf:'WABAG.NS'},
+  'WELSPUNIND': {n:'Welspun India',              s:'Textile',            yf:'WELSPUNIND.NS'},
+  'WENDT':      {n:'Wendt (India)',               s:'Industrial',         yf:'WENDT.NS'},
+  'WHIRLPOOL':  {n:'Whirlpool of India',         s:'Consumer Durables',  yf:'WHIRLPOOL.NS'},
+  'WIPRO':      {n:'Wipro',                      s:'IT',                 yf:'WIPRO.NS'},
+  'XCHANGING':  {n:'Xchanging Solutions',        s:'IT',                 yf:'XCHANGING.NS'},
+  'ZENSARTECH': {n:'Zensar Technologies',        s:'IT',                 yf:'ZENSARTECH.NS'},
+  'ZENTEC':     {n:'Zen Technologies',           s:'Defence',            yf:'ZENTEC.NS'},
+  'ZOMATO':     {n:'Zomato',                     s:'Consumer Tech',      yf:'ZOMATO.NS'},
+  'ZYDUSLIFE':  {n:'Zydus Lifesciences',         s:'Pharma',             yf:'ZYDUSLIFE.NS'},
 };
 
-// YF symbol overrides
+// Build fast search index from STOCK_MASTER
+const SEARCH_INDEX = Object.entries(STOCK_MASTER).map(([sym, info]) => ({
+  sym, name: info.n, sector: info.s, yf: info.yf,
+  _q: (sym + ' ' + info.n + ' ' + info.s).toLowerCase(),
+}));
+
+// YF symbol overrides (keep for backward compat)
 const YF_MAP = {
-  'MAZAGON':'MAZDOCK.NS','IEXINDIA':'IEX.NS','VARUNBEV':'VBL.NS','HPCL':'HINDPETRO.NS'
+  'MAZAGON':'MAZDOCK.NS','IEXINDIA':'IEX.NS','VARUNBEV':'VBL.NS','HPCL':'HINDPETRO.NS',
+  'LODHA':'MACROTECH.NS','HPCL':'HINDPETRO.NS',
 };
-function getYF(sym) { return YF_MAP[sym] || (sym + '.NS'); }
+function getYF(sym) {
+  if (YF_MAP[sym]) return YF_MAP[sym];
+  if (STOCK_MASTER[sym]) return STOCK_MASTER[sym].yf;
+  return sym + '.NS';
+}
 
 // Period configs
 const PERIOD_CFG = {
@@ -857,6 +1410,162 @@ const PERIOD_CFG = {
   '1M':{range:'1mo',interval:'1d'},'3M':{range:'3mo',interval:'1d'},
   '6M':{range:'6mo',interval:'1d'},'1Y':{range:'1y',interval:'1d'},'5Y':{range:'5y',interval:'1wk'}
 };
+
+// ── Watchlist manager ────────────────────────────────────────────────────────
+const WL_KEY = 'nse_dashboard_watchlist_v2';
+
+function getWatchlist() {
+  try {
+    const saved = localStorage.getItem(WL_KEY);
+    if (saved) return JSON.parse(saved);
+  } catch(e) {}
+  // Default starter watchlist
+  return ['HAL','BEL','BDL','MAZAGON','COCHINSHIP','GRSE','TCS','INFY','RELIANCE',
+          'HDFCBANK','SBIN','ICICIBANK','ONGC','NTPC','IRFC','RVNL','IREDA',
+          'PERSISTENT','KPITTECH','CUMMINSIND','YESBANK'];
+}
+
+function saveWatchlist(arr) {
+  try { localStorage.setItem(WL_KEY, JSON.stringify([...new Set(arr.map(s=>s.toUpperCase().trim()).filter(Boolean))])); }
+  catch(e) {}
+}
+
+function renderWlChips() {
+  const chips = document.getElementById('wlChips');
+  const bulk  = document.getElementById('wlBulk');
+  if (!chips) return;
+  const wl = getWatchlist();
+  chips.innerHTML = wl.map(sym => {
+    const info = STOCK_MASTER[sym];
+    return `<span class="wl-chip" title="${info ? info.n : sym}">
+      ${sym}
+      <span class="wl-chip-remove" onclick="removeFromWatchlist('${sym}')" title="Remove">×</span>
+    </span>`;
+  }).join('');
+  if (bulk) bulk.value = wl.join(', ');
+  // Update signal lab universe
+  SL_UNIVERSES.watchlist = wl;
+}
+
+function addToWatchlist(symOverride) {
+  const inp = document.getElementById('wlInput');
+  const sym = (symOverride || inp?.value || '').trim().toUpperCase();
+  if (!sym) return;
+  const wl = getWatchlist();
+  if (!wl.includes(sym)) { wl.push(sym); saveWatchlist(wl); }
+  if (inp) inp.value = '';
+  const drop = document.getElementById('wlDrop');
+  if (drop) drop.classList.remove('open');
+  renderWlChips();
+}
+
+function removeFromWatchlist(sym) {
+  const wl = getWatchlist().filter(s => s !== sym);
+  saveWatchlist(wl);
+  renderWlChips();
+}
+
+function clearWatchlist() {
+  if (!confirm('Clear entire watchlist?')) return;
+  saveWatchlist([]);
+  renderWlChips();
+}
+
+function applyBulkWatchlist() {
+  const txt = document.getElementById('wlBulk')?.value || '';
+  const syms = txt.split(/[,\s\n]+/).map(s => s.trim().toUpperCase()).filter(Boolean);
+  saveWatchlist(syms);
+  renderWlChips();
+}
+
+// Watchlist preset groups
+const WL_PRESETS = [
+  { label:'🛡 Defence',    syms:['HAL','BEL','BDL','MAZAGON','COCHINSHIP','GRSE','BEML','MIDHANI','SOLARINDS','DATAPATTNS','ZENTEC','MTAR','PARAS'] },
+  { label:'💻 IT',         syms:['TCS','INFY','WIPRO','HCLTECH','TECHM','LTIM','LTTS','PERSISTENT','COFORGE','MPHASIS','KPITTECH'] },
+  { label:'🏦 Banking',    syms:['HDFCBANK','ICICIBANK','KOTAKBANK','SBIN','AXISBANK','INDUSINDBK','YESBANK','FEDERALBNK','IDFCFIRSTB','PNB'] },
+  { label:'⚡ PSU Power',  syms:['NTPC','POWERGRID','NHPC','SJVN','IREDA','IRFC','RVNL','RECLTD','HUDCO','TATAPOWER','JSWENERGY'] },
+  { label:'🛢 Oil & Gas',  syms:['RELIANCE','ONGC','BPCL','IOC','GAIL','HINDPETRO','PETRONET','ATGL','GUJGASLTD','IGL'] },
+  { label:'💊 Pharma',     syms:['SUNPHARMA','DRREDDY','CIPLA','DIVISLAB','LUPIN','AUROPHARMA','ZYDUSLIFE','ALKEM','MANKIND'] },
+  { label:'🏗 Infra/PSU',  syms:['LT','IRCTC','IRFC','RVNL','GMRINFRA','NCC','KNRCON','ENGINERSIN','CONCOR'] },
+  { label:'💎 Midcap gems',syms:['PERSISTENT','COFORGE','KAYNES','DIXON','CGPOWER','TATAELXSI','ASTRAL','POLYCAB','KEI'] },
+];
+
+function buildWlPresets() {
+  const el = document.getElementById('wlPresets');
+  if (!el) return;
+  el.innerHTML = WL_PRESETS.map(p =>
+    `<button class="wl-preset-btn" onclick="applyPreset(${JSON.stringify(p.syms)})">${p.label}</button>`
+  ).join('');
+}
+
+function applyPreset(syms) {
+  const wl = [...new Set([...getWatchlist(), ...syms])];
+  saveWatchlist(wl);
+  renderWlChips();
+}
+
+// SL_UNIVERSES — dynamic, watchlist pulled from localStorage
+const SL_UNIVERSES = {
+  nifty50:   ALL_INDICES['Nifty 50'].stocks.slice(0,30),
+  defence:   ALL_INDICES['Nifty Defence'].stocks,
+  it:        ALL_INDICES['Nifty IT'].stocks,
+  banking:   ALL_INDICES['Nifty Bank'].stocks,
+  pharma:    ALL_INDICES['Nifty Pharma'].stocks,
+  pse:       ALL_INDICES['Nifty PSE'].stocks.slice(0,25),
+  watchlist: getWatchlist(), // pulled live from localStorage
+};
+
+// ── Stock search engine ──────────────────────────────────────────────────────
+function searchStocks(q) {
+  if (!q || q.length < 1) return [];
+  const lq = q.toLowerCase();
+  return SEARCH_INDEX.filter(s => s._q.includes(lq)).slice(0, 12);
+}
+
+function buildDropdown(results, dropId, onSelect) {
+  const drop = document.getElementById(dropId);
+  if (!drop) return;
+  if (!results.length) { drop.classList.remove('open'); return; }
+  drop.innerHTML = results.map(r =>
+    `<div class="sd-item" data-sym="${r.sym}">
+       <span class="sd-sym">${r.sym}</span>
+       <span class="sd-name">${r.name}</span>
+       <span class="sd-sect">${r.sector}</span>
+     </div>`
+  ).join('');
+  drop.classList.add('open');
+  drop.querySelectorAll('.sd-item').forEach(item => {
+    item.addEventListener('click', () => {
+      drop.classList.remove('open');
+      onSelect(item.dataset.sym, STOCK_MASTER[item.dataset.sym]);
+    });
+  });
+}
+
+function wireSearch(inputId, dropId, onSelect) {
+  const inp = document.getElementById(inputId);
+  if (!inp) return;
+  inp.addEventListener('input', () => {
+    const q = inp.value.trim();
+    buildDropdown(searchStocks(q), dropId, (sym, info) => {
+      inp.value = sym;
+      if (onSelect) onSelect(sym, info);
+    });
+  });
+  inp.addEventListener('keydown', e => {
+    if (e.key === 'Escape') document.getElementById(dropId)?.classList.remove('open');
+    if (e.key === 'Enter') {
+      document.getElementById(dropId)?.classList.remove('open');
+      if (onSelect) onSelect(inp.value.trim().toUpperCase(), null);
+    }
+  });
+  // Close on outside click
+  document.addEventListener('click', e => {
+    if (!e.target.closest('#' + dropId) && !e.target.closest('#' + inputId)) {
+      document.getElementById(dropId)?.classList.remove('open');
+    }
+  });
+}
 
 /* ═══════════════════════════════════════════════
    CLOCK + TICKER
@@ -2005,7 +2714,7 @@ async function loadSVN() {
     &nbsp;
     <a href="steam.html?stock=${sym}" class="steam-link">🔥 Steam Gauge</a>`;
 }
-document.getElementById('svnInput').addEventListener('keydown', e => { if (e.key === 'Enter') loadSVN(); });
+// SVN and caInput listeners handled by wireSearch() above
 
 /* ═══════════════════════════════════════════════
    CUSTOM ANALYSIS (CTAE)
@@ -2131,7 +2840,7 @@ async function loadCustom() {
       <div>${momSig}</div>
     </div>`;
 }
-document.getElementById('caInput').addEventListener('keydown', e => { if(e.key==='Enter') loadCustom(); });
+// caInput Enter handled by wireSearch
 
 /* ═══════════════════════════════════════════════
    INDEX STOCKS
@@ -2331,6 +3040,15 @@ async function runSignalLab() {
 ═══════════════════════════════════════════════ */
 loadTicker();
 ov.init();  // builds tiles, loads all prices, renders both charts
+
+// ── Wire stock search dropdowns ──
+wireSearch('svnInput', 'svnDrop', (sym) => { /* symbol selected — user clicks Compare */ });
+wireSearch('caInput',  'caDrop',  (sym) => { /* symbol selected — user clicks Run Analysis */ });
+wireSearch('wlInput',  'wlDrop',  (sym) => addToWatchlist(sym));
+
+// ── Init watchlist UI ──
+renderWlChips();
+buildWlPresets();
 
 /* ═══════════════════════════════════════════════
    FII / DII FLOWS — Complete Implementation
