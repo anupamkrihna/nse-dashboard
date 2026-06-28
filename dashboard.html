@@ -615,28 +615,33 @@ function tick() {
 tick(); setInterval(tick, 1000);
 
 const TICKER_SYMS = [
-  {l:'NIFTY 50',    s:'^NSEI',                  skip:false},
-  {l:'BANK NIFTY',  s:'^NSEBANK',               skip:false},
-  {l:'NIFTY IT',    s:'^CNXIT',                 skip:false},
-  {l:'NIFTY NEXT50',s:'^NSEMDCP50',             skip:true },
-  {l:'NIFTY MIDCAP',s:'^CNXMIDCAP',             skip:true },
-  {l:'NIFTY SC',    s:'^CNXSC',                 skip:true },
-  {l:'NIFTY DEF',   s:'NIFTY_IND_DEFENCE.NS',   skip:false},
-  {l:'NIFTY PHARMA',s:'^CNXPHARMA',             skip:false},
-  {l:'NIFTY AUTO',  s:'^CNXAUTO',               skip:false},
-  {l:'NIFTY FMCG',  s:'^CNXFMCG',               skip:false},
-  {l:'NIFTY METAL', s:'^CNXMETAL',               skip:false},
-  {l:'NIFTY ENERGY',s:'^CNXENERGY',             skip:false},
-  {l:'SENSEX',      s:'^BSESN',                 skip:false},
-  {l:'USD/INR',     s:'USDINR=X',               skip:false},
+  {l:'NIFTY 50',    s:'^NSEI',                  etf:null},
+  {l:'BANK NIFTY',  s:'^NSEBANK',               etf:null},
+  {l:'NIFTY IT',    s:'^CNXIT',                 etf:null},
+  {l:'NIFTY NXT50', s:'^NSEMDCP50',             etf:'JUNIORBEES.NS'},
+  {l:'NIFTY MIDCAP',s:'^CNXMIDCAP',             etf:'MOM100.NS'},
+  {l:'NIFTY SC',    s:'^CNXSC',                 etf:'SETFNN50.NS'},
+  {l:'NIFTY DEF',   s:'NIFTY_IND_DEFENCE.NS',   etf:null},
+  {l:'NIFTY PHARMA',s:'^CNXPHARMA',             etf:null},
+  {l:'NIFTY AUTO',  s:'^CNXAUTO',               etf:null},
+  {l:'NIFTY FMCG',  s:'^CNXFMCG',              etf:null},
+  {l:'NIFTY METAL', s:'^CNXMETAL',              etf:null},
+  {l:'NIFTY ENERGY',s:'^CNXENERGY',             etf:null},
+  {l:'SENSEX',      s:'^BSESN',                 etf:null},
+  {l:'USD/INR',     s:'USDINR=X',               etf:null},
 ];
 async function loadTicker() {
   const results = await Promise.all(TICKER_SYMS.map(async ts => {
     try {
+      const etfUrls = ts.etf ? [
+        BACKEND + '?symbol=' + encodeURIComponent(ts.etf) + '&range=2d&interval=1d',
+        'https://query1.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(ts.etf) + '?range=2d&interval=1d',
+      ] : [];
       const urls = [
-        ...(ts.skip ? [] : [BACKEND + '?symbol=' + encodeURIComponent(ts.s) + '&range=2d&interval=1d']),
+        BACKEND + '?symbol=' + encodeURIComponent(ts.s) + '&range=2d&interval=1d',
         'https://query1.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(ts.s) + '?range=2d&interval=1d',
         'https://query2.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(ts.s) + '?range=2d&interval=1d',
+        ...etfUrls,
       ];
       let meta = null;
       for (const url of urls) {
@@ -757,26 +762,27 @@ function drawDualChart(canvasId, labels, d1, d2, l1, l2) {
 ═══════════════════════════════════════════════ */
 
 // All index tiles shown in the overview bar
-// skipGAS: true = bypass GAS proxy (which gets 403'd by Yahoo for these index symbols)
-// and go direct to Yahoo v8 chart from browser
+// etf: NSE-listed ETF that tracks the index → reliable GAS fallback when Yahoo blocks ^ symbols
+// Yahoo Finance inconsistently serves ^NSEMDCP50, ^CNXREALTY, ^CNXMIDCAP, ^CNXSC from browser
+// ETF prices differ from index levels but change% is identical (ETF tracks the index exactly)
 const OV_INDICES = [
-  {l:'Nifty 50',       s:'^NSEI',                  iso:false, skipGAS:false},
-  {l:'Sensex',         s:'^BSESN',                 iso:false, skipGAS:false},
-  {l:'Nifty Next 50',  s:'^NSEMDCP50',             iso:false, skipGAS:true },
-  {l:'Nifty Bank',     s:'^NSEBANK',               iso:false, skipGAS:false},
-  {l:'Nifty IT',       s:'^CNXIT',                 iso:false, skipGAS:false},
-  {l:'Nifty Auto',     s:'^CNXAUTO',               iso:false, skipGAS:false},
-  {l:'Nifty FMCG',     s:'^CNXFMCG',               iso:false, skipGAS:false},
-  {l:'Nifty Pharma',   s:'^CNXPHARMA',             iso:false, skipGAS:false},
-  {l:'Nifty Metal',    s:'^CNXMETAL',               iso:false, skipGAS:false},
-  {l:'Nifty Realty',   s:'^CNXREALTY',             iso:false, skipGAS:true },
-  {l:'Nifty Energy',   s:'^CNXENERGY',             iso:false, skipGAS:false},
-  {l:'Nifty PSE',      s:'^CNXPSE',                iso:false, skipGAS:false},
-  {l:'Nifty Defence',  s:'NIFTY_IND_DEFENCE.NS',   iso:false, skipGAS:false},
-  {l:'Nifty Midcap 150',s:'^CNXMIDCAP',            iso:false, skipGAS:true },
-  {l:'Nifty Smallcap', s:'^CNXSC',                 iso:false, skipGAS:true },
-  {l:'USD/INR',        s:'USDINR=X',               iso:true,  skipGAS:false},
-  {l:'Gold/oz',        s:'GC=F',                   iso:true,  skipGAS:false},
+  {l:'Nifty 50',        s:'^NSEI',                 iso:false, etf:null},
+  {l:'Sensex',          s:'^BSESN',                iso:false, etf:null},
+  {l:'Nifty Next 50',   s:'^NSEMDCP50',            iso:false, etf:'JUNIORBEES.NS'},
+  {l:'Nifty Bank',      s:'^NSEBANK',              iso:false, etf:null},
+  {l:'Nifty IT',        s:'^CNXIT',                iso:false, etf:null},
+  {l:'Nifty Auto',      s:'^CNXAUTO',              iso:false, etf:null},
+  {l:'Nifty FMCG',      s:'^CNXFMCG',             iso:false, etf:null},
+  {l:'Nifty Pharma',    s:'^CNXPHARMA',            iso:false, etf:null},
+  {l:'Nifty Metal',     s:'^CNXMETAL',             iso:false, etf:null},
+  {l:'Nifty Realty',    s:'^CNXREALTY',            iso:false, etf:'NIFTYREAL.NS'},
+  {l:'Nifty Energy',    s:'^CNXENERGY',            iso:false, etf:null},
+  {l:'Nifty PSE',       s:'^CNXPSE',               iso:false, etf:null},
+  {l:'Nifty Defence',   s:'NIFTY_IND_DEFENCE.NS',  iso:false, etf:null},
+  {l:'Nifty Midcap 150',s:'^CNXMIDCAP',            iso:false, etf:'MOM100.NS'},
+  {l:'Nifty Smallcap',  s:'^CNXSC',                iso:false, etf:'SETFNN50.NS'},
+  {l:'USD/INR',         s:'USDINR=X',              iso:true,  etf:null},
+  {l:'Gold/oz',         s:'GC=F',                  iso:true,  etf:null},
 ];
 
 // Overview state
@@ -844,11 +850,17 @@ const ov = {
   async loadAllTiles() {
     const promises = OV_INDICES.map(async (idx, i) => {
       try {
-        // Build URL list: skip GAS proxy for symbols it can't fetch (403 from Yahoo)
+        // Build 4-URL chain: Yahoo index (q1) → Yahoo index (q2) → GAS ETF → Yahoo ETF direct
+        // ETFs track the index change% exactly — used when Yahoo blocks the ^ index symbol
+        const etfUrls = idx.etf ? [
+          BACKEND + '?symbol=' + encodeURIComponent(idx.etf) + '&range=2d&interval=1d',
+          'https://query1.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(idx.etf) + '?range=2d&interval=1d',
+        ] : [];
         const urls = [
-          ...(idx.skipGAS ? [] : [BACKEND + '?symbol=' + encodeURIComponent(idx.s) + '&range=2d&interval=1d']),
+          BACKEND + '?symbol=' + encodeURIComponent(idx.s) + '&range=2d&interval=1d',
           'https://query1.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(idx.s) + '?range=2d&interval=1d',
           'https://query2.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(idx.s) + '?range=2d&interval=1d',
+          ...etfUrls,
         ];
         let meta = null;
         for (const url of urls) {
@@ -864,6 +876,7 @@ const ov = {
         const p    = meta.regularMarketPrice;
         const prev = meta.previousClose || meta.chartPreviousClose;
         const chg  = prev ? (p - prev) / prev * 100 : 0;
+        // For ETF proxies: show change% with ~ prefix to indicate it's the ETF
         const pStr = idx.iso ? p.toFixed(2) : Math.round(p).toLocaleString('en-IN');
         const valEl = document.getElementById('kpiv' + i);
         const chgEl = document.getElementById('kpic' + i);
@@ -895,12 +908,17 @@ const ov = {
     document.getElementById('chart' + slot + 'Title').textContent = idx.l;
     document.getElementById('chart' + slot + 'Meta').textContent  = period + ' · loading…';
 
-    // Fetch (skip GAS if flagged, then try query1 + query2 Yahoo)
+    // Fetch chain: Yahoo index (q1) → Yahoo index (q2) → GAS ETF proxy → Yahoo ETF direct
     let pts = null, meta = null;
+    const etfUrls = idx.etf ? [
+      BACKEND + '?symbol=' + encodeURIComponent(idx.etf) + '&range=' + cfg.range + '&interval=' + cfg.interval,
+      'https://query1.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(idx.etf) + '?range=' + cfg.range + '&interval=' + cfg.interval,
+    ] : [];
     const urls = [
-      ...(idx.skipGAS ? [] : [BACKEND + '?symbol=' + encodeURIComponent(idx.s) + '&range=' + cfg.range + '&interval=' + cfg.interval]),
+      BACKEND + '?symbol=' + encodeURIComponent(idx.s) + '&range=' + cfg.range + '&interval=' + cfg.interval,
       'https://query1.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(idx.s) + '?range=' + cfg.range + '&interval=' + cfg.interval,
       'https://query2.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(idx.s) + '?range=' + cfg.range + '&interval=' + cfg.interval,
+      ...etfUrls,
     ];
     for (const url of urls) {
       try {
@@ -1363,11 +1381,28 @@ async function changePeriod(which, period, btn) {
 // Old loadKPIs shim
 async function loadKPIs() { await ov.loadAllTiles(); }
 
-// Direct Yahoo fetch for analytics — skips GAS, tries query1 then query2
+// Direct fetch for analytics — tries Yahoo q1/q2, then ETF fallback via GAS
 async function fetchChartDirect(sym, range, interval) {
-  for (const host of ['query1', 'query2']) {
+  const ETF_FALLBACK = {
+    '^NSEMDCP50': 'JUNIORBEES.NS',
+    '^CNXMIDCAP': 'MOM100.NS',
+    '^CNXSC':     'SETFNN50.NS',
+    '^CNXREALTY': 'NIFTYREAL.NS',
+  };
+  const etf = ETF_FALLBACK[sym] || null;
+
+  const allUrls = [
+    BACKEND + '?symbol=' + encodeURIComponent(sym) + '&range=' + range + '&interval=' + interval,
+    `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?range=${range}&interval=${interval}`,
+    `https://query2.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?range=${range}&interval=${interval}`,
+    ...(etf ? [
+      BACKEND + '?symbol=' + encodeURIComponent(etf) + '&range=' + range + '&interval=' + interval,
+      `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(etf)}?range=${range}&interval=${interval}`,
+    ] : []),
+  ];
+
+  for (const url of allUrls) {
     try {
-      const url = `https://${host}.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?range=${range}&interval=${interval}`;
       const r = await fetch(url);
       if (!r.ok) continue;
       const j = await r.json();
@@ -1378,8 +1413,7 @@ async function fetchChartDirect(sym, range, interval) {
       if (pts.length) return pts;
     } catch(e) {}
   }
-  // Final fallback: GAS proxy
-  return fetchChart(sym, range, interval).then(d => d?.pts || null);
+  return null;
 }
 /* EMA helper */
 function calcEMA(arr, n) {
@@ -1481,19 +1515,42 @@ const RATIO_SYMS = [
 let ratiosLoaded = false;
 
 async function fetchIndexRatio(sym) {
-  // Skip-GAS symbols (Yahoo blocks GAS server IPs for these)
-  const skipGASSym = ['^NSEMDCP50','^CNXMIDCAP','^CNXSC','^CNXREALTY','NIFTY_IND_DEFENCE.NS'];
-  const useGAS = !skipGASSym.includes(sym);
+  // ETF fallbacks for Yahoo ^ symbols that are inconsistently served
+  const ETF_FALLBACK = {
+    '^NSEMDCP50': 'JUNIORBEES.NS',
+    '^CNXMIDCAP': 'MOM100.NS',
+    '^CNXSC':     'SETFNN50.NS',
+    '^CNXREALTY': 'NIFTYREAL.NS',
+  };
+  const etf = ETF_FALLBACK[sym] || null;
 
   const [summaryRes, chartRes] = await Promise.allSettled([
-    // Source 1: quoteSummary for valuation — try query1 then query2
+    // Source 1: quoteSummary for PE/PB — try query1 then query2
     fetch('https://query1.finance.yahoo.com/v10/finance/quoteSummary/' + encodeURIComponent(sym) + '?modules=summaryDetail,defaultKeyStatistics,price')
-      .then(r => r.ok ? r.json() : fetch('https://query2.finance.yahoo.com/v10/finance/quoteSummary/' + encodeURIComponent(sym) + '?modules=summaryDetail,defaultKeyStatistics,price').then(r2 => r2.json()))
+      .then(r => r.ok ? r.json()
+        : fetch('https://query2.finance.yahoo.com/v10/finance/quoteSummary/' + encodeURIComponent(sym) + '?modules=summaryDetail,defaultKeyStatistics,price').then(r2 => r2.json()))
       .catch(() => null),
-    // Source 2: chart for live price — GAS first (if allowed), then Yahoo
-    useGAS
-      ? fetch(BACKEND + '?symbol=' + encodeURIComponent(sym) + '&range=2d&interval=1d').then(r => r.json()).catch(() => null)
-      : Promise.resolve(null),
+    // Source 2: chart for price — GAS first, then query1, then query2, then ETF fallback
+    (async () => {
+      const priceUrls = [
+        BACKEND + '?symbol=' + encodeURIComponent(sym) + '&range=2d&interval=1d',
+        'https://query1.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(sym) + '?range=2d&interval=1d',
+        'https://query2.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(sym) + '?range=2d&interval=1d',
+        ...(etf ? [
+          BACKEND + '?symbol=' + encodeURIComponent(etf) + '&range=2d&interval=1d',
+          'https://query1.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(etf) + '?range=2d&interval=1d',
+        ] : []),
+      ];
+      for (const url of priceUrls) {
+        try {
+          const r = await fetch(url);
+          if (!r.ok) continue;
+          const j = await r.json();
+          if (j.chart?.result?.[0]?.meta?.regularMarketPrice) return j;
+        } catch(e) {}
+      }
+      return null;
+    })(),
   ]);
 
   let pe = null, pb = null, price = null, chg = null, eps = null, divYield = null;
@@ -1516,30 +1573,13 @@ async function fetchIndexRatio(sym) {
     }
   }
 
-  // Parse GAS chart for price if quoteSummary didn't give it
+  // Parse chart for price
   if (price == null && chartRes.status === 'fulfilled' && chartRes.value) {
     const meta = chartRes.value?.chart?.result?.[0]?.meta;
     if (meta?.regularMarketPrice) {
       price = meta.regularMarketPrice;
       const prev = meta.previousClose || meta.chartPreviousClose;
       chg = prev ? (price - prev) / prev : null;
-    }
-  }
-
-  // Final fallback: try both Yahoo query1 and query2 v8 chart
-  if (price == null) {
-    for (const host of ['query1','query2']) {
-      try {
-        const r = await fetch(`https://${host}.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?range=2d&interval=1d`);
-        const j = await r.json();
-        const meta = j.chart?.result?.[0]?.meta;
-        if (meta?.regularMarketPrice) {
-          price = meta.regularMarketPrice;
-          const prev = meta.previousClose || meta.chartPreviousClose;
-          chg = prev ? (price - prev) / prev : null;
-          break;
-        }
-      } catch(e) {}
     }
   }
 
