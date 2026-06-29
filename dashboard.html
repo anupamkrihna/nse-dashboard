@@ -822,11 +822,24 @@ select:focus, input[type=text]:focus { border-color: #e8b94a; }
           <div class="macro-tile-row" id="fiiSummaryTiles" style="margin-bottom:14px"></div>
 
           <!-- CHART: FII vs DII net flows bar chart -->
+          
           <div class="chart-box" style="height:220px;margin-bottom:4px"><canvas id="fiiFlowChart"></canvas></div>
           <div style="font-size:10px;color:#aaa;margin-top:4px">Data: NSE/BSE provisional FII/DII cash market reports. FII = Foreign Portfolio Investors. DII = Domestic Institutional Investors (MFs + Insurance + Banks).</div>
         </div>
       </div>
-
+<!-- ── AI Flow Reader ── -->
+<div id="fiiAISection" style="margin: 4px 0 12px 0;">
+  <button id="fiiAIBtn" onclick="runFIIAnalysis()"
+    style="background:#1a2744;color:#e8b94a;border:1.5px solid #e8b94a;
+           border-radius:6px;padding:7px 18px;font-size:12px;font-weight:700;
+           cursor:pointer;font-family:Arial,sans-serif;letter-spacing:0.4px;">
+    🤖 AI Read Flow
+  </button>
+  <span style="font-size:10px;color:#aaa;margin-left:10px;">~250 tokens per click</span>
+  <div id="fiiAIResult" style="display:none;margin-top:10px;background:#f7f4ef;
+       border:1px solid #e0d8c8;border-left:4px solid #e8b94a;border-radius:6px;
+       padding:12px 14px;font-size:12px;line-height:1.75;color:#333;white-space:pre-wrap;"></div>
+</div>
       <!-- ── TWO COLUMNS: Absorption + F&O ── -->
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
 
