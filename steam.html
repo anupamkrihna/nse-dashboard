@@ -123,6 +123,58 @@ body { background: #f0ede6; color: #1a2744; font-family: Arial, sans-serif; font
 .verdict-text { font-size: 12px; color: #555; line-height: 1.7; border-top: 1px solid #f0f0f0; padding-top: 12px; }
 .verdict-text strong { color: #1a2744; }
 
+/* ── AI Analyst Card ── */
+.ai-card {
+  background: #fff;
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: 10px;
+  padding: 16px 18px;
+  margin-bottom: 12px;
+}
+.ai-card-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.ai-card-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1a2744;
+}
+.ai-card-note {
+  font-size: 10px;
+  color: #aaa;
+}
+.ai-btn {
+  background: #1a2744;
+  color: #e8b94a;
+  border: 1.5px solid #e8b94a;
+  border-radius: 6px;
+  padding: 8px 20px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: Arial, sans-serif;
+  letter-spacing: 0.4px;
+  transition: background 0.15s;
+}
+.ai-btn:hover:not(:disabled) { background: #233354; }
+.ai-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.ai-result {
+  display: none;
+  margin-top: 12px;
+  background: #f7f4ef;
+  border: 1px solid #e0d8c8;
+  border-left: 4px solid #e8b94a;
+  border-radius: 6px;
+  padding: 13px 15px;
+  font-size: 12px;
+  line-height: 1.75;
+  color: #333;
+  white-space: pre-wrap;
+}
+
 /* ── Sector tab ── */
 .sector-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .sector-card { background: #fff; border: 1px solid rgba(0,0,0,0.08); border-radius: 10px; padding: 16px 18px; }
@@ -346,6 +398,18 @@ body { background: #f0ede6; color: #1a2744; font-family: Arial, sans-serif; font
         <div class="verdict-text" id="verdictText">–</div>
       </div>
 
+      <!-- ── AI ANALYST CARD ── -->
+      <div class="ai-card" id="aiAnalystCard" style="display:none">
+        <div class="ai-card-hdr">
+          <div class="ai-card-title">🤖 AI Analyst</div>
+          <span class="ai-card-note">~250 tokens per click · click deliberately</span>
+        </div>
+        <button class="ai-btn" id="aiAnalystBtn" onclick="runStockAI()">
+          Run AI Analysis
+        </button>
+        <div class="ai-result" id="aiAnalystResult"></div>
+      </div>
+
       <div class="disclaimer">Data: Yahoo Finance (price, chart, holdings, EPS, beta) · Upstox (PE, PB, ROE, sector ratios) · GAS proxy backend. Dual-source parallel fetch. Scores are algorithmic estimates — not investment advice. Do your own research.</div>
     </div>
   </div>
@@ -388,7 +452,6 @@ body { background: #f0ede6; color: #1a2744; font-family: Arial, sans-serif; font
       Click any index card to see all its constituent stocks with live price and % change — fetched in parallel from Yahoo Finance and Upstox. Click a stock chip to load it in Steam Gauge.
     </div>
     <div id="indicesContainer"></div>
-    <!-- Expanded chip panel renders here -->
     <div id="chipsPanel" style="display:none"></div>
   </div>
 
@@ -562,7 +625,6 @@ const STOCK_MASTER = {
   'IDEAFORGE':{n:'ideaForge Technology',yf:'IDEAFORGE.NS',s:'Defence/Drone'},
   'IDFCFIRSTB':{n:'IDFC First Bank',yf:'IDFCFIRSTB.NS',s:'Banking'},
   'IEX':{n:'Indian Energy Exchange',yf:'IEX.NS',s:'Financial Services'},
-  'IEXINDIA':{n:'Indian Energy Exchange',yf:'IEX.NS',s:'Financial Services'},
   'IGL':{n:'Indraprastha Gas',yf:'IGL.NS',s:'Gas Distribution'},
   'IIFL':{n:'IIFL Finance',yf:'IIFL.NS',s:'NBFC'},
   'INDHOTEL':{n:'Indian Hotels Company',yf:'INDHOTEL.NS',s:'Hospitality'},
@@ -582,13 +644,11 @@ const STOCK_MASTER = {
   'ITC':{n:'ITC',yf:'ITC.NS',s:'FMCG'},
   'JINDALSTEL':{n:'Jindal Steel & Power',yf:'JINDALSTEL.NS',s:'Metal'},
   'JKCEMENT':{n:'JK Cement',yf:'JKCEMENT.NS',s:'Cement'},
-  'JSL':{n:'Jindal Stainless',yf:'JSL.NS',s:'Metal'},
   'JSWENERGY':{n:'JSW Energy',yf:'JSWENERGY.NS',s:'Power'},
   'JSWSTEEL':{n:'JSW Steel',yf:'JSWSTEEL.NS',s:'Metal'},
   'JUBLFOOD':{n:'Jubilant FoodWorks',yf:'JUBLFOOD.NS',s:'Consumer'},
   'JUSTDIAL':{n:'Just Dial',yf:'JUSTDIAL.NS',s:'Internet'},
   'JYOTHYLAB':{n:'Jyothy Labs',yf:'JYOTHYLAB.NS',s:'FMCG'},
-  'KAJARIACER':{n:'Kajaria Ceramics',yf:'KAJARIACER.NS',s:'Building Materials'},
   'KALYANKJIL':{n:'Kalyan Jewellers',yf:'KALYANKJIL.NS',s:'Jewellery'},
   'KAYNES':{n:'Kaynes Technology',yf:'KAYNES.NS',s:'Electronics'},
   'KIMS':{n:'KIMS',yf:'KIMS.NS',s:'Healthcare'},
@@ -632,7 +692,6 @@ const STOCK_MASTER = {
   'NCC':{n:'NCC',yf:'NCC.NS',s:'Infrastructure'},
   'NESTLEIND':{n:'Nestle India',yf:'NESTLEIND.NS',s:'FMCG'},
   'NHPC':{n:'NHPC',yf:'NHPC.NS',s:'Power/PSU'},
-  'NLC':{n:'NLC India',yf:'NLC.NS',s:'Power/PSU'},
   'NMDC':{n:'NMDC',yf:'NMDC.NS',s:'Mining/PSU'},
   'NTPC':{n:'NTPC',yf:'NTPC.NS',s:'Power'},
   'NUVOCO':{n:'Nuvoco Vistas',yf:'NUVOCO.NS',s:'Cement'},
@@ -642,9 +701,7 @@ const STOCK_MASTER = {
   'OLECTRA':{n:'Olectra Greentech',yf:'OLECTRA.NS',s:'EV/Bus'},
   'ONGC':{n:'Oil & Natural Gas Corp',yf:'ONGC.NS',s:'Oil & Gas'},
   'PAGEIND':{n:'Page Industries',yf:'PAGEIND.NS',s:'Textile'},
-  'PAISALO':{n:'Paisalo Digital',yf:'PAISALO.NS',s:'NBFC'},
   'PARAS':{n:'Paras Defence & Space',yf:'PARAS.NS',s:'Defence'},
-  'PATANJALI':{n:'Patanjali Foods',yf:'PATANJALI.NS',s:'FMCG'},
   'PAYTM':{n:'One97 Communications',yf:'PAYTM.NS',s:'Fintech'},
   'PERSISTENT':{n:'Persistent Systems',yf:'PERSISTENT.NS',s:'IT'},
   'PETRONET':{n:'Petronet LNG',yf:'PETRONET.NS',s:'Oil & Gas'},
@@ -673,16 +730,13 @@ const STOCK_MASTER = {
   'SENCO':{n:'Senco Gold',yf:'SENCO.NS',s:'Jewellery'},
   'SHREECEM':{n:'Shree Cement',yf:'SHREECEM.NS',s:'Cement'},
   'SHRIRAMFIN':{n:'Shriram Finance',yf:'SHRIRAMFIN.NS',s:'NBFC'},
-  'SHOPERSTOP':{n:"Shoppers Stop",yf:'SHOPERSTOP.NS',s:'Retail'},
   'SIEMENS':{n:'Siemens',yf:'SIEMENS.NS',s:'Industrial'},
   'SJVN':{n:'SJVN',yf:'SJVN.NS',s:'Power/PSU'},
   'SOBHA':{n:'Sobha',yf:'SOBHA.NS',s:'Realty'},
   'SOLARINDS':{n:'Solar Industries India',yf:'SOLARINDS.NS',s:'Defence/Explosive'},
   'SONACOMS':{n:'Sona BLW Precision Forgings',yf:'SONACOMS.NS',s:'Auto Ancillary'},
-  'SPARC':{n:'Sun Pharma Advanced Research',yf:'SPARC.NS',s:'Pharma'},
   'SUNDARMFIN':{n:'Sundaram Finance',yf:'SUNDARMFIN.NS',s:'NBFC'},
   'SUNPHARMA':{n:'Sun Pharma',yf:'SUNPHARMA.NS',s:'Pharma'},
-  'SUNTECK':{n:'Sunteck Realty',yf:'SUNTECK.NS',s:'Realty'},
   'SUPREMEIND':{n:'Supreme Industries',yf:'SUPREMEIND.NS',s:'Plastics'},
   'SURYAROSNI':{n:'Surya Roshni',yf:'SURYAROSNI.NS',s:'Electrical'},
   'SYNGENE':{n:'Syngene International',yf:'SYNGENE.NS',s:'Pharma/CRO'},
@@ -709,11 +763,9 @@ const STOCK_MASTER = {
   'UNITDSPR':{n:'United Spirits',yf:'UNITDSPR.NS',s:'Beverages'},
   'UNOMINDA':{n:'Uno Minda',yf:'UNOMINDA.NS',s:'Auto Ancillary'},
   'UPL':{n:'UPL',yf:'UPL.NS',s:'Agrochem'},
-  'VARUNBEV':{n:'Varun Beverages',yf:'VBL.NS',s:'FMCG'},
   'VBL':{n:'Varun Beverages',yf:'VBL.NS',s:'FMCG'},
   'VEDL':{n:'Vedanta',yf:'VEDL.NS',s:'Metal'},
   'VGUARD':{n:'V-Guard Industries',yf:'VGUARD.NS',s:'Electrical'},
-  'VIJAYA':{n:'Vijaya Diagnostic Centre',yf:'VIJAYA.NS',s:'Healthcare'},
   'VOLTAS':{n:'Voltas',yf:'VOLTAS.NS',s:'Consumer Durables'},
   'VSTIND':{n:'VST Industries',yf:'VSTIND.NS',s:'FMCG'},
   'WELCORP':{n:'Welspun Corp',yf:'WELCORP.NS',s:'Metal'},
@@ -735,15 +787,12 @@ const dropdown    = document.getElementById('dropdown');
 let currentStock  = null;
 let expandedIndex = null;
 
-// Build search array from STOCK_MASTER + index constituents
 const SEARCH_LIST = (() => {
   const seen = new Set();
   const arr  = [];
-  // Add all STOCK_MASTER entries
   Object.entries(STOCK_MASTER).forEach(([sym, info]) => {
     if (!seen.has(sym)) { seen.add(sym); arr.push({ sym, name: info.n, sector: info.s, yf: info.yf }); }
   });
-  // Add any symbols in indices not in STOCK_MASTER
   Object.values(ALL_INDICES).forEach(idx => {
     idx.stocks.forEach(sym => {
       if (!seen.has(sym)) {
@@ -872,7 +921,6 @@ function renderMembership(sym) {
    DATA FETCH — DUAL SOURCE
 ═══════════════════════════════════════════════ */
 async function fetchGAS(nsSym) {
-  // Try GAS action=stock first (Upstox fundamentals + Yahoo chart)
   try {
     const r = await fetch(BACKEND + '?action=stock&symbol=' + encodeURIComponent(nsSym));
     if (r.ok) {
@@ -880,8 +928,6 @@ async function fetchGAS(nsSym) {
       if (!d.error && d.summary?.regularMarketPrice) return d;
     }
   } catch(e) {}
-  // Fallback: direct Yahoo v8 chart (always works — browser never blocked)
-  // Reconstructs a summary-like object from chart meta
   const r2 = await fetch('https://query1.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(nsSym) + '?range=1y&interval=1d');
   if (!r2.ok) throw new Error('Yahoo chart HTTP ' + r2.status);
   const j2 = await r2.json();
@@ -889,35 +935,34 @@ async function fetchGAS(nsSym) {
   if (!res) throw new Error('No chart data for ' + nsSym);
   const meta = res.meta;
   if (!meta?.regularMarketPrice) throw new Error('No price in chart for ' + nsSym);
-  // Build a minimal summary object from chart meta
   const q = res.indicators.quote[0];
   const closes = res.timestamp.map((t,i) => q.close[i]).filter(c=>c!=null);
   const return1y = closes.length>1 ? (closes.at(-1)-closes[0])/closes[0] : null;
   const summary = {
-    regularMarketPrice:       meta.regularMarketPrice,
+    regularMarketPrice:         meta.regularMarketPrice,
     regularMarketChangePercent: meta.regularMarketChangePercent ?? null,
-    previousClose:            meta.previousClose,
-    fiftyTwoWeekHigh:         meta.fiftyTwoWeekHigh,
-    fiftyTwoWeekLow:          meta.fiftyTwoWeekLow,
-    marketCap:                meta.marketCap,
-    averageVolume:            meta.averageVolume3Month ?? meta.averageVolume,
-    trailingPE:               meta.trailingPE ?? null,
-    priceToBook:              null,
-    epsTrailingTwelveMonths:  null,
-    dividendYield:            null,
-    beta:                     null,
-    revenueGrowth:            null,
-    totalRevenue:             null,
-    netIncome:                null,
-    profitMargins:            null,
-    heldPercentInsiders:      null,
-    heldPercentInstitutions:  null,
-    fiiHold:                  null,
-    diiHold:                  null,
-    sectorPE:                 null,
+    previousClose:              meta.previousClose,
+    fiftyTwoWeekHigh:           meta.fiftyTwoWeekHigh,
+    fiftyTwoWeekLow:            meta.fiftyTwoWeekLow,
+    marketCap:                  meta.marketCap,
+    averageVolume:              meta.averageVolume3Month ?? meta.averageVolume,
+    trailingPE:                 meta.trailingPE ?? null,
+    priceToBook:                null,
+    epsTrailingTwelveMonths:    null,
+    dividendYield:              null,
+    beta:                       null,
+    revenueGrowth:              null,
+    totalRevenue:               null,
+    netIncome:                  null,
+    profitMargins:              null,
+    heldPercentInsiders:        null,
+    heldPercentInstitutions:    null,
+    fiiHold:                    null,
+    diiHold:                    null,
+    sectorPE:                   null,
     return1y,
-    nseDataLoaded:            false,
-    chartFallback:            true,
+    nseDataLoaded:              false,
+    chartFallback:              true,
   };
   return { summary, chart: j2 };
 }
@@ -933,13 +978,11 @@ async function fetchYahooHoldings(yfSym) {
     const mh = res.majorHoldersBreakdown  || {};
     const ks = res.defaultKeyStatistics   || {};
     const fd = res.financialData          || {};
-    const ins = mh?.insidersPercentHeld?.raw   ?? null;
-    const ist = mh?.institutionsPercentHeld?.raw ?? null;
     return {
-      promoter:  ins,
-      instTotal: ist,
-      fii:       ist != null ? ist * 0.55 : null,
-      dii:       ist != null ? ist * 0.45 : null,
+      promoter:  mh?.insidersPercentHeld?.raw   ?? null,
+      instTotal: mh?.institutionsPercentHeld?.raw ?? null,
+      fii:       mh?.institutionsPercentHeld?.raw != null ? mh.institutionsPercentHeld.raw * 0.55 : null,
+      dii:       mh?.institutionsPercentHeld?.raw != null ? mh.institutionsPercentHeld.raw * 0.45 : null,
       eps:       ks?.trailingEps?.raw      ?? null,
       divYield:  ks?.dividendYield?.raw    ?? null,
       beta:      ks?.beta?.raw             ?? null,
@@ -984,7 +1027,6 @@ async function loadStock(stock) {
   document.getElementById('landing').style.display = 'none';
   document.getElementById('mainDash').classList.add('show');
 
-  // Reset header
   document.getElementById('hSym').textContent    = stock.sym;
   document.getElementById('hName').textContent   = stock.name;
   document.getElementById('hSector').textContent = stock.sector;
@@ -995,7 +1037,6 @@ async function loadStock(stock) {
   renderMembership(stock.sym);
   renderPeers(stock);
 
-  // Switch to steam tab
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   document.querySelector('[data-tab="steam"]').classList.add('active');
@@ -1003,6 +1044,13 @@ async function loadStock(stock) {
 
   document.getElementById('steamLoading').style.display = 'flex';
   document.getElementById('steamContent').style.display  = 'none';
+
+  // Reset AI card when new stock loads
+  document.getElementById('aiAnalystCard').style.display   = 'none';
+  document.getElementById('aiAnalystResult').style.display = 'none';
+  document.getElementById('aiAnalystBtn').disabled         = false;
+  document.getElementById('aiAnalystBtn').textContent      = 'Run AI Analysis';
+
   document.getElementById('loadMsg').textContent = 'Fetching from GAS + Yahoo…';
 
   const badge = document.getElementById('srcBadge');
@@ -1029,7 +1077,6 @@ async function loadStock(stock) {
   const yhData  = yhResult.status === 'fulfilled' ? yhResult.value : null;
   const merged  = merge(gasData, yhData);
 
-  // Status badge
   badge.style.display = 'inline';
   const upOk = gasData.summary.nseDataLoaded;
   const yhOk = yhData !== null;
@@ -1071,30 +1118,29 @@ function fmtInr(n) { return n != null ? '₹' + n.toLocaleString('en-IN', {maxim
 ═══════════════════════════════════════════════ */
 function scoreGauges(pe, pb, ext, beta, margin, growth, ret1y) {
   const sc = [];
-  // 1 Valuation
   if (!pe||pe<0) sc.push({s:'gray',l:'N/A',cls:'bg-gray'});
   else if (pe>80) sc.push({s:'red',l:'Stretched',cls:'bg-red'});
   else if (pe>50) sc.push({s:'amber',l:'Caution',cls:'bg-amber'});
   else if (pe>25) sc.push({s:'green',l:'Moderate',cls:'bg-green'});
   else sc.push({s:'green',l:'Cheap',cls:'bg-green'});
-  // 2 Price ext
+
   if (ext == null) sc.push({s:'gray',l:'N/A',cls:'bg-gray'});
   else if (ext>0.9) sc.push({s:'red',l:'Extended',cls:'bg-red'});
   else if (ext>0.7) sc.push({s:'amber',l:'Caution',cls:'bg-amber'});
   else if (ext>0.4) sc.push({s:'green',l:'Healthy',cls:'bg-green'});
   else sc.push({s:'green',l:'Low base',cls:'bg-green'});
-  // 3 Beta/vol
+
   if (beta==null) sc.push({s:'gray',l:'N/A',cls:'bg-gray'});
   else if (beta>1.5) sc.push({s:'amber',l:'High vol',cls:'bg-amber'});
   else if (beta>0.8) sc.push({s:'green',l:'Bullish',cls:'bg-green'});
   else sc.push({s:'amber',l:'Low beta',cls:'bg-amber'});
-  // 4 Earnings
+
   if (growth==null) sc.push({s:'gray',l:'N/A',cls:'bg-gray'});
   else if (growth>0.2) sc.push({s:'green',l:'Strong',cls:'bg-green'});
   else if (growth>0.08) sc.push({s:'green',l:'Moderate',cls:'bg-green'});
   else if (growth>0) sc.push({s:'amber',l:'Slowing',cls:'bg-amber'});
   else sc.push({s:'red',l:'Declining',cls:'bg-red'});
-  // 5 RS
+
   if (ret1y==null) sc.push({s:'gray',l:'N/A',cls:'bg-gray'});
   else if (ret1y>0.5) sc.push({s:'green',l:'Strong RS',cls:'bg-green'});
   else if (ret1y>0.15) sc.push({s:'green',l:'Positive',cls:'bg-green'});
@@ -1151,7 +1197,6 @@ function renderSteam(stock, chart, s) {
 
   const ext = (hi52&&lo52&&cmp) ? (cmp-lo52)/(hi52-lo52) : null;
 
-  // Header
   document.getElementById('hPrice').textContent = fmtInr(cmp);
   const cel = document.getElementById('hChg');
   if (chg != null) {
@@ -1221,8 +1266,7 @@ function renderSteam(stock, chart, s) {
   document.getElementById('g4pm').textContent   = margin!=null ? (margin*100).toFixed(1)+'%' : '–';
   document.getElementById('g4rg').textContent   = growth!=null ? fmtPct(growth) + ' YoY' : '–';
   document.getElementById('g4analysis').innerHTML = growth!=null
-    ? `<strong>Revenue growing at ${fmtPct(growth)} YoY${growth>0.2?' — strong double-digit.':growth>0.08?' — healthy.':growth>0?' — slowing.':' — declining.'}
-</strong> Profit margin ${margin!=null?(margin*100).toFixed(1)+'%':'–'} ${margin>0.15?'— healthy, pricing power present.':margin>0.05?'— moderate.':'— thin, watch for compression.'}`
+    ? `<strong>Revenue growing at ${fmtPct(growth)} YoY${growth>0.2?' — strong double-digit.':growth>0.08?' — healthy.':growth>0?' — slowing.':' — declining.'}</strong> Profit margin ${margin!=null?(margin*100).toFixed(1)+'%':'–'} ${margin>0.15?'— healthy, pricing power present.':margin>0.05?'— moderate.':'— thin, watch for compression.'}`
     : '<strong>Revenue data unavailable from Upstox for this stock.</strong> Check quarterly results on NSE or Screener.in.';
 
   // Gauge 5
@@ -1254,6 +1298,66 @@ function renderSteam(stock, chart, s) {
 
   document.getElementById('steamLoading').style.display = 'none';
   document.getElementById('steamContent').style.display = 'block';
+
+  // Show AI card now that data is loaded
+  document.getElementById('aiAnalystCard').style.display = 'block';
+}
+
+/* ═══════════════════════════════════════════════
+   AI ANALYST — reads rendered DOM values
+═══════════════════════════════════════════════ */
+function runStockAI() {
+  if (!currentStock) return;
+
+  const btn       = document.getElementById('aiAnalystBtn');
+  const resultBox = document.getElementById('aiAnalystResult');
+
+  // Read values directly from rendered DOM elements
+  const payload = {
+    symbol:   currentStock.sym,
+    name:     currentStock.name,
+    sector:   currentStock.sector,
+    pe:       document.getElementById('g1pe').textContent,
+    sectorPe: document.getElementById('g1spe').textContent,
+    pb:       document.getElementById('g1pb').textContent,
+    roe:      document.getElementById('g3inst').textContent,   // best proxy available in DOM
+    roce:     '–',
+    revenue:  document.getElementById('g4rev').textContent,
+    margin:   document.getElementById('g4pm').textContent,
+    promoter: document.getElementById('g5pro').textContent,
+    fii:      document.getElementById('g5fii').textContent,
+    dii:      document.getElementById('g5dii').textContent,
+    fromHigh: document.getElementById('g2sub').textContent.split('%')[0] + '%',
+    return1y: document.getElementById('g5ret').textContent
+  };
+
+  btn.disabled    = true;
+  btn.textContent = '⏳ Analysing…';
+  resultBox.style.display = 'none';
+
+  const url = BACKEND
+    + '?action=ai&mode=stock'
+    + '&payload=' + encodeURIComponent(JSON.stringify(payload));
+
+  fetch(url)
+    .then(r => r.json())
+    .then(data => {
+      btn.disabled    = false;
+      btn.textContent = 'Run AI Analysis';
+      if (data.analysis) {
+        resultBox.textContent    = data.analysis;
+        resultBox.style.display  = 'block';
+      } else {
+        resultBox.textContent    = '⚠ ' + (data.error || 'No response from Claude');
+        resultBox.style.display  = 'block';
+      }
+    })
+    .catch(err => {
+      btn.disabled    = false;
+      btn.textContent = 'Run AI Analysis';
+      resultBox.textContent   = '⚠ Request failed: ' + err.message;
+      resultBox.style.display = 'block';
+    });
 }
 
 /* ═══════════════════════════════════════════════
@@ -1271,7 +1375,7 @@ function renderPeers(stock) {
 }
 
 /* ═══════════════════════════════════════════════
-   ALL INDICES TAB — clickable with live chips
+   ALL INDICES TAB
 ═══════════════════════════════════════════════ */
 let indicesBuilt = false;
 
@@ -1279,8 +1383,6 @@ function buildIndicesPanel() {
   if (indicesBuilt) return;
   indicesBuilt = true;
   const container = document.getElementById('indicesContainer');
-
-  // Group by type
   const groups = { broad:'Broad Market', size:'Market Cap Segments', sector:'Sector Indices' };
   let html = '';
   Object.entries(groups).forEach(([type, label]) => {
@@ -1300,34 +1402,26 @@ function buildIndicesPanel() {
 }
 
 async function toggleIndexChips(encName, cardEl) {
-  const name     = decodeURIComponent(encName);
-  const panel    = document.getElementById('chipsPanel');
-  const isOpen   = cardEl.classList.contains('expanded');
+  const name  = decodeURIComponent(encName);
+  const panel = document.getElementById('chipsPanel');
+  const isOpen = cardEl.classList.contains('expanded');
 
-  // Collapse all cards
   document.querySelectorAll('.idx-card').forEach(c => {
     c.classList.remove('expanded');
     const h = c.querySelector('.idx-card-hint');
     if (h) h.textContent = '';
   });
 
-  if (isOpen) {
-    // was open — just close
-    panel.style.display = 'none';
-    expandedIndex = null;
-    return;
-  }
+  if (isOpen) { panel.style.display = 'none'; expandedIndex = null; return; }
 
-  // Open
   cardEl.classList.add('expanded');
   const h = cardEl.querySelector('.idx-card-hint');
   if (h) h.textContent = '▼ showing live prices…';
   expandedIndex = name;
 
-  const idx   = ALL_INDICES[name];
-  const syms  = idx.stocks;
+  const idx  = ALL_INDICES[name];
+  const syms = idx.stocks;
 
-  // Scroll panel into view
   panel.style.display = 'block';
   panel.innerHTML = `
     <div class="chips-header">
@@ -1348,19 +1442,17 @@ async function toggleIndexChips(encName, cardEl) {
 
   panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
-  // Fetch prices in parallel — batch of 10 at a time to avoid overwhelming GAS
   let loaded = 0;
   const queue = [...syms];
 
   async function fetchBatch() {
     const batch = queue.splice(0, 8);
     await Promise.all(batch.map(async (sym) => {
-      const info   = getStockInfo(sym);
-      const yfSym  = info.yf;
+      const info    = getStockInfo(sym);
+      const yfSym   = info.yf;
       const priceEl = document.getElementById('chip-price-' + sym);
       if (!priceEl) return;
       try {
-        // Try GAS first, then direct Yahoo
         let price = null, chg = null;
         try {
           const r = await fetch(BACKEND + '?symbol=' + encodeURIComponent(yfSym) + '&range=1d&interval=1d');
@@ -1374,8 +1466,6 @@ async function toggleIndexChips(encName, cardEl) {
             }
           }
         } catch(e1) {}
-
-        // Fallback: direct Yahoo
         if (price == null) {
           const r2 = await fetch('https://query1.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(yfSym) + '?range=1d&interval=1d');
           if (r2.ok) {
@@ -1388,7 +1478,6 @@ async function toggleIndexChips(encName, cardEl) {
             }
           }
         }
-
         if (price != null) {
           const pStr = price >= 1000
             ? '₹' + Math.round(price).toLocaleString('en-IN')
@@ -1428,18 +1517,15 @@ function closeChips() {
 }
 
 function chipClick(sym) {
-  // Close panel first
   closeChips();
-  // Load stock
   const info = getStockInfo(sym);
   searchInput.value = sym;
   loadStock(info);
-  // Scroll to top of main dash
   document.getElementById('mainDash').scrollIntoView({ behavior: 'smooth' });
 }
 
 /* ═══════════════════════════════════════════════
-   URL PARAM: ?stock=SYMBOL — auto-load on open
+   URL PARAM
 ═══════════════════════════════════════════════ */
 function checkUrlParam() {
   const p = new URLSearchParams(window.location.search);
