@@ -3632,7 +3632,61 @@ switchTab = function(el, panel) {
   _origSwitch2(el, panel);
   if (panel === 'fiidii' && !fiiLoaded) loadFiiDii();
 };
-
+function runFIIAnalysis() {
+  var btn       = document.getElementById('fiiAIBtn');
+  var resultBox = document.getElementById('fiiAIResult');
+ 
+  // Read live values already computed by renderFiiSummaryTiles() / renderAbsorption()
+  // FII_DII_RECENT is available globally in dashboard.html
+  var last     = FII_DII_RECENT[FII_DII_RECENT.length - 1];
+  var m30      = FII_DII_RECENT.reduce(function(s,d){return {fii:s.fii+d.fiiNet,dii:s.dii+d.diiNet};},{fii:0,dii:0});
+ 
+  // Nifty change over the 30-day period
+  var firstClose = FII_DII_RECENT[0].niftyClose;
+  var lastClose  = last.niftyClose;
+  var niftyChg   = firstClose ? ((lastClose - firstClose) / firstClose * 100).toFixed(1) : 0;
+ 
+  // DII absorption (same logic as renderAbsorption)
+  var sellDays  = FII_DII_RECENT.filter(function(d){return d.fiiNet < 0;});
+  var totalSell = sellDays.reduce(function(s,d){return s+Math.abs(d.fiiNet);}, 0);
+  var totalBuy  = sellDays.reduce(function(s,d){return s+Math.max(0,d.diiNet);}, 0);
+  var absorption = totalSell > 0 ? Math.round(totalBuy / totalSell * 100) : 0;
+ 
+  var payload = {
+    fiiNet:      Math.round(m30.fii),
+    diiNet:      Math.round(m30.dii),
+    niftyChange: parseFloat(niftyChg),
+    absorption:  absorption
+  };
+ 
+  btn.disabled    = true;
+  btn.textContent = '⏳ Reading flow…';
+  resultBox.style.display = 'none';
+ 
+  var url = BACKEND
+    + '?action=ai&mode=fii'
+    + '&payload=' + encodeURIComponent(JSON.stringify(payload));
+ 
+  fetch(url)
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      btn.disabled    = false;
+      btn.textContent = '🤖 AI Read Flow';
+      if (data.analysis) {
+        resultBox.textContent   = data.analysis;
+        resultBox.style.display = 'block';
+      } else {
+        resultBox.textContent   = '⚠ ' + (data.error || 'No response');
+        resultBox.style.display = 'block';
+      }
+    })
+    .catch(function(err){
+      btn.disabled    = false;
+      btn.textContent = '🤖 AI Read Flow';
+      resultBox.textContent   = '⚠ Request failed: ' + err.message;
+      resultBox.style.display = 'block';
+    });
+}
 
 // ── Constants ──────────────────────────────────
 const USDINR_CACHE = { rate: null, ts: 0 };           // cached FX for gold conversion
