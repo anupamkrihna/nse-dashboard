@@ -3075,8 +3075,9 @@ buildWlPresets();
 // All values in ₹ Crore. NET = BUY - SELL.
 // Source: NSE India provisional cash market data
 
-const FII_DII_RECENT = [
+const FII_DII_FALLBACK = [
   // {date, fiiNet, diiNet, niftyClose}  — most recent last
+  // Used ONLY if the live ?action=fiidii fetch from the GAS backend fails.
   { date:'30-Apr-25', fiiNet:  2847, diiNet: -1203, niftyClose:24334 },
   { date:'02-May-25', fiiNet:  4120, diiNet: -2180, niftyClose:24461 },
   { date:'05-May-25', fiiNet:  3615, diiNet: -1890, niftyClose:24578 },
@@ -3108,6 +3109,60 @@ const FII_DII_RECENT = [
   { date:'10-Jun-25', fiiNet:  3456, diiNet: -1890, niftyClose:26145 },
   { date:'11-Jun-25', fiiNet:  384,  diiNet:  5748, niftyClose:25980 },
 ];
+
+// ── LIVE DATA STATE ──────────────────────────────────────────────────────
+// FII_DII_DATA starts as the fallback array and gets overwritten by
+// loadLiveFiiDii() with rows from the GAS backend's ?action=fiidii route
+// (Upstox NSE_EQ|CASH data, accumulated daily into the FII_DII_History sheet).
+let FII_DII_DATA = FII_DII_FALLBACK;
+
+// Formats a JS Date as yyyy-MM-dd in IST, matching the GAS backend's dateKey format
+function toISTDateKey(d) {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata', year:'numeric', month:'2-digit', day:'2-digit' }).format(d);
+}
+
+// Fetches live FII/DII history from the GAS backend (Upstox-backed, accumulating sheet).
+// Returns true on success (FII_DII_DATA is updated), false if it falls back to static data.
+async function loadLiveFiiDii() {
+  try {
+    const r = await fetch(BACKEND + '?action=fiidii&days=30');
+    const j = await r.json();
+    if (!j.ok || !j.history || !j.history.length) {
+      console.warn('FII/DII live fetch unavailable, using fallback static data:', j.error);
+      return false;
+    }
+
+    // Overlay Nifty close prices for the chart, aligned to the same IST trading dates
+    let niftyMap = {};
+    try {
+      const nr = await fetch(BACKEND + '?symbol=%5ENSEI&range=2mo&interval=1d');
+      const nj = await nr.json();
+      const res = nj.chart?.result?.[0];
+      if (res) {
+        const q = res.indicators.quote[0];
+        res.timestamp.forEach((t, i) => {
+          if (q.close[i] != null) niftyMap[toISTDateKey(new Date(t * 1000))] = q.close[i];
+        });
+      }
+    } catch(e) {}
+
+    FII_DII_DATA = j.history.map(h => ({
+      date: h.date,             // e.g. '29-Jun-2026' — display label from the sheet
+      dateKey: h.dateKey,       // e.g. '2026-06-29'
+      fiiNet: h.fiiNet,
+      diiNet: h.diiNet,
+      fiiBuy: h.fiiBuy,
+      fiiSell: h.fiiSell,
+      diiBuy: h.diiBuy,
+      diiSell: h.diiSell,
+      niftyClose: niftyMap[h.dateKey] || null,
+    }));
+    return true;
+  } catch(e) {
+    console.warn('FII/DII live fetch failed, using fallback static data:', e);
+    return false;
+  }
+}
 
 // Monthly aggregate data (₹ Crore net flows)
 const FII_DII_MONTHLY = [
@@ -3244,7 +3299,7 @@ function fmtCr(n) {
 }
 
 function renderFiiSummaryTiles() {
-  const data  = FII_DII_RECENT;
+  const data  = FII_DII_DATA;
   const last  = data.at(-1);
   const m30   = data.reduce((s, d) => ({ fii: s.fii + d.fiiNet, dii: s.dii + d.diiNet }), { fii: 0, dii: 0 });
   const fiiStreak = (() => {
@@ -3313,17 +3368,17 @@ function renderFiiChart(mode) {
 
   let labels, fiiData, diiData, niftyData = null, chartTitle;
   if (mode === 'monthly' || mode === 'recent' && FII_DII_MONTHLY) {
-    const src = mode === 'monthly' ? FII_DII_MONTHLY : FII_DII_RECENT.slice(-20);
+    const src = mode === 'monthly' ? FII_DII_MONTHLY : FII_DII_DATA.slice(-20);
     if (mode === 'monthly') {
       labels    = FII_DII_MONTHLY.map(d => d.month);
       fiiData   = FII_DII_MONTHLY.map(d => d.fiiNet);
       diiData   = FII_DII_MONTHLY.map(d => d.diiNet);
       chartTitle = 'Monthly FII vs DII net flows (₹ Crore)';
     } else {
-      labels    = FII_DII_RECENT.map(d => d.date.split('-').slice(0,2).join(' '));
-      fiiData   = FII_DII_RECENT.map(d => d.fiiNet);
-      diiData   = FII_DII_RECENT.map(d => d.diiNet);
-      niftyData = FII_DII_RECENT.map(d => d.niftyClose);
+      labels    = FII_DII_DATA.map(d => d.date.split('-').slice(0,2).join(' '));
+      fiiData   = FII_DII_DATA.map(d => d.fiiNet);
+      diiData   = FII_DII_DATA.map(d => d.diiNet);
+      niftyData = FII_DII_DATA.map(d => d.niftyClose);
       chartTitle = 'Daily FII vs DII net flows — last 30 trading days (₹ Crore)';
     }
   } else {
@@ -3408,12 +3463,12 @@ function renderAbsorption() {
   if (!el) return;
 
   // Calculate rolling absorption
-  const sellDays = FII_DII_RECENT.filter(d => d.fiiNet < 0);
+  const sellDays = FII_DII_DATA.filter(d => d.fiiNet < 0);
   const totalFiiSell = sellDays.reduce((s, d) => s + Math.abs(d.fiiNet), 0);
   const totalDiiBuy  = sellDays.reduce((s, d) => s + Math.max(0, d.diiNet), 0);
   const absorp30d    = totalFiiSell > 0 ? Math.round(totalDiiBuy / totalFiiSell * 100) : 0;
 
-  const last = FII_DII_RECENT.at(-1);
+  const last = FII_DII_DATA.at(-1);
   const absorpToday = last.fiiNet < 0
     ? Math.min(300, Math.round(Math.abs(last.diiNet) / Math.abs(last.fiiNet) * 100))
     : null;
@@ -3616,8 +3671,12 @@ async function renderAmfi() {
 let fiiLoaded = false;
 async function loadFiiDii() {
   fiiLoaded = true;
-  document.getElementById('fiiDataDate').textContent =
-    `Cash market · NSE+BSE+MSEI provisional · Last updated: ${FII_DII_RECENT.at(-1).date} · Update weekly from nseindia.com/reports/fii-dii`;
+  document.getElementById('fiiDataDate').textContent = 'Loading live FII/DII data…';
+  const isLive = await loadLiveFiiDii();
+  const last = FII_DII_DATA.at(-1);
+  document.getElementById('fiiDataDate').textContent = isLive
+    ? `Cash market · NSE_EQ|CASH via Upstox · last updated: ${last.date} · auto-updates daily after market close`
+    : `⚠ Live feed unavailable — showing fallback reference data (as of ${last.date}). Check the GAS backend.`;
   renderFiiSummaryTiles();
   renderFiiChart('recent');
   renderAbsorption();
@@ -3638,17 +3697,18 @@ function runFIIAnalysis() {
   var resultBox = document.getElementById('fiiAIResult');
  
   // Read live values already computed by renderFiiSummaryTiles() / renderAbsorption()
-  // FII_DII_RECENT is available globally in dashboard.html
-  var last     = FII_DII_RECENT[FII_DII_RECENT.length - 1];
-  var m30      = FII_DII_RECENT.reduce(function(s,d){return {fii:s.fii+d.fiiNet,dii:s.dii+d.diiNet};},{fii:0,dii:0});
+  // FII_DII_DATA holds the live (Upstox-backed) data once loadFiiDii() has run,
+  // or falls back to FII_DII_FALLBACK if the live fetch failed.
+  var last     = FII_DII_DATA[FII_DII_DATA.length - 1];
+  var m30      = FII_DII_DATA.reduce(function(s,d){return {fii:s.fii+d.fiiNet,dii:s.dii+d.diiNet};},{fii:0,dii:0});
  
   // Nifty change over the 30-day period
-  var firstClose = FII_DII_RECENT[0].niftyClose;
+  var firstClose = FII_DII_DATA[0].niftyClose;
   var lastClose  = last.niftyClose;
   var niftyChg   = firstClose ? ((lastClose - firstClose) / firstClose * 100).toFixed(1) : 0;
  
   // DII absorption (same logic as renderAbsorption)
-  var sellDays  = FII_DII_RECENT.filter(function(d){return d.fiiNet < 0;});
+  var sellDays  = FII_DII_DATA.filter(function(d){return d.fiiNet < 0;});
   var totalSell = sellDays.reduce(function(s,d){return s+Math.abs(d.fiiNet);}, 0);
   var totalBuy  = sellDays.reduce(function(s,d){return s+Math.max(0,d.diiNet);}, 0);
   var absorption = totalSell > 0 ? Math.round(totalBuy / totalSell * 100) : 0;
