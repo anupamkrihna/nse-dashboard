@@ -720,9 +720,17 @@ select:focus, input[type=text]:focus { border-color: #e8b94a; }
 
       <!-- ── SECTION 1: GLOBAL MARKET TILES ── -->
       <div class="card" style="margin-bottom:14px">
-        <div class="card-head">
-          <div><div class="card-title">🌐 Global Markets — Live</div><div class="card-sub">Yahoo Finance · auto-refreshes on open</div></div>
-          <button class="btn" onclick="loadMacro()">↻ Refresh</button>
+        <div class="card-head" style="flex-wrap:wrap;gap:8px">
+          <div><div class="card-title">🌐 Global Markets — Live</div><div class="card-sub" id="macroTilesSub">Yahoo Finance · change shown over selected time frame</div></div>
+          <div style="display:flex;align-items:center;gap:6px">
+            <div class="period-btns" id="macroTilePeriods">
+              <button class="period-btn active" onclick="setMacroTilePeriod('1D',this)">1D</button>
+              <button class="period-btn" onclick="setMacroTilePeriod('1W',this)">1W</button>
+              <button class="period-btn" onclick="setMacroTilePeriod('1M',this)">1M</button>
+              <button class="period-btn" onclick="setMacroTilePeriod('3M',this)">3M</button>
+            </div>
+            <button class="btn" onclick="loadMacro()">↻ Refresh</button>
+          </div>
         </div>
         <div class="card-body" style="padding-bottom:12px">
           <!-- Group labels -->
@@ -3380,7 +3388,9 @@ function renderFiiChart(mode) {
       fiiData   = FII_DII_DATA.map(d => d.fiiNet);
       diiData   = FII_DII_DATA.map(d => d.diiNet);
       niftyData = FII_DII_DATA.map(d => d.niftyClose);
-      chartTitle = 'Daily FII vs DII net flows — last 30 trading days (₹ Crore)';
+      const periodFrom = FII_DII_DATA[0]?.date || '–';
+      const periodTo   = FII_DII_DATA.at(-1)?.date || '–';
+      chartTitle = `Daily FII vs DII net flows — ${periodFrom} to ${periodTo} (${FII_DII_DATA.length} trading days, ₹ Crore)`;
     }
   } else {
     labels  = FII_DII_ANNUAL.map(d => d.year);
@@ -3424,6 +3434,7 @@ function renderFiiChart(mode) {
   }
 
   fiiChartInst = new Chart(canvasEl.getContext('2d'), {
+    type: 'bar',
     data: { labels, datasets },
     options: {
       responsive: true, maintainAspectRatio: false, animation: false,
@@ -3780,10 +3791,12 @@ async function loadFiiDii() {
   fiiLoaded = true;
   document.getElementById('fiiDataDate').textContent = 'Loading live FII/DII data…';
   const isLive = await loadLiveFiiDii();
+  const first = FII_DII_DATA[0];
   const last = FII_DII_DATA.at(-1);
+  const period = first && last ? `${first.date} → ${last.date} (${FII_DII_DATA.length} trading days)` : '';
   document.getElementById('fiiDataDate').textContent = isLive
-    ? `Cash market · NSE_EQ|CASH via Upstox · last updated: ${last.date} · auto-updates daily after market close`
-    : `⚠ Live feed unavailable — showing fallback reference data (as of ${last.date}). Check the GAS backend.`;
+    ? `Cash market · NSE_EQ|CASH via Upstox · ${period} · auto-updates daily after market close`
+    : `⚠ Live feed unavailable — showing fallback reference data · ${period}. Check the GAS backend.`;
   renderFiiSummaryTiles();
   renderFiiChart('recent');
   renderAbsorption();
@@ -3972,27 +3985,40 @@ async function getUSDINR() {
 function goldToINR(usdPerOz, inr) { return (usdPerOz / 31.1035 * 10 * inr); }
 
 // ── Tile fetcher ─────────────────────────────────
-async function fetchMacroPrice(sym) {
+// period: '1D' (default, uses meta.previousClose like before) | '1W' | '1M' | '3M'
+// For periods beyond 1D, % change is computed from the first close in that
+// window to the latest close, using the same range/interval map as the rest
+// of the dashboard's period buttons.
+async function fetchMacroPrice(sym, period) {
+  period = period || '1D';
   const etfMap = { '^CNXMIDCAP':'MOM100.NS', '^CNXSC':'SETFNN50.NS', '^NSEMDCP50':'JUNIORBEES.NS' };
   const etf    = etfMap[sym];
+  const cfg    = period === '1D' ? { range:'2d', interval:'1d' } : (PERIOD_CFG[period] || PERIOD_CFG['1M']);
   const urls   = [
-    BACKEND + '?symbol=' + encodeURIComponent(sym) + '&range=2d&interval=1d',
-    'https://query1.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(sym) + '?range=2d&interval=1d',
-    'https://query2.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(sym) + '?range=2d&interval=1d',
-    ...(etf ? [BACKEND + '?symbol=' + encodeURIComponent(etf) + '&range=2d&interval=1d'] : []),
+    BACKEND + '?symbol=' + encodeURIComponent(sym) + '&range=' + cfg.range + '&interval=' + cfg.interval,
+    'https://query1.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(sym) + '?range=' + cfg.range + '&interval=' + cfg.interval,
+    'https://query2.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(sym) + '?range=' + cfg.range + '&interval=' + cfg.interval,
+    ...(etf ? [BACKEND + '?symbol=' + encodeURIComponent(etf) + '&range=' + cfg.range + '&interval=' + cfg.interval] : []),
   ];
   for (const url of urls) {
     try {
       const r = await fetch(url);
       if (!r.ok) continue;
       const j = await r.json();
-      const meta = j.chart?.result?.[0]?.meta;
-      if (meta?.regularMarketPrice) {
-        const p    = meta.regularMarketPrice;
+      const res = j.chart?.result?.[0];
+      const meta = res?.meta;
+      if (!meta?.regularMarketPrice) continue;
+      const p = meta.regularMarketPrice;
+      if (period === '1D') {
         const prev = meta.previousClose || meta.chartPreviousClose;
         const chg  = prev ? (p - prev) / prev * 100 : 0;
         return { price: p, chg, prev };
       }
+      // Longer period: use the first valid close in the fetched window as the baseline
+      const closes = (res.indicators?.quote?.[0]?.close || []).filter(c => c != null);
+      const baseline = closes.length ? closes[0] : (meta.previousClose || meta.chartPreviousClose);
+      const chg = baseline ? (p - baseline) / baseline * 100 : 0;
+      return { price: p, chg, prev: baseline };
     } catch(e) {}
   }
   return null;
@@ -4340,7 +4366,8 @@ function renderCommodityDetail(results, inrRate) {
       } else {
         priceStr = fmtMacroPrice(d.price, sym, null) + ' ' + def.unit;
       }
-      chgStr = `<div class="comm-chg" style="color:${d.chg >= 0 ? '#2d7a4f' : '#c0392b'}">${d.chg >= 0 ? '▲' : '▼'} ${Math.abs(d.chg).toFixed(2)}% today</div>`;
+      const periodLbl = macroTilePeriod === '1D' ? 'today' : macroTilePeriod;
+      chgStr = `<div class="comm-chg" style="color:${d.chg >= 0 ? '#2d7a4f' : '#c0392b'}">${d.chg >= 0 ? '▲' : '▼'} ${Math.abs(d.chg).toFixed(2)}% ${periodLbl}</div>`;
     }
     const impact = d ? def.impact(d.price, d.chg) : '–';
     return `<div class="comm-card ${def.cat}">
@@ -4468,8 +4495,24 @@ async function loadMacroChart(period, btn) {
 
 // ── MAIN LOADER ──────────────────────────────────
 let macroLoaded = false;
+let macroTilePeriod = '1D';
+
+// Period selector handler for the Global Markets tiles (separate from the
+// Nifty vs Global Indices correlation chart's own period buttons below).
+function setMacroTilePeriod(period, btn) {
+  macroTilePeriod = period;
+  if (btn) {
+    document.querySelectorAll('#macroTilePeriods .period-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+  loadMacro();
+}
+
 async function loadMacro() {
   macroLoaded = true;
+  const period = macroTilePeriod;
+  const sub = document.getElementById('macroTilesSub');
+  if (sub) sub.textContent = `Yahoo Finance · change shown over last ${period === '1D' ? '1 day' : period}`;
 
   // Fetch USD/INR first (needed for gold conversion)
   const inrRate = await getUSDINR();
@@ -4482,8 +4525,8 @@ async function loadMacro() {
   ];
   const uniqueSyms = [...new Set(allSyms)];
 
-  // Fetch all in parallel
-  const rawResults = await Promise.all(uniqueSyms.map(async sym => ({ sym, data: await fetchMacroPrice(sym) })));
+  // Fetch all in parallel, using the selected time-frame for % change
+  const rawResults = await Promise.all(uniqueSyms.map(async sym => ({ sym, data: await fetchMacroPrice(sym, period) })));
   const results    = {};
   rawResults.forEach(r => { if (r.data) results[r.sym] = r.data; });
 
