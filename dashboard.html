@@ -883,7 +883,7 @@ select:focus, input[type=text]:focus { border-color: #e8b94a; }
       <div class="card" style="margin-bottom:14px">
         <div class="card-head">
           <div class="card-title">🏭 Sectoral Investment — DII vs FII Tilt</div>
-          <div class="card-sub">Sector-level institutional preference · FII-heavy vs DII-dominated · data as of Jun 2025</div>
+          <div class="card-sub" id="sectorFlowSub">Sector-level institutional preference · FII-heavy vs DII-dominated</div>
         </div>
         <div class="card-body" style="padding:0">
           <div style="overflow-x:auto" id="sectorFlowTable"></div>
@@ -3205,7 +3205,8 @@ const FII_FNO = {
 };
 
 // Sectoral FII/DII tilt (as of May 2025 shareholding patterns)
-const SECTOR_FLOWS = [
+// Fallback only — used if the live ?action=sectorflows fetch fails.
+const SECTOR_FLOWS_FALLBACK = [
   {
     sector: 'IT Services',
     fiiOwn: 38.4, diiOwn: 12.1,
@@ -3582,7 +3583,113 @@ async function renderFpiMood() {
   }
 }
 
-function renderSectorTable() {
+function tiltFromPct(fii, dii) {
+  if (fii == null || dii == null) return 'mixed';
+  if (fii > dii + 5) return 'fii';
+  if (dii > fii + 5) return 'dii';
+  return 'mixed';
+}
+
+function toggleSectorDetail(safeId) {
+  const row = document.getElementById('sdrow-' + safeId);
+  const arrow = document.getElementById('sdarrow-' + safeId);
+  if (!row) return;
+  const open = row.style.display !== 'none';
+  row.style.display = open ? 'none' : 'table-row';
+  if (arrow) arrow.textContent = open ? '▸' : '▾';
+}
+
+// Live sectoral table — granular, per-stock FII/DII/Promoter shareholding via
+// the GAS backend's ?action=sectorflows route (Upstox share-holdings, cached weekly).
+async function loadSectorFlows() {
+  const el = document.getElementById('sectorFlowTable');
+  const sub = document.getElementById('sectorFlowSub');
+  if (!el) return;
+  el.innerHTML = '<div class="loading" style="padding:14px"><div class="spinner"></div>Loading live sector shareholding…</div>';
+
+  try {
+    const r = await fetch(BACKEND + '?action=sectorflows');
+    const j = await r.json();
+    if (!j.ok || !j.sectors || !j.sectors.length) {
+      console.warn('Sector flows live fetch unavailable, using fallback:', j.error);
+      renderSectorTableStatic();
+      if (sub) sub.textContent = '⚠ Live shareholding feed unavailable — showing reference data (not current). Check the GAS backend.';
+      return;
+    }
+
+    const sectors = j.sectors.slice().sort((a,b) => (b.fiiOwnPct||0) - (a.fiiOwnPct||0));
+    const fetchedAt = sectors[0]?.fetchedAt ? new Date(sectors[0].fetchedAt) : null;
+    if (sub) {
+      sub.textContent = fetchedAt
+        ? `Live · Upstox shareholding data, ${sectors.reduce((s,sec)=>s+sec.stocks.length,0)} stocks across ${sectors.length} sectors · refreshed ${fetchedAt.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'})} · click a row for stock-level detail`
+        : `Live · Upstox shareholding data across ${sectors.length} sectors · click a row for stock-level detail`;
+    }
+
+    el.innerHTML = `
+      <table class="sector-flow-table">
+        <thead>
+          <tr>
+            <th></th>
+            <th>Sector</th>
+            <th>Avg FII %</th>
+            <th>Avg DII %</th>
+            <th>Institutional Tilt</th>
+            <th>Stocks Sampled</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${sectors.map(s => {
+            const safeId = s.sector.replace(/[^a-z0-9]/gi, '_');
+            const tilt = tiltFromPct(s.fiiOwnPct, s.diiOwnPct);
+            const tiltLabel = tilt === 'fii' ? '🌐 FII dominant' : tilt === 'dii' ? '🏦 DII dominant' : '🤝 Balanced';
+            return `
+            <tr style="cursor:pointer" onclick="toggleSectorDetail('${safeId}')">
+              <td style="width:18px;color:#999" id="sdarrow-${safeId}">▸</td>
+              <td style="font-weight:600;color:#1a2744">${s.sector}</td>
+              <td style="font-family:'Courier New',monospace;color:#4a90d9;font-weight:600">${s.fiiOwnPct != null ? s.fiiOwnPct + '%' : '–'}</td>
+              <td style="font-family:'Courier New',monospace;color:#2d7a4f;font-weight:600">${s.diiOwnPct != null ? s.diiOwnPct + '%' : '–'}</td>
+              <td><span class="tilt-pill tilt-${tilt}">${tiltLabel}</span></td>
+              <td style="font-size:11px;color:#888">${s.stocks.length} stocks</td>
+            </tr>
+            <tr id="sdrow-${safeId}" style="display:none">
+              <td></td>
+              <td colspan="5" style="padding:0">
+                <table style="width:100%;border-collapse:collapse;background:#f7f5f0">
+                  <thead>
+                    <tr>
+                      <th style="padding:6px 12px;text-align:left;font-size:9px;color:#999;text-transform:uppercase;letter-spacing:0.5px">Stock</th>
+                      <th style="padding:6px 12px;text-align:right;font-size:9px;color:#999;text-transform:uppercase;letter-spacing:0.5px">FII %</th>
+                      <th style="padding:6px 12px;text-align:right;font-size:9px;color:#999;text-transform:uppercase;letter-spacing:0.5px">DII %</th>
+                      <th style="padding:6px 12px;text-align:right;font-size:9px;color:#999;text-transform:uppercase;letter-spacing:0.5px">Promoter %</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${s.stocks.map(st => `
+                      <tr>
+                        <td style="padding:5px 12px;font-family:'Courier New',monospace;font-size:11px;color:#1a2744">${st.symbol.replace('.NS','')}</td>
+                        <td style="padding:5px 12px;text-align:right;font-family:'Courier New',monospace;font-size:11px;color:#4a90d9">${st.fiiPct != null ? st.fiiPct + '%' : '–'}</td>
+                        <td style="padding:5px 12px;text-align:right;font-family:'Courier New',monospace;font-size:11px;color:#2d7a4f">${st.diiPct != null ? st.diiPct + '%' : '–'}</td>
+                        <td style="padding:5px 12px;text-align:right;font-family:'Courier New',monospace;font-size:11px;color:#888">${st.promoterPct != null ? st.promoterPct + '%' : '–'}</td>
+                      </tr>`).join('')}
+                  </tbody>
+                </table>
+              </td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+      <div style="padding:10px 12px;font-size:10px;color:#aaa">
+        Live shareholding %, sourced via Upstox per-stock share-holdings data, refreshed weekly. Sector figures are a simple average across the sampled stocks listed — not full-sector ownership. Click any sector row to see the underlying stocks.
+      </div>`;
+  } catch(e) {
+    console.warn('Sector flows live fetch failed, using fallback:', e);
+    renderSectorTableStatic();
+    if (sub) sub.textContent = '⚠ Live shareholding feed unavailable — showing reference data (not current).';
+  }
+}
+
+// Static fallback — only used if the live fetch above fails.
+function renderSectorTableStatic() {
   const el = document.getElementById('sectorFlowTable');
   if (!el) return;
   el.innerHTML = `
@@ -3600,7 +3707,7 @@ function renderSectorTable() {
         </tr>
       </thead>
       <tbody>
-        ${SECTOR_FLOWS.map(s => `<tr>
+        ${SECTOR_FLOWS_FALLBACK.map(s => `<tr>
           <td style="font-weight:600;color:#1a2744">${s.sector}</td>
           <td style="font-family:'Courier New',monospace;color:#4a90d9;font-weight:600">${s.fiiOwn}%</td>
           <td style="font-family:'Courier New',monospace;color:#2d7a4f;font-weight:600">${s.diiOwn}%</td>
@@ -3613,7 +3720,7 @@ function renderSectorTable() {
       </tbody>
     </table>
     <div style="padding:10px 12px;font-size:10px;color:#aaa">
-      Ownership data: Shareholding patterns as of Mar 2025. Actions: based on QoQ change trend. Source: SEBI/BSE shareholding disclosures.
+      ⚠ Reference data only (not live) — Ownership data: Shareholding patterns as of Mar 2025. Actions: based on QoQ change trend. Source: SEBI/BSE shareholding disclosures.
     </div>`;
 }
 
@@ -3681,7 +3788,7 @@ async function loadFiiDii() {
   renderFiiChart('recent');
   renderAbsorption();
   renderFnoPanel();
-  renderSectorTable();
+  await loadSectorFlows();
   renderAmfi();
   await renderFpiMood();
 }
