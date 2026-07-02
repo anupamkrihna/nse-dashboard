@@ -231,6 +231,31 @@ body { background: #f0ede6; color: #1a2744; font-family: Arial, sans-serif; font
   .main { padding: 12px; }
 }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+/* ── Flow & News tab (v2) ── */
+.flow-card { background:#fff; border:1px solid #e2ddd2; border-radius:12px; padding:16px 18px; margin-bottom:14px; }
+.flow-hdr  { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:10px; }
+.flow-title{ font-size:13px; font-weight:700; color:#1a2744; text-transform:uppercase; letter-spacing:0.5px; }
+.flow-sub  { font-size:11px; color:#888; }
+.flow-canvas-wrap { position:relative; height:220px; }
+.flow-corr-stat { display:flex; gap:24px; margin-top:10px; flex-wrap:wrap; }
+.fcs-item  { font-size:11px; color:#666; }
+.fcs-item b{ font-family:'Courier New',monospace; font-size:15px; color:#1a2744; display:block; }
+.own-table { width:100%; border-collapse:collapse; font-size:12px; }
+.own-table th { text-align:right; padding:7px 8px; color:#888; font-size:10px; text-transform:uppercase; letter-spacing:0.5px; border-bottom:1px solid #e2ddd2; }
+.own-table th:first-child, .own-table td:first-child { text-align:left; }
+.own-table td { text-align:right; padding:8px; border-bottom:1px solid #f2efe8; font-family:'Courier New',monospace; }
+.own-table td:first-child { font-family:Arial,sans-serif; font-weight:600; color:#1a2744; }
+.own-up { color:#2d7a4f; font-weight:700; } .own-dn { color:#c0392b; font-weight:700; }
+.buyer-tag { display:inline-block; background:#e8b84b; color:#1a2744; font-size:9px; font-weight:700; border-radius:4px; padding:1px 6px; margin-left:6px; letter-spacing:0.4px; }
+.news-item { padding:10px 0; border-bottom:1px solid #f2efe8; }
+.news-item:last-child { border-bottom:none; }
+.news-item a { color:#1a2744; text-decoration:none; font-size:13px; font-weight:600; line-height:1.45; }
+.news-item a:hover { color:#b8860b; }
+.news-meta { font-size:10px; color:#999; margin-top:3px; }
+.flow-note { font-size:11px; color:#666; line-height:1.6; margin-top:8px; }
+</style>
 </head>
 <body>
 
@@ -303,6 +328,7 @@ body { background: #f0ede6; color: #1a2744; font-family: Arial, sans-serif; font
     <div class="tab active" data-tab="steam">🔥 Steam Gauge</div>
     <div class="tab" data-tab="sector">📊 Sector Context</div>
     <div class="tab" data-tab="indices">🗂 All Indices</div>
+    <div class="tab" data-tab="flow">📈 Flow &amp; News</div>
   </div>
 
   <!-- STEAM TAB -->
@@ -415,6 +441,36 @@ body { background: #f0ede6; color: #1a2744; font-family: Arial, sans-serif; font
   </div>
 
   <!-- SECTOR TAB -->
+  <!-- FLOW & NEWS TAB (v2) -->
+  <div class="tab-panel" id="tab-flow">
+    <div class="flow-card">
+      <div class="flow-hdr"><span class="flow-title">Price — 1 Year</span><span class="flow-sub" id="flowPriceSub"></span></div>
+      <div class="flow-canvas-wrap"><canvas id="flowPriceChart"></canvas></div>
+    </div>
+    <div class="flow-card">
+      <div class="flow-hdr"><span class="flow-title">Volume — 1 Year</span><span class="flow-sub">green = up day · red = down day</span></div>
+      <div class="flow-canvas-wrap"><canvas id="flowVolChart"></canvas></div>
+    </div>
+    <div class="flow-card">
+      <div class="flow-hdr"><span class="flow-title">Price–Volume Correlation</span><span class="flow-sub">rolling 20-day Pearson · daily %change vs volume</span></div>
+      <div class="flow-canvas-wrap"><canvas id="flowCorrChart"></canvas></div>
+      <div class="flow-corr-stat">
+        <div class="fcs-item"><b id="fcsCorr">–</b>1Y corr: Δprice% vs volume</div>
+        <div class="fcs-item"><b id="fcsCorrAbs">–</b>1Y corr: |Δprice%| vs volume</div>
+        <div class="fcs-item" style="flex:1;min-width:220px"><span id="fcsRead" class="flow-note"></span></div>
+      </div>
+    </div>
+    <div class="flow-card">
+      <div class="flow-hdr"><span class="flow-title">Ownership — Who's Buying</span><span class="flow-sub" id="ownPeriodSub"></span></div>
+      <div id="ownTableWrap"><div class="flow-note">Loading shareholding pattern…</div></div>
+      <div class="flow-note">QoQ change in quarterly shareholding disclosures. "Retail &amp; Others" is the residual public category. Source: Upstox fundamentals.</div>
+    </div>
+    <div class="flow-card">
+      <div class="flow-hdr"><span class="flow-title">Latest News</span><span class="flow-sub">Yahoo Finance + Google News (IN)</span></div>
+      <div id="newsWrap"><div class="flow-note">Loading news…</div></div>
+    </div>
+  </div>
+
   <div class="tab-panel" id="tab-sector">
     <div class="sector-grid">
       <div class="sector-card">
@@ -851,6 +907,7 @@ document.querySelectorAll('.tab').forEach(tab => {
     tab.classList.add('active');
     document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
     if (tab.dataset.tab === 'indices') buildIndicesPanel();
+    if (tab.dataset.tab === 'flow') renderFlowTab();
   });
 });
 
@@ -1084,6 +1141,11 @@ async function loadStock(stock) {
   else if (yhOk)    { badge.textContent = '⚠ Yahoo only';     badge.className = 'src-badge src-warn'; }
   else if (upOk)    { badge.textContent = '⚠ Upstox only';    badge.className = 'src-badge src-warn'; }
   else              { badge.textContent = '⚠ Chart only';      badge.className = 'src-badge src-err'; }
+
+  flowState.chartJson = gasData.chart;
+  flowState.stock     = stock;
+  flowState.symbol    = nsSym;
+  flowState.rendered  = false;
 
   try { renderSteam(stock, gasData.chart, merged); }
   catch(e) {
@@ -1543,6 +1605,178 @@ function checkUrlParam() {
 buildLanding();
 loadTicker();
 checkUrlParam();
+
+
+/* ═══════════════════════════════════════════════
+   FLOW & NEWS TAB (v2)
+   Charts 1-3 from the already-loaded Yahoo chart JSON (no new calls).
+   Ownership + news via backend v15 routes (?action=holdings / news).
+═══════════════════════════════════════════════ */
+let flowState = { chartJson:null, stock:null, symbol:null, rendered:false, charts:[] };
+
+function pearson_(x, y) {
+  const n = x.length; if (n < 3) return null;
+  let sx=0, sy=0, sxy=0, sx2=0, sy2=0;
+  for (let i=0;i<n;i++){ sx+=x[i]; sy+=y[i]; sxy+=x[i]*y[i]; sx2+=x[i]*x[i]; sy2+=y[i]*y[i]; }
+  const den = Math.sqrt((n*sx2-sx*sx)*(n*sy2-sy*sy));
+  return den === 0 ? null : (n*sxy-sx*sy)/den;
+}
+
+function renderFlowTab() {
+  if (!flowState.chartJson) {
+    document.getElementById('ownTableWrap').innerHTML = '<div class="flow-note">Load a stock first (search above), then open this tab.</div>';
+    return;
+  }
+  if (flowState.rendered) return;
+  flowState.rendered = true;
+
+  const res = flowState.chartJson.chart?.result?.[0];
+  if (!res) return;
+  const q = res.indicators.quote[0];
+  const pts = [];
+  res.timestamp.forEach((t,i) => {
+    if (q.close[i] != null && q.volume[i] != null)
+      pts.push({ t: new Date(t*1000), c: q.close[i], v: q.volume[i] });
+  });
+  if (pts.length < 25) return;
+
+  const labels = pts.map(p => p.t.toLocaleDateString('en-IN',{day:'2-digit',month:'short'}));
+  const closes = pts.map(p => p.c);
+  const vols   = pts.map(p => p.v);
+
+  // Daily % returns (aligned: returns[i] pairs with vols[i+1])
+  const rets = [], retVols = [];
+  for (let i=1;i<pts.length;i++){ rets.push((closes[i]-closes[i-1])/closes[i-1]*100); retVols.push(vols[i]); }
+
+  // Rolling 20-day correlation
+  const WIN = 20;
+  const corrSeries = new Array(pts.length).fill(null);
+  for (let i=WIN;i<rets.length;i++){
+    corrSeries[i+1] = pearson_(rets.slice(i-WIN,i), retVols.slice(i-WIN,i));
+  }
+  const corrFull = pearson_(rets, retVols);
+  const corrAbs  = pearson_(rets.map(Math.abs), retVols);
+
+  document.getElementById('fcsCorr').textContent    = corrFull != null ? corrFull.toFixed(2) : '–';
+  document.getElementById('fcsCorrAbs').textContent = corrAbs  != null ? corrAbs.toFixed(2)  : '–';
+  document.getElementById('flowPriceSub').textContent =
+    '₹' + closes[0].toFixed(0) + ' → ₹' + closes.at(-1).toFixed(0) +
+    ' (' + (((closes.at(-1)-closes[0])/closes[0])*100).toFixed(1) + '%)';
+
+  let read = '';
+  if (corrAbs != null && corrAbs > 0.3) read = 'Volume expands on big moves — participation confirms the trend. ';
+  else if (corrAbs != null) read = 'Volume is largely indifferent to move size — trend conviction is weak. ';
+  if (corrFull != null && corrFull > 0.15) read += 'Positive price–volume tilt: up-days attract more volume (accumulation bias).';
+  else if (corrFull != null && corrFull < -0.15) read += 'Negative tilt: down-days carry more volume (distribution bias — caution).';
+  else read += 'No directional volume bias in the last year.';
+  document.getElementById('fcsRead').textContent = read;
+
+  // Destroy prior chart instances (stock switch)
+  flowState.charts.forEach(c => { try { c.destroy(); } catch(e){} });
+  flowState.charts = [];
+
+  const NAVY='#1a2744', GOLD='#e8b84b', GRID='#eee9df';
+  const baseOpts = {
+    responsive:true, maintainAspectRatio:false, animation:false,
+    plugins:{ legend:{display:false}, tooltip:{mode:'index',intersect:false} },
+    scales:{ x:{ ticks:{maxTicksLimit:10,font:{size:10}}, grid:{display:false} },
+             y:{ grid:{color:GRID}, ticks:{font:{size:10}} } }
+  };
+
+  flowState.charts.push(new Chart(document.getElementById('flowPriceChart'), {
+    type:'line',
+    data:{ labels, datasets:[{ data:closes, borderColor:NAVY, backgroundColor:'rgba(232,184,75,0.12)',
+      borderWidth:1.6, pointRadius:0, fill:true, tension:0.15 }] },
+    options: baseOpts
+  }));
+
+  flowState.charts.push(new Chart(document.getElementById('flowVolChart'), {
+    type:'bar',
+    data:{ labels, datasets:[{ data:vols,
+      backgroundColor: pts.map((p,i)=> i>0 && closes[i]>=closes[i-1] ? 'rgba(45,122,79,0.55)' : 'rgba(192,57,43,0.5)'),
+      borderWidth:0 }] },
+    options: baseOpts
+  }));
+
+  flowState.charts.push(new Chart(document.getElementById('flowCorrChart'), {
+    type:'line',
+    data:{ labels, datasets:[{ data:corrSeries, borderColor:GOLD, borderWidth:1.8,
+      pointRadius:0, spanGaps:true, tension:0.2 }] },
+    options:{ ...baseOpts,
+      scales:{ x: baseOpts.scales.x,
+        y:{ min:-1, max:1, grid:{ color: ctx => ctx.tick.value === 0 ? '#c9c2b2' : GRID },
+            ticks:{ font:{size:10}, stepSize:0.5 } } } }
+  }));
+
+  loadOwnership_();
+  loadNews_();
+}
+
+async function loadOwnership_() {
+  const wrap = document.getElementById('ownTableWrap');
+  wrap.innerHTML = '<div class="flow-note">Loading shareholding pattern…</div>';
+  try {
+    const r = await fetch(BACKEND + '?action=holdings&symbol=' + encodeURIComponent(flowState.symbol));
+    const j = await r.json();
+    if (!j.ok) { wrap.innerHTML = '<div class="flow-note">⚠ ' + (j.error||'Holdings unavailable') + '</div>'; return; }
+
+    const G = {'Promoter':{l:null,p:null},'FII':{l:null,p:null},'DII':{l:null,p:null},'Retail & Others':{l:null,p:null}};
+    j.categories.forEach(c => {
+      const t = (c.category||'').toLowerCase();
+      const key = t.includes('promoter') ? 'Promoter'
+                : (t === 'fii' || t.includes('foreign')) ? 'FII'
+                : (t.includes('dii') || t.includes('mutual') || t.includes('insurance')) ? 'DII'
+                : 'Retail & Others';
+      if (c.latestPct != null) G[key].l = (G[key].l||0) + c.latestPct;
+      if (c.priorPct  != null) G[key].p = (G[key].p||0) + c.priorPct;
+    });
+
+    const rows = Object.keys(G).map(k => {
+      const l = G[k].l, p = G[k].p;
+      return { k, l, p, d: (l!=null && p!=null) ? l-p : null };
+    });
+    const buyers = rows.filter(r => r.d != null).sort((a,b) => b.d - a.d);
+    const topBuyer = buyers.length && buyers[0].d > 0.05 ? buyers[0].k : null;
+
+    const per = j.categories.find(c => c.latestPeriod);
+    document.getElementById('ownPeriodSub').textContent =
+      per ? (per.priorPeriod ? per.priorPeriod + ' → ' + per.latestPeriod : 'as of ' + per.latestPeriod) : '';
+
+    wrap.innerHTML = '<table class="own-table"><tr><th>Holder</th><th>Latest %</th><th>Prev Qtr %</th><th>QoQ Chg</th></tr>' +
+      rows.map(r => '<tr><td>' + r.k + (r.k === topBuyer ? '<span class="buyer-tag">TOP BUYER</span>' : '') + '</td>' +
+        '<td>' + (r.l != null ? r.l.toFixed(2) : '–') + '</td>' +
+        '<td>' + (r.p != null ? r.p.toFixed(2) : '–') + '</td>' +
+        '<td class="' + (r.d > 0 ? 'own-up' : r.d < 0 ? 'own-dn' : '') + '">' +
+        (r.d != null ? (r.d >= 0 ? '▲ +' : '▼ ') + r.d.toFixed(2) : '–') + '</td></tr>').join('') +
+      '</table>';
+  } catch(e) {
+    wrap.innerHTML = '<div class="flow-note">⚠ Holdings fetch failed: ' + e.message + '</div>';
+  }
+}
+
+async function loadNews_() {
+  const wrap = document.getElementById('newsWrap');
+  wrap.innerHTML = '<div class="flow-note">Loading news…</div>';
+  try {
+    const nm = flowState.stock?.name || '';
+    const r = await fetch(BACKEND + '?action=news&symbol=' + encodeURIComponent(flowState.symbol) + '&name=' + encodeURIComponent(nm));
+    const j = await r.json();
+    if (!j.ok || !j.news?.length) { wrap.innerHTML = '<div class="flow-note">No recent news found for this stock.</div>'; return; }
+    const rel = ts => {
+      if (!ts) return '';
+      const h = (Date.now() - ts) / 36e5;
+      if (h < 1)  return Math.max(1, Math.round(h*60)) + 'm ago';
+      if (h < 24) return Math.round(h) + 'h ago';
+      return Math.round(h/24) + 'd ago';
+    };
+    wrap.innerHTML = j.news.map(n =>
+      '<div class="news-item"><a href="' + n.link + '" target="_blank" rel="noopener">' + n.title + '</a>' +
+      '<div class="news-meta">' + (n.publisher||'') + (n.ts ? ' · ' + rel(n.ts) : '') + '</div></div>').join('');
+  } catch(e) {
+    wrap.innerHTML = '<div class="flow-note">⚠ News fetch failed: ' + e.message + '</div>';
+  }
+}
+
 </script>
 </body>
 </html>
