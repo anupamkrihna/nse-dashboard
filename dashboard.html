@@ -547,7 +547,7 @@ select:focus, input[type=text]:focus { border-color: #e8b94a; }
             <select id="svnIndex" style="width:175px">
               <option value="^NSEI|Nifty 50">Nifty 50</option>
               <option value="^BSESN|Sensex">Sensex</option>
-              <option value="^NSEMDCP50|Nifty Next 50">Nifty Next 50</option>
+              <option value="^NSMIDCP|Nifty Next 50">Nifty Next 50</option>
               <option value="^NSEBANK|Nifty Bank">Nifty Bank</option>
               <option value="^CNXIT|Nifty IT">Nifty IT</option>
               <option value="^CNXAUTO|Nifty Auto">Nifty Auto</option>
@@ -559,13 +559,13 @@ select:focus, input[type=text]:focus { border-color: #e8b94a; }
               <option value="^CNXPSE|Nifty PSE">Nifty PSE</option>
               <option value="^CNXPSUBANK|Nifty PSU Bank">Nifty PSU Bank</option>
               <option value="NIFTY_IND_DEFENCE.NS|Nifty Defence">Nifty Defence</option>
-              <option value="^CNXMIDCAP|Nifty Midcap 150">Nifty Midcap 150</option>
+              <option value="NIFTYMIDCAP150.NS|Nifty Midcap 150">Nifty Midcap 150</option>
               <option value="^CNXSC|Nifty Smallcap">Nifty Smallcap</option>
-              <option value="^CNXFINANCE|Nifty Financial Services">Nifty Financial</option>
-              <option value="^CNXHEALTH|Nifty Healthcare">Nifty Healthcare</option>
-              <option value="^CNXOILGAS|Nifty Oil &amp; Gas">Nifty Oil &amp; Gas</option>
+              <option value="NIFTY_FIN_SERVICE.NS|Nifty Financial Services">Nifty Financial</option>
+              <option value="NIFTY_HEALTHCARE.NS|Nifty Healthcare">Nifty Healthcare</option>
+              <option value="NIFTY_OIL_AND_GAS.NS|Nifty Oil &amp; Gas">Nifty Oil &amp; Gas</option>
               <option value="^CNXINFRA|Nifty Infra">Nifty Infra</option>
-              <option value="^CNXCPSE|Nifty CPSE">Nifty CPSE</option>
+              <option value="NIFTY_CPSE.NS|Nifty CPSE">Nifty CPSE</option>
             </select>
             <select id="svnPeriod">
               <option value="1D">1D</option>
@@ -924,11 +924,11 @@ const BACKEND = 'https://script.google.com/macros/s/AKfycbxbqcip3QPPRP5YUxngoWec
 
 const ALL_INDICES = {
   'Nifty 50':       {type:'broad', sym:'^NSEI',      stocks:['RELIANCE','TCS','HDFCBANK','BHARTIARTL','ICICIBANK','SBIN','INFY','LICI','ITC','HINDUNILVR','LT','BAJFINANCE','HCLTECH','MARUTI','SUNPHARMA','KOTAKBANK','AXISBANK','TITAN','ADANIENT','ONGC','NTPC','ULTRACEMCO','COALINDIA','JSWSTEEL','BAJAJ-AUTO','WIPRO','POWERGRID','NESTLEIND','TATAMOTORS','M&M','TATASTEEL','ADANIPORTS','TECHM','ASIANPAINT','HINDALCO','DRREDDY','CIPLA','DIVISLAB','GRASIM','SBILIFE','BAJAJFINSV','HDFCLIFE','APOLLOHOSP','EICHERMOT','BRITANNIA','TATACONSUM','BPCL','INDUSINDBK','HEROMOTOCO','SHRIRAMFIN']},
-  'Nifty Next 50':  {type:'broad', sym:'^NSEMDCP50', stocks:['ADANIGREEN','ADANIPOWER','ATGL','AMBUJACEM','BANKBARODA','BEL','BHEL','BOSCHLTD','CANBK','CHOLAFIN','DABUR','DLF','GAIL','GODREJCP','HAVELLS','INDIGO','IOC','IRCTC','IRFC','LUPIN','MUTHOOTFIN','OBEROIRLTY','OFSS','PIIND','PNB','RECLTD','SBICARD','SHREECEM','SIEMENS','TATAPOWER','TORNTPHARM','TRENT','UNITDSPR','UPL','VBL','VEDL','ZOMATO','HDFCAMC','ICICIPRULI','INDUSTOWER','MANKIND','MARICO','MOTHERSON','NAUKRI','PAGEIND','POLYCAB','PERSISTENT','TIINDIA','ZYDUSLIFE']},
+  'Nifty Next 50':  {type:'broad', sym:'^NSMIDCP', stocks:['ADANIGREEN','ADANIPOWER','ATGL','AMBUJACEM','BANKBARODA','BEL','BHEL','BOSCHLTD','CANBK','CHOLAFIN','DABUR','DLF','GAIL','GODREJCP','HAVELLS','INDIGO','IOC','IRCTC','IRFC','LUPIN','MUTHOOTFIN','OBEROIRLTY','OFSS','PIIND','PNB','RECLTD','SBICARD','SHREECEM','SIEMENS','TATAPOWER','TORNTPHARM','TRENT','UNITDSPR','UPL','VBL','VEDL','ZOMATO','HDFCAMC','ICICIPRULI','INDUSTOWER','MANKIND','MARICO','MOTHERSON','NAUKRI','PAGEIND','POLYCAB','PERSISTENT','TIINDIA','ZYDUSLIFE']},
   'Nifty 100':      {type:'broad', sym:'^CNX100',    stocks:['RELIANCE','TCS','HDFCBANK','BHARTIARTL','ICICIBANK','SBIN','INFY','LICI','ITC','HINDUNILVR','LT','BAJFINANCE','HCLTECH','MARUTI','SUNPHARMA','KOTAKBANK','AXISBANK','TITAN','ADANIENT','ONGC','NTPC','ULTRACEMCO','COALINDIA','JSWSTEEL','BAJAJ-AUTO','WIPRO','POWERGRID','NESTLEIND','TATAMOTORS','M&M','TATASTEEL','ADANIPORTS','TECHM','ASIANPAINT','HINDALCO','DRREDDY','CIPLA','GRASIM','SBILIFE','BAJAJFINSV','HDFCLIFE','APOLLOHOSP','EICHERMOT','BRITANNIA','TATACONSUM','BPCL','INDUSINDBK','HEROMOTOCO','SHRIRAMFIN','BEL','BHEL','CANBK','CHOLAFIN','DABUR','DLF','GAIL','GODREJCP','HAVELLS','INDIGO','IOC','IRCTC','IRFC','LUPIN','MUTHOOTFIN','OBEROIRLTY','OFSS','PIIND','PNB','RECLTD','SHREECEM','SIEMENS','TATAPOWER','TORNTPHARM','TRENT','UNITDSPR','UPL','VBL','VEDL','ZOMATO','HDFCAMC','ICICIPRULI','INDUSTOWER','MANKIND','MARICO','MOTHERSON','NAUKRI','PAGEIND','POLYCAB','PERSISTENT','TIINDIA','ZYDUSLIFE']},
-  'Nifty Midcap 50':{type:'size',   sym:'^NSMIDCP50', stocks:['APOLLOTYRE','ASHOKLEY','ASTRAL','AUROPHARMA','BATAINDIA','BSE','CANFINHOME','CDSL','CESC','CGPOWER','CHOLAFIN','COFORGE','CONCOR','DEEPAKFERT','DIXON','ESCORTS','EXIDEIND','FEDERALBNK','FORTIS','GODREJPROP','GUJGASLTD','HUDCO','IIFL','IDFCFIRSTB','IREDA','JSWENERGY','KAYNES','KIMS','KPITTECH','LALPATHLAB','LAURUSLABS','LICHSGFIN','LTTS','MAXHEALTH','MCX','MOTHERSON','MPHASIS','NHPC','NMDC','NYKAA','OBEROIRLTY','PERSISTENT','POLYCAB','RECLTD','RVNL','SJVN','SUNDARMFIN','THERMAX','TIINDIA','UNIONBANK']},
-  'Nifty Midcap 100':{type:'size',  sym:'^NSMIDCP',   stocks:['ABCAPITAL','AIAENG','APOLLOTYRE','ASHOKLEY','ASTRAL','AUROPHARMA','BATAINDIA','BSE','CANFINHOME','CDSL','CESC','CGPOWER','CHOLAFIN','COFORGE','CONCOR','DEEPAKFERT','DIXON','ESCORTS','EXIDEIND','FEDERALBNK','FORTIS','GODREJPROP','GUJGASLTD','HUDCO','IIFL','IDFCFIRSTB','IREDA','JSWENERGY','KAYNES','KIMS','KPITTECH','LALPATHLAB','LAURUSLABS','LICHSGFIN','LTTS','MAXHEALTH','MCX','MOTHERSON','MPHASIS','NHPC','NMDC','NYKAA','OBEROIRLTY','PERSISTENT','PETRONET','POLYCAB','POONAWALLA','PRESTIGE','RECLTD','RVNL','SJVN','SONACOMS','SUNDARMFIN','SUPREMEIND','SYNGENE','THERMAX','TIINDIA','TORNTPOWER','UNIONBANK','UNOMINDA','VOLTAS','ZOMATO']},
-  'Nifty Smallcap 100':{type:'size', sym:'^CNXSC100', stocks:['AARTIIND','AJANTPHARM','ANANTRAJ','APTUS','CAMS','CEATLTD','CENTURYPLY','COCHINSHIP','EQUITASBNK','FINCABLES','GRSE','IREDA','JSWENERGY','KAYNES','KNRCON','MAZAGON','NHPC','NMDC','OLECTRA','RECLTD','RVNL','SAFARI','SJVN','SONACOMS','THERMAX','TIINDIA','TRIDENT','UJJIVANSFB','WELSPUNLIV','VGUARD']},
+  'Nifty Midcap 50':{type:'size',   sym:'^NSEMDCP50', stocks:['APOLLOTYRE','ASHOKLEY','ASTRAL','AUROPHARMA','BATAINDIA','BSE','CANFINHOME','CDSL','CESC','CGPOWER','CHOLAFIN','COFORGE','CONCOR','DEEPAKFERT','DIXON','ESCORTS','EXIDEIND','FEDERALBNK','FORTIS','GODREJPROP','GUJGASLTD','HUDCO','IIFL','IDFCFIRSTB','IREDA','JSWENERGY','KAYNES','KIMS','KPITTECH','LALPATHLAB','LAURUSLABS','LICHSGFIN','LTTS','MAXHEALTH','MCX','MOTHERSON','MPHASIS','NHPC','NMDC','NYKAA','OBEROIRLTY','PERSISTENT','POLYCAB','RECLTD','RVNL','SJVN','SUNDARMFIN','THERMAX','TIINDIA','UNIONBANK']},
+  'Nifty Midcap 100':{type:'size',  sym:'NIFTYMIDCAP150.NS', /* proxy: Yahoo has no live Midcap-100 index; 150 used */   stocks:['ABCAPITAL','AIAENG','APOLLOTYRE','ASHOKLEY','ASTRAL','AUROPHARMA','BATAINDIA','BSE','CANFINHOME','CDSL','CESC','CGPOWER','CHOLAFIN','COFORGE','CONCOR','DEEPAKFERT','DIXON','ESCORTS','EXIDEIND','FEDERALBNK','FORTIS','GODREJPROP','GUJGASLTD','HUDCO','IIFL','IDFCFIRSTB','IREDA','JSWENERGY','KAYNES','KIMS','KPITTECH','LALPATHLAB','LAURUSLABS','LICHSGFIN','LTTS','MAXHEALTH','MCX','MOTHERSON','MPHASIS','NHPC','NMDC','NYKAA','OBEROIRLTY','PERSISTENT','PETRONET','POLYCAB','POONAWALLA','PRESTIGE','RECLTD','RVNL','SJVN','SONACOMS','SUNDARMFIN','SUPREMEIND','SYNGENE','THERMAX','TIINDIA','TORNTPOWER','UNIONBANK','UNOMINDA','VOLTAS','ZOMATO']},
+  'Nifty Smallcap 100':{type:'size', sym:'^CNXSC', stocks:['AARTIIND','AJANTPHARM','ANANTRAJ','APTUS','CAMS','CEATLTD','CENTURYPLY','COCHINSHIP','EQUITASBNK','FINCABLES','GRSE','IREDA','JSWENERGY','KAYNES','KNRCON','MAZAGON','NHPC','NMDC','OLECTRA','RECLTD','RVNL','SAFARI','SJVN','SONACOMS','THERMAX','TIINDIA','TRIDENT','UJJIVANSFB','WELSPUNLIV','VGUARD']},
   'Nifty Bank':     {type:'sector', sym:'^NSEBANK',   stocks:['HDFCBANK','ICICIBANK','KOTAKBANK','SBIN','AXISBANK','INDUSINDBK','BANKBARODA','FEDERALBNK','IDFCFIRSTB','PNB','BANDHANBNK','AUBANK','CUB','CANBK','UNIONBANK']},
   'Nifty IT':       {type:'sector', sym:'^CNXIT',     stocks:['TCS','INFY','HCLTECH','WIPRO','TECHM','LTIM','LTTS','PERSISTENT','COFORGE','MPHASIS','OFSS','KPITTECH','TATAELXSI','MASTEK','CYIENT','INTELLECT']},
   'Nifty Auto':     {type:'sector', sym:'^CNXAUTO',   stocks:['MARUTI','TATAMOTORS','M&M','BAJAJ-AUTO','EICHERMOT','HEROMOTOCO','BOSCHLTD','MOTHERSON','TIINDIA','BHARATFORG','APOLLOTYRE','CEATLTD','UNOMINDA','SONACOMS','ESCORTS','EXIDEIND','ENDURANCE','ASHOKLEY']},
@@ -941,10 +941,10 @@ const ALL_INDICES = {
   'Nifty PSU Bank': {type:'sector', sym:'^CNXPSUBANK', stocks:['SBIN','BANKBARODA','PNB','CANBK','UNIONBANK','MAHABANK','CENTRALBK','INDIANB','IOB','UCOBANK']},
   'Nifty Defence':  {type:'sector', sym:'NIFTY_IND_DEFENCE.NS', stocks:['HAL','BEL','BHEL','MAZAGON','COCHINSHIP','GRSE','BEML','MIDHANI','PARAS','ZENTEC','MTAR','DCXINDIA','IDEAFORGE','SOLARINDS','DATAPATTNS','APOLLOMIC','RVNL','IRFC','BDL','ASTRAMICRO']},
   'Nifty Infra':    {type:'sector', sym:'^CNXINFRA',  stocks:['LT','POWERGRID','NTPC','ADANIPORTS','RELIANCE','BHARTIARTL','GAIL','BPCL','IOC','HINDPETRO','TATAPOWER','ADANIGREEN','NHPC','SJVN','RVNL','IRFC','IRCTC','RECLTD','HUDCO','GMRINFRA','KNRCON','NCC']},
-  'Nifty Financial Services':{type:'sector', sym:'^CNXFINANCE', stocks:['HDFCBANK','ICICIBANK','KOTAKBANK','SBIN','AXISBANK','BAJFINANCE','BAJAJFINSV','HDFCLIFE','SBILIFE','ICICIPRULI','MUTHOOTFIN','CHOLAFIN','SHRIRAMFIN','IIFL','LICHSGFIN','SUNDARMFIN','POONAWALLA','CANFINHOME','HDFCAMC','ANGELONE']},
-  'Nifty Healthcare':{type:'sector', sym:'^CNXHEALTH', stocks:['SUNPHARMA','DRREDDY','CIPLA','DIVISLAB','LUPIN','TORNTPHARM','AUROPHARMA','ZYDUSLIFE','ALKEM','APOLLOHOSP','MAXHEALTH','KIMS','FORTIS','MEDANTA','METROPOLIS','LALPATHLAB','IPCALAB','SYNGENE','GLAND']},
-  'Nifty Oil & Gas':{type:'sector', sym:'^CNXOILGAS', stocks:['RELIANCE','ONGC','GAIL','BPCL','IOC','HINDPETRO','PETRONET','ATGL','GUJGASLTD','IGL','MGL','GSPL']},
-  'Nifty CPSE':     {type:'sector', sym:'^CNXCPSE',   stocks:['NTPC','POWERGRID','ONGC','COALINDIA','SBIN','BEL','BHEL','HAL','RECLTD','NHPC','SJVN','IRFC','IRCTC','RVNL','SAIL','NMDC','COCHINSHIP','GRSE','MAZAGON','BEML','MIDHANI','MOIL','HUDCO','IREDA','IOC','HINDPETRO','BPCL']},
+  'Nifty Financial Services':{type:'sector', sym:'NIFTY_FIN_SERVICE.NS', stocks:['HDFCBANK','ICICIBANK','KOTAKBANK','SBIN','AXISBANK','BAJFINANCE','BAJAJFINSV','HDFCLIFE','SBILIFE','ICICIPRULI','MUTHOOTFIN','CHOLAFIN','SHRIRAMFIN','IIFL','LICHSGFIN','SUNDARMFIN','POONAWALLA','CANFINHOME','HDFCAMC','ANGELONE']},
+  'Nifty Healthcare':{type:'sector', sym:'NIFTY_HEALTHCARE.NS', stocks:['SUNPHARMA','DRREDDY','CIPLA','DIVISLAB','LUPIN','TORNTPHARM','AUROPHARMA','ZYDUSLIFE','ALKEM','APOLLOHOSP','MAXHEALTH','KIMS','FORTIS','MEDANTA','METROPOLIS','LALPATHLAB','IPCALAB','SYNGENE','GLAND']},
+  'Nifty Oil & Gas':{type:'sector', sym:'NIFTY_OIL_AND_GAS.NS', stocks:['RELIANCE','ONGC','GAIL','BPCL','IOC','HINDPETRO','PETRONET','ATGL','GUJGASLTD','IGL','MGL','GSPL']},
+  'Nifty CPSE':     {type:'sector', sym:'NIFTY_CPSE.NS',   stocks:['NTPC','POWERGRID','ONGC','COALINDIA','SBIN','BEL','BHEL','HAL','RECLTD','NHPC','SJVN','IRFC','IRCTC','RVNL','SAIL','NMDC','COCHINSHIP','GRSE','MAZAGON','BEML','MIDHANI','MOIL','HUDCO','IREDA','IOC','HINDPETRO','BPCL']},
 };
 
 // Signal Lab universes
@@ -1602,8 +1602,8 @@ const TICKER_SYMS = [
   {l:'NIFTY 50',    s:'^NSEI',                  etf:null},
   {l:'BANK NIFTY',  s:'^NSEBANK',               etf:null},
   {l:'NIFTY IT',    s:'^CNXIT',                 etf:null},
-  {l:'NIFTY NXT50', s:'^NSEMDCP50',             etf:'JUNIORBEES.NS'},
-  {l:'NIFTY MIDCAP',s:'^CNXMIDCAP',             etf:'MOM100.NS'},
+  {l:'NIFTY NXT50', s:'^NSMIDCP',               etf:'JUNIORBEES.NS'},
+  {l:'NIFTY MIDCAP',s:'NIFTYMIDCAP150.NS',      etf:'MOM100.NS'},
   {l:'NIFTY SC',    s:'^CNXSC',                 etf:'SETFNN50.NS'},
   {l:'NIFTY DEF',   s:'NIFTY_IND_DEFENCE.NS',   etf:null},
   {l:'NIFTY PHARMA',s:'^CNXPHARMA',             etf:null},
@@ -1747,23 +1747,23 @@ function drawDualChart(canvasId, labels, d1, d2, l1, l2) {
 
 // All index tiles shown in the overview bar
 // etf: NSE-listed ETF that tracks the index → reliable GAS fallback when Yahoo blocks ^ symbols
-// Yahoo Finance inconsistently serves ^NSEMDCP50, ^CNXREALTY, ^CNXMIDCAP, ^CNXSC from browser
+// Yahoo Finance inconsistently serves some NSE index symbols from browser IPs; canonical, audit-verified symbols per 02-Jul-2026 Data_Audit
 // ETF prices differ from index levels but change% is identical (ETF tracks the index exactly)
 const OV_INDICES = [
   {l:'Nifty 50',        s:'^NSEI',                 iso:false, etf:null},
   {l:'Sensex',          s:'^BSESN',                iso:false, etf:null},
-  {l:'Nifty Next 50',   s:'^NSEMDCP50',            iso:false, etf:'JUNIORBEES.NS'},
+  {l:'Nifty Next 50',   s:'^NSMIDCP',              iso:false, etf:'JUNIORBEES.NS'},
   {l:'Nifty Bank',      s:'^NSEBANK',              iso:false, etf:null},
   {l:'Nifty IT',        s:'^CNXIT',                iso:false, etf:null},
   {l:'Nifty Auto',      s:'^CNXAUTO',              iso:false, etf:null},
   {l:'Nifty FMCG',      s:'^CNXFMCG',             iso:false, etf:null},
   {l:'Nifty Pharma',    s:'^CNXPHARMA',            iso:false, etf:null},
   {l:'Nifty Metal',     s:'^CNXMETAL',             iso:false, etf:null},
-  {l:'Nifty Realty',    s:'^CNXREALTY',            iso:false, etf:'NIFTYREAL.NS'},
+  {l:'Nifty Realty',    s:'^CNXREALTY',            iso:false, etf:''},
   {l:'Nifty Energy',    s:'^CNXENERGY',            iso:false, etf:null},
   {l:'Nifty PSE',       s:'^CNXPSE',               iso:false, etf:null},
   {l:'Nifty Defence',   s:'NIFTY_IND_DEFENCE.NS',  iso:false, etf:null},
-  {l:'Nifty Midcap 150',s:'^CNXMIDCAP',            iso:false, etf:'MOM100.NS'},
+  {l:'Nifty Midcap 150',s:'NIFTYMIDCAP150.NS',     iso:false, etf:'MOM100.NS'},
   {l:'Nifty Smallcap',  s:'^CNXSC',                iso:false, etf:'SETFNN50.NS'},
   {l:'USD/INR',         s:'USDINR=X',              iso:true,  etf:null},
   {l:'Gold/oz',         s:'GC=F',                  iso:true,  etf:null},
@@ -2368,10 +2368,10 @@ async function loadKPIs() { await ov.loadAllTiles(); }
 // Direct fetch for analytics — tries Yahoo q1/q2, then ETF fallback via GAS
 async function fetchChartDirect(sym, range, interval) {
   const ETF_FALLBACK = {
-    '^NSEMDCP50': 'JUNIORBEES.NS',
-    '^CNXMIDCAP': 'MOM100.NS',
-    '^CNXSC':     'SETFNN50.NS',
-    '^CNXREALTY': 'NIFTYREAL.NS',
+    '^NSMIDCP':   'JUNIORBEES.NS',
+    'NIFTYMIDCAP150.NS': 'MOM100.NS',
+    '^NSEMDCP50': 'MOM100.NS',
+    '^CNXSC':     'NIFTYSMLCAP250.NS',
   };
   const etf = ETF_FALLBACK[sym] || null;
 
@@ -2474,7 +2474,7 @@ async function changePeriod(which, period, btn) {
 ═══════════════════════════════════════════════ */
 const RATIO_SYMS = [
   {name:'Nifty 50',      sym:'^NSEI'},
-  {name:'Nifty Next 50', sym:'^NSEMDCP50'},
+  {name:'Nifty Next 50', sym:'^NSMIDCP'},
   {name:'Nifty Bank',    sym:'^NSEBANK'},
   {name:'Nifty IT',      sym:'^CNXIT'},
   {name:'Nifty FMCG',    sym:'^CNXFMCG'},
@@ -2486,14 +2486,14 @@ const RATIO_SYMS = [
   {name:'Nifty PSE',     sym:'^CNXPSE'},
   {name:'Nifty PSU Bank',sym:'^CNXPSUBANK'},
   {name:'Nifty Defence', sym:'NIFTY_IND_DEFENCE.NS'},
-  {name:'Nifty Midcap 150',sym:'^CNXMIDCAP'},
+  {name:'Nifty Midcap 150',sym:'NIFTYMIDCAP150.NS'},
   {name:'Nifty Smallcap',sym:'^CNXSC'},
   {name:'Nifty Infra',   sym:'^CNXINFRA'},
-  {name:'Nifty Financial',sym:'^CNXFINANCE'},
-  {name:'Nifty Healthcare',sym:'^CNXHEALTH'},
-  {name:'Nifty Oil & Gas',sym:'^CNXOILGAS'},
+  {name:'Nifty Financial',sym:'NIFTY_FIN_SERVICE.NS'},
+  {name:'Nifty Healthcare',sym:'NIFTY_HEALTHCARE.NS'},
+  {name:'Nifty Oil & Gas',sym:'NIFTY_OIL_AND_GAS.NS'},
   {name:'Sensex',        sym:'^BSESN'},
-  {name:'Nifty CPSE',    sym:'^CNXCPSE'},
+  {name:'Nifty CPSE',    sym:'NIFTY_CPSE.NS'},
 ];
 
 let ratiosLoaded = false;
@@ -2501,10 +2501,10 @@ let ratiosLoaded = false;
 async function fetchIndexRatio(sym) {
   // ETF fallbacks for Yahoo ^ symbols that are inconsistently served
   const ETF_FALLBACK = {
-    '^NSEMDCP50': 'JUNIORBEES.NS',
-    '^CNXMIDCAP': 'MOM100.NS',
-    '^CNXSC':     'SETFNN50.NS',
-    '^CNXREALTY': 'NIFTYREAL.NS',
+    '^NSMIDCP':   'JUNIORBEES.NS',
+    'NIFTYMIDCAP150.NS': 'MOM100.NS',
+    '^NSEMDCP50': 'MOM100.NS',
+    '^CNXSC':     'NIFTYSMLCAP250.NS',
   };
   const etf = ETF_FALLBACK[sym] || null;
 
@@ -3997,7 +3997,7 @@ function goldToINR(usdPerOz, inr) { return (usdPerOz / 31.1035 * 10 * inr); }
 // of the dashboard's period buttons.
 async function fetchMacroPrice(sym, period) {
   period = period || '1D';
-  const etfMap = { '^CNXMIDCAP':'MOM100.NS', '^CNXSC':'SETFNN50.NS', '^NSEMDCP50':'JUNIORBEES.NS' };
+  const etfMap = { 'NIFTYMIDCAP150.NS':'MOM100.NS', '^CNXSC':'NIFTYSMLCAP250.NS', '^NSMIDCP':'JUNIORBEES.NS' };
   const etf    = etfMap[sym];
   const cfg    = period === '1D' ? { range:'2d', interval:'1d' } : (PERIOD_CFG[period] || PERIOD_CFG['1M']);
   const urls   = [
