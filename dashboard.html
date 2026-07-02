@@ -3154,15 +3154,19 @@ async function loadLiveFiiDii() {
       }
     } catch(e) {}
 
+    // v14 backend: CDSL-sourced rows (Upstox outage fallback) carry FII data
+    // but empty-string DII fields — normalize '' to null so sums stay numeric
+    // and Chart.js renders a gap instead of a fake zero bar.
+    const numOrNull = v => (v === '' || v == null || isNaN(v)) ? null : Number(v);
     FII_DII_DATA = j.history.map(h => ({
       date: h.date,             // e.g. '29-Jun-2026' — display label from the sheet
       dateKey: h.dateKey,       // e.g. '2026-06-29'
       fiiNet: h.fiiNet,
-      diiNet: h.diiNet,
+      diiNet: numOrNull(h.diiNet),
       fiiBuy: h.fiiBuy,
       fiiSell: h.fiiSell,
-      diiBuy: h.diiBuy,
-      diiSell: h.diiSell,
+      diiBuy: numOrNull(h.diiBuy),
+      diiSell: numOrNull(h.diiSell),
       niftyClose: niftyMap[h.dateKey] || null,
     }));
     return true;
@@ -3310,7 +3314,7 @@ function fmtCr(n) {
 function renderFiiSummaryTiles() {
   const data  = FII_DII_DATA;
   const last  = data.at(-1);
-  const m30   = data.reduce((s, d) => ({ fii: s.fii + d.fiiNet, dii: s.dii + d.diiNet }), { fii: 0, dii: 0 });
+  const m30   = data.reduce((s, d) => ({ fii: s.fii + d.fiiNet, dii: s.dii + (d.diiNet ?? 0) }), { fii: 0, dii: 0 });
   const fiiStreak = (() => {
     let streak = 0, dir = last.fiiNet >= 0 ? 1 : -1;
     for (let i = data.length - 1; i >= 0; i--) {
@@ -3318,7 +3322,7 @@ function renderFiiSummaryTiles() {
     }
     return { count: streak, dir };
   })();
-  const absorption = last.fiiNet < 0 ? Math.min(200, Math.round(Math.abs(last.diiNet) / Math.abs(last.fiiNet) * 100)) : null;
+  const absorption = (last.fiiNet < 0 && last.diiNet != null) ? Math.min(200, Math.round(Math.abs(last.diiNet) / Math.abs(last.fiiNet) * 100)) : null;
   const YTD_APPROX  = { fii: 65543, dii: -23456 };
 
   const tiles = [
@@ -3330,9 +3334,9 @@ function renderFiiSummaryTiles() {
     },
     {
       lbl: 'DII Net · Today',
-      val: fmtCr(last.diiNet),
-      sub: last.date,
-      cls: last.diiNet >= 0 ? 'up' : 'dn',
+      val: last.diiNet == null ? '—' : fmtCr(last.diiNet),
+      sub: last.diiNet == null ? last.date + ' · paused (CDSL src)' : last.date,
+      cls: (last.diiNet ?? 0) >= 0 ? 'up' : 'dn',
     },
     {
       lbl: 'FII 30D Running',
@@ -3477,11 +3481,11 @@ function renderAbsorption() {
   // Calculate rolling absorption
   const sellDays = FII_DII_DATA.filter(d => d.fiiNet < 0);
   const totalFiiSell = sellDays.reduce((s, d) => s + Math.abs(d.fiiNet), 0);
-  const totalDiiBuy  = sellDays.reduce((s, d) => s + Math.max(0, d.diiNet), 0);
+  const totalDiiBuy  = sellDays.reduce((s, d) => s + Math.max(0, d.diiNet ?? 0), 0);
   const absorp30d    = totalFiiSell > 0 ? Math.round(totalDiiBuy / totalFiiSell * 100) : 0;
 
   const last = FII_DII_DATA.at(-1);
-  const absorpToday = last.fiiNet < 0
+  const absorpToday = (last.fiiNet < 0 && last.diiNet != null)
     ? Math.min(300, Math.round(Math.abs(last.diiNet) / Math.abs(last.fiiNet) * 100))
     : null;
 
@@ -3502,7 +3506,9 @@ function renderAbsorption() {
         <div style="font-size:10px;color:#888;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.6px">Today's absorption</div>
         <div style="font-family:'Courier New',monospace;font-size:22px;font-weight:700;color:${absorpToday>100?'#2d7a4f':absorpToday>70?'#e8b94a':'#c0392b'}">${absorpToday}%</div>
         <div style="font-size:11px;color:#666;margin-top:3px">FII sold ₹${Math.abs(last.fiiNet).toLocaleString()} Cr · DII bought ₹${Math.max(0,last.diiNet).toLocaleString()} Cr</div>
-      </div>` : `
+      </div>` : last.diiNet == null ? `
+      <div style="margin-top:12px;padding-top:10px;border-top:1px solid #f0f0f0;font-size:11px;color:#888">
+        DII flows paused for the latest day(s) — FII-only data via CDSL while the Upstox source is offline.</div>` : `
       <div style="margin-top:12px;padding-top:10px;border-top:1px solid #f0f0f0;font-size:11px;color:#2d7a4f">
         ✓ FII was a net buyer today — no absorption needed.</div>`}
     <div style="margin-top:12px;font-size:11px;color:#666;line-height:1.7">
@@ -3820,7 +3826,7 @@ function runFIIAnalysis() {
   // FII_DII_DATA holds the live (Upstox-backed) data once loadFiiDii() has run,
   // or falls back to FII_DII_FALLBACK if the live fetch failed.
   var last     = FII_DII_DATA[FII_DII_DATA.length - 1];
-  var m30      = FII_DII_DATA.reduce(function(s,d){return {fii:s.fii+d.fiiNet,dii:s.dii+d.diiNet};},{fii:0,dii:0});
+  var m30      = FII_DII_DATA.reduce(function(s,d){return {fii:s.fii+d.fiiNet,dii:s.dii+(d.diiNet==null?0:d.diiNet)};},{fii:0,dii:0});
  
   // Nifty change over the 30-day period
   var firstClose = FII_DII_DATA[0].niftyClose;
@@ -3830,7 +3836,7 @@ function runFIIAnalysis() {
   // DII absorption (same logic as renderAbsorption)
   var sellDays  = FII_DII_DATA.filter(function(d){return d.fiiNet < 0;});
   var totalSell = sellDays.reduce(function(s,d){return s+Math.abs(d.fiiNet);}, 0);
-  var totalBuy  = sellDays.reduce(function(s,d){return s+Math.max(0,d.diiNet);}, 0);
+  var totalBuy  = sellDays.reduce(function(s,d){return s+Math.max(0,d.diiNet==null?0:d.diiNet);}, 0);
   var absorption = totalSell > 0 ? Math.round(totalBuy / totalSell * 100) : 0;
  
   var payload = {
