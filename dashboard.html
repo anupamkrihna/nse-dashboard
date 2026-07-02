@@ -263,6 +263,7 @@ select:focus, input[type=text]:focus { border-color: #e8b94a; }
 .rot-cond-act  { color:#2d7a4f; font-weight:600; }
 .rot-cond-cau  { color:#c0392b; font-weight:600; }
 .commodity-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:10px; }
+.mt-inr { font-size:10px; color:#b8860b; font-family:'Courier New',monospace; margin-top:2px; }
 .comm-card { background:#f7f5f0; border-radius:8px; padding:12px 14px; border-top:3px solid #ddd; }
 .comm-card.energy   { border-top-color:#e8b94a; }
 .comm-card.metal    { border-top-color:#4a90d9; }
@@ -4046,6 +4047,26 @@ function fmtMacroPrice(p, sym, goldINR) {
   return Math.round(p).toLocaleString();
 }
 
+/* v16: ₹ equivalent line for USD-denominated commodity tiles, using the
+   live USDINR rate already fetched for gold conversion. */
+function fmtInrEquiv(sym, p, rate) {
+  if (!p || !rate) return '';
+  const map = {
+    'SI=F':  [p * rate,       '/oz'],
+    'CL=F':  [p * rate,       '/bbl'],
+    'BZ=F':  [p * rate,       '/bbl'],
+    'NG=F':  [p * rate,       '/MMBTU'],
+    'HG=F':  [p * rate,       '/lb'],
+    'ALI=F': [p * rate,       '/MT'],
+    'ZS=F':  [p / 100 * rate, '/bushel']
+  };
+  const m = map[sym];
+  if (!m) return '';
+  const v = m[0];
+  const s = v >= 1000 ? Math.round(v).toLocaleString('en-IN') : v.toFixed(2);
+  return '<div class="mt-inr">≈ ₹' + s + m[1] + '</div>';
+}
+
 function chgSign(c) { return c >= 0 ? '+' : ''; }
 function chgClass(c) { return c >= 0 ? 'up' : 'dn'; }
 function tileClass(c) { return Math.abs(c) < 0.05 ? 'neu' : c > 0 ? 'up' : 'dn'; }
@@ -4066,10 +4087,11 @@ function renderTileGrid(containerId, items, results, inrRate) {
       }
       chgStr = d.chg != null ? `<div class="mt-chg ${chgClass(d.chg)}">${chgSign(d.chg)}${Math.abs(d.chg).toFixed(2)}%</div>` : '';
     }
+    const inrLine = d ? fmtInrEquiv(item.sym, d.price, inrRate) : '';
     return `<div class="macro-tile ${d ? tileClass(d.chg) : ''}">
       <div class="mt-lbl">${item.lbl}</div>
       <div class="mt-val">${priceStr}</div>
-      ${chgStr}
+      ${chgStr}${inrLine}
       <div class="mt-sub">${item.sub}</div>
     </div>`;
   }).join('');
