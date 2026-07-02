@@ -860,6 +860,26 @@ const SEARCH_LIST = (() => {
   return arr;
 })();
 
+/* v16.1: extend SEARCH_LIST with the full NSE universe (ISIN_Master
+   via backend). Runs async at startup; until it lands (or if it
+   fails), the hardcoded list still works and the direct-load row
+   below covers anything missing. */
+(async function loadUniverse() {
+  try {
+    const r = await fetch(BACKEND + '?action=universe');
+    const j = await r.json();
+    if (!j.ok || !j.stocks) return;
+    const seen = new Set(SEARCH_LIST.map(s => s.sym));
+    j.stocks.forEach(([sym, name]) => {
+      if (!seen.has(sym)) {
+        seen.add(sym);
+        SEARCH_LIST.push({ sym, name: name || sym, sector: 'NSE Listed', yf: sym + '.NS' });
+      }
+    });
+    console.log('Search universe: ' + SEARCH_LIST.length + ' symbols');
+  } catch(e) { console.warn('Universe load failed — search runs on built-in list', e); }
+})();
+
 function getStockInfo(sym) {
   const m = STOCK_MASTER[sym];
   if (m) return { sym, name: m.n, sector: m.s, yf: m.yf };
@@ -874,6 +894,18 @@ searchInput.addEventListener('input', () => {
     s.name.toLowerCase().includes(q) ||
     s.sector.toLowerCase().includes(q)
   ).slice(0, 12);
+  // v16.1 safety net: nothing matched but the query looks like a ticker —
+  // offer to load it directly (backend's Yahoo search self-heals symbols).
+  if (!res.length && /^[a-z0-9&-]{2,15}$/i.test(q)) {
+    const qU = q.toUpperCase();
+    dropdown.innerHTML = `<div class="dd-item" data-sym="${qU}">
+      <span class="dd-sym">${qU}</span>
+      <span class="dd-name">Load directly from NSE ↗</span>
+      <span class="dd-sector">not in list</span>
+    </div>`;
+    dropdown.classList.add('open');
+    return;
+  }
   if (!res.length) { dropdown.classList.remove('open'); return; }
   dropdown.innerHTML = res.map(s =>
     `<div class="dd-item" data-sym="${s.sym}">
