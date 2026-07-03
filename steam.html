@@ -255,6 +255,28 @@ body { background: #f0ede6; color: #1a2744; font-family: Arial, sans-serif; font
 .news-item a:hover { color:#b8860b; }
 .news-meta { font-size:10px; color:#999; margin-top:3px; }
 .flow-note { font-size:11px; color:#666; line-height:1.6; margin-top:8px; }
+/* ── Buffett tab ── */
+.bf-scorewrap { display:flex; align-items:center; gap:22px; flex-wrap:wrap; }
+.bf-score { font-size:52px; font-weight:800; color:#1a2744; font-family:'Courier New',monospace; line-height:1; }
+.bf-score small { font-size:16px; color:#999; font-weight:400; }
+.bf-meta { font-size:11px; color:#888; }
+.bf-pillar { margin:9px 0; }
+.bf-plabel { display:flex; justify-content:space-between; font-size:11px; color:#555; margin-bottom:3px; }
+.bf-plabel b { font-family:'Courier New',monospace; color:#1a2744; }
+.bf-bar { height:8px; background:#f0ede6; border-radius:4px; overflow:hidden; }
+.bf-fill { height:100%; background:linear-gradient(90deg,#e8b84b,#b8860b); border-radius:4px; transition:width .5s; }
+.bf-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px; margin-top:6px; }
+.bf-cell { background:#faf8f3; border:1px solid #eee7d8; border-radius:8px; padding:9px 11px; }
+.bf-cl { font-size:9px; color:#999; text-transform:uppercase; letter-spacing:0.5px; }
+.bf-cv { font-size:15px; font-weight:700; font-family:'Courier New',monospace; color:#1a2744; margin-top:2px; }
+.bf-cv.up { color:#2d7a4f; } .bf-cv.dn { color:#c0392b; }
+.bf-btn { background:#1a2744; color:#fff; border:none; border-radius:8px; padding:9px 16px; font-size:12px; font-weight:600; cursor:pointer; margin-right:8px; margin-top:4px; }
+.bf-btn:hover { background:#2a3b60; } .bf-btn:disabled { background:#aaa; cursor:wait; }
+.bf-btn.gold { background:#e8b84b; color:#1a2744; }
+.bf-out { margin-top:12px; font-size:13px; line-height:1.65; color:#333; white-space:pre-wrap; }
+.bf-out .src { font-size:10px; color:#999; }
+.bf-decision { display:inline-block; padding:3px 12px; border-radius:6px; font-weight:800; font-size:13px; letter-spacing:0.5px; margin-top:6px; }
+.bf-decision.acc { background:#e3f2e8; color:#2d7a4f; } .bf-decision.wat { background:#fdf3dc; color:#b8860b; } .bf-decision.avd { background:#fbe4e0; color:#c0392b; }
 </style>
 </head>
 <body>
@@ -329,6 +351,7 @@ body { background: #f0ede6; color: #1a2744; font-family: Arial, sans-serif; font
     <div class="tab" data-tab="sector">📊 Sector Context</div>
     <div class="tab" data-tab="indices">🗂 All Indices</div>
     <div class="tab" data-tab="flow">📈 Flow &amp; News</div>
+    <div class="tab" data-tab="buffett">🎩 Buffett</div>
   </div>
 
   <!-- STEAM TAB -->
@@ -469,6 +492,22 @@ body { background: #f0ede6; color: #1a2744; font-family: Arial, sans-serif; font
       <div class="flow-hdr"><span class="flow-title">Latest News</span><span class="flow-sub">Yahoo Finance + Google News (IN)</span></div>
       <div id="newsWrap"><div class="flow-note">Loading news…</div></div>
     </div>
+  </div>
+
+  <!-- BUFFETT TAB (v18) -->
+  <div class="tab-panel" id="tab-buffett">
+    <div class="flow-card">
+      <div class="flow-hdr"><span class="flow-title">🎩 Buffett Scorecard</span><span class="flow-sub" id="bfMeta"></span></div>
+      <div id="bfBody"><div class="flow-note">Load a stock, then open this tab.</div></div>
+    </div>
+    <div class="flow-card">
+      <div class="flow-hdr"><span class="flow-title">AI Desk</span><span class="flow-sub">verdict ≈2s · research 15–30s (cached 24h)</span></div>
+      <button class="bf-btn" id="bfVerdictBtn">⚡ AI Verdict</button>
+      <button class="bf-btn gold" id="bfResStockBtn">🔍 Research Stock</button>
+      <button class="bf-btn gold" id="bfResSectorBtn">🔍 Research Sector</button>
+      <div class="bf-out" id="bfAiOut"></div>
+    </div>
+    <div class="flow-note">Scores come from the rule-based five-pillar model (Moat · Value · Consistency · Ownership · Safety), batch-computed from Upstox fundamentals + Yahoo price. Research is AI with live web search. Analytical tooling, not investment advice.</div>
   </div>
 
   <div class="tab-panel" id="tab-sector">
@@ -940,6 +979,7 @@ document.querySelectorAll('.tab').forEach(tab => {
     document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
     if (tab.dataset.tab === 'indices') buildIndicesPanel();
     if (tab.dataset.tab === 'flow') renderFlowTab();
+    if (tab.dataset.tab === 'buffett') renderBuffettTab();
   });
 });
 
@@ -1178,6 +1218,8 @@ async function loadStock(stock) {
   flowState.stock     = stock;
   flowState.symbol    = nsSym;
   flowState.rendered  = false;
+  bfState.row = null; bfState.rendered = false;
+  const _ao = document.getElementById('bfAiOut'); if (_ao) _ao.innerHTML = '';
 
   try { renderSteam(stock, gasData.chart, merged); }
   catch(e) {
@@ -1809,6 +1851,105 @@ async function loadNews_() {
   }
 }
 
-</script>
+
+
+/* ═══════════════════════════════════════════════
+   BUFFETT TAB (v18) — cached scorecard + AI desk
+═══════════════════════════════════════════════ */
+let bfState = { row:null, rendered:false };
+
+async function renderBuffettTab() {
+  const body = document.getElementById('bfBody');
+  if (!flowState.symbol) { body.innerHTML = '<div class="flow-note">Load a stock first (search above), then open this tab.</div>'; return; }
+  if (bfState.rendered && bfState.row) return;
+  body.innerHTML = '<div class="flow-note">Reading scorecard cache…</div>';
+  try {
+    const r = await fetch(BACKEND + '?action=buffett&symbol=' + encodeURIComponent(flowState.symbol));
+    const j = await r.json();
+    if (!j.ok || !j.rows || !j.rows.length) {
+      body.innerHTML = '<div class="flow-note">No cached score yet for ' + flowState.symbol +
+        ' — the batch engine refreshes the universe roughly daily. Curated stocks appear first; others as coverage expands.</div>';
+      return;
+    }
+    bfState.row = j.rows[0]; bfState.rendered = true;
+    drawBuffett_(bfState.row);
+  } catch(e) { body.innerHTML = '<div class="flow-note">⚠ Scorecard fetch failed: ' + e.message + '</div>'; }
+}
+
+function drawBuffett_(d) {
+  const f  = (v, dec=1) => (v === '' || v == null) ? '—' : Number(v).toFixed(dec);
+  const fi = v => (v === '' || v == null) ? '—' : Math.round(Number(v)).toLocaleString('en-IN');
+  const pillars = [['Moat', d.Moat], ['Value', d.Value], ['Consistency', d.Consistency], ['Ownership', d.Ownership], ['Safety', d.Safety]];
+  const cls = v => (v === '' || v == null) ? '' : (Number(v) >= 0 ? 'up' : 'dn');
+  const sgn = v => (v === '' || v == null) ? '—' : (Number(v) >= 0 ? '+' : '') + Number(v).toFixed(2);
+  document.getElementById('bfMeta').textContent =
+    'data ' + (d.DataPct || '—') + '% · as of ' + String(d.FetchedAt || '').substring(0, 10);
+  document.getElementById('bfBody').innerHTML =
+    '<div class="bf-scorewrap"><div class="bf-score">' + (d.Score === '' || d.Score == null ? '—' : Math.round(d.Score)) +
+    '<small>/100</small></div><div style="flex:1;min-width:230px">' +
+    pillars.map(p => '<div class="bf-pillar"><div class="bf-plabel"><span>' + p[0] + '</span><b>' + f(p[1]) +
+      '/20</b></div><div class="bf-bar"><div class="bf-fill" style="width:' +
+      ((p[1] === '' || p[1] == null) ? 0 : Math.min(100, Number(p[1]) / 20 * 100)) + '%"></div></div></div>').join('') +
+    '</div></div>' +
+    '<div class="bf-grid">' +
+    '<div class="bf-cell"><div class="bf-cl">PE vs Sector</div><div class="bf-cv">' + f(d.PE) + ' / ' + f(d.SectorPE) + '</div></div>' +
+    '<div class="bf-cell"><div class="bf-cl">Graham № vs Price</div><div class="bf-cv ' + cls(d.GrahamMarginPct) + '">₹' + fi(d.GrahamNum) + ' (' + sgn(d.GrahamMarginPct) + '%)</div></div>' +
+    '<div class="bf-cell"><div class="bf-cl">ROE / ROCE</div><div class="bf-cv">' + f(d.ROE) + ' / ' + f(d.ROCE) + '</div></div>' +
+    '<div class="bf-cell"><div class="bf-cl">Rev / Profit CAGR 3Y</div><div class="bf-cv">' + f(d.RevCAGR) + '% / ' + f(d.ProfCAGR) + '%</div></div>' +
+    '<div class="bf-cell"><div class="bf-cl">D/E · Quick</div><div class="bf-cv">' + f(d.DE_Ratio, 2) + ' · ' + f(d.QuickRatio, 2) + '</div></div>' +
+    '<div class="bf-cell"><div class="bf-cl">OCF / Profit</div><div class="bf-cv ' + ((d.OCFtoProfit||0) >= 0.8 ? 'up' : '') + '">' + f(d.OCFtoProfit, 2) + '×</div></div>' +
+    '<div class="bf-cell"><div class="bf-cl">Promoter (QoQ)</div><div class="bf-cv ' + cls(d.PromoterQoQ) + '">' + f(d.Promoter) + '% (' + sgn(d.PromoterQoQ) + ')</div></div>' +
+    '<div class="bf-cell"><div class="bf-cl">FII (QoQ)</div><div class="bf-cv ' + cls(d.FIIQoQ) + '">' + f(d.FII) + '% (' + sgn(d.FIIQoQ) + ')</div></div>' +
+    '</div>';
+}
+
+async function bfAi_(kind) {
+  const out = document.getElementById('bfAiOut');
+  if (!flowState.symbol) { out.textContent = 'Load a stock first.'; return; }
+  const info = getStockInfo(flowState.symbol);
+  const btns = ['bfVerdictBtn','bfResStockBtn','bfResSectorBtn'].map(id => document.getElementById(id));
+  btns.forEach(b => b.disabled = true);
+  try {
+    let url;
+    if (kind === 'verdict') {
+      if (!bfState.row) { out.textContent = 'Open the scorecard first (no cached score yet).'; return; }
+      const d = bfState.row;
+      const payload = { symbol: d.Symbol, name: info.name, sector: info.sector,
+        score: Math.round(d.Score || 0), moat: d.Moat, value: d.Value, consistency: d.Consistency,
+        ownership: d.Ownership, grahamMargin: d.GrahamMarginPct,
+        promoterTrend: (d.PromoterQoQ === '' || d.PromoterQoQ == null) ? 'n/a' : (d.PromoterQoQ >= 0 ? 'rising' : 'falling'),
+        fiiTrend: (d.FIIQoQ === '' || d.FIIQoQ == null) ? 'n/a' : (d.FIIQoQ >= 0 ? 'rising' : 'falling') };
+      out.textContent = '⚡ Interpreting scorecard…';
+      url = BACKEND + '?action=ai&mode=buffett&payload=' + encodeURIComponent(JSON.stringify(payload));
+    } else {
+      const subject = kind === 'sector' ? (info.sector + ' sector India') : (info.name + ' ' + flowState.symbol);
+      out.textContent = '🔍 Deep research in progress (Claude + live web search, 15–30s; cached 24h)…';
+      url = BACKEND + '?action=research&type=' + (kind === 'sector' ? 'sector' : 'stock') +
+            '&subject=' + encodeURIComponent(subject);
+    }
+    const r = await fetch(url);
+    const j = await r.json();
+    if (kind === 'verdict') {
+      if (j.error) { out.textContent = '⚠ ' + j.error; return; }
+      let t = j.analysis || '';
+      const m = t.match(/Decision:\s*(ACCUMULATE|WATCH|AVOID)/i);
+      let badge = '';
+      if (m) {
+        const w = m[1].toUpperCase();
+        badge = '<div class="bf-decision ' + (w === 'ACCUMULATE' ? 'acc' : w === 'WATCH' ? 'wat' : 'avd') + '">' + w + '</div>';
+      }
+      out.innerHTML = t.replace(/</g, '&lt;') + badge;
+    } else {
+      if (!j.ok) { out.textContent = '⚠ ' + (j.error || 'research failed'); return; }
+      out.innerHTML = j.brief.replace(/</g, '&lt;') +
+        '<div class="src">' + (j.cached ? ('cached · ' + j.ageHours + 'h old') : 'fresh research') + ' · sources named inline</div>';
+    }
+  } catch(e) { out.textContent = '⚠ ' + e.message; }
+  finally { btns.forEach(b => b.disabled = false); }
+}
+document.getElementById('bfVerdictBtn').addEventListener('click', () => bfAi_('verdict'));
+document.getElementById('bfResStockBtn').addEventListener('click', () => bfAi_('stock'));
+document.getElementById('bfResSectorBtn').addEventListener('click', () => bfAi_('sector'));
+\n</script>
 </body>
 </html>
