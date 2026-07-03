@@ -1862,19 +1862,17 @@ async function renderBuffettTab() {
   const body = document.getElementById('bfBody');
   if (!flowState.symbol) { body.innerHTML = '<div class="flow-note">Load a stock first (search above), then open this tab.</div>'; return; }
   if (bfState.rendered && bfState.row) return;
-  body.innerHTML = '<div class="flow-note">Reading scorecard… first visit for a stock computes live (~10s), after that it\'s instant.</div>';
+  body.innerHTML = '<div class="flow-note">Reading scorecard cache…</div>';
   try {
     const r = await fetch(BACKEND + '?action=buffett&symbol=' + encodeURIComponent(flowState.symbol));
     const j = await r.json();
     if (!j.ok || !j.rows || !j.rows.length) {
-      body.innerHTML = '<div class="flow-note">⚠ Score unavailable for ' + flowState.symbol +
-        (j.error ? ' — ' + j.error : '') +
-        '. Usually means the data vendor has no fundamentals for this stock (score needs ratios + financials; price charts still work on the other tabs).</div>';
+      body.innerHTML = '<div class="flow-note">No cached score yet for ' + flowState.symbol +
+        ' — the batch engine refreshes the universe roughly daily. Curated stocks appear first; others as coverage expands.</div>';
       return;
     }
     bfState.row = j.rows[0]; bfState.rendered = true;
     drawBuffett_(bfState.row);
-    if (j.live) document.getElementById('bfMeta').textContent += ' · freshly computed';
   } catch(e) { body.innerHTML = '<div class="flow-note">⚠ Scorecard fetch failed: ' + e.message + '</div>'; }
 }
 
