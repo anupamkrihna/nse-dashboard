@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prediction Calibration Lab</title>
+<style>
+* { box-sizing:border-box; margin:0; padding:0; }
+body { background:#f0ede6; color:#1a2744; font-family:Arial,sans-serif; font-size:13px; min-height:100vh; }
+.u-header { background:#1a2744; height:48px; padding:0 20px; display:flex; align-items:center; gap:16px; position:sticky; top:0; z-index:50; }
+.u-brand { color:#f0e6c8; font-weight:700; font-size:14px; letter-spacing:0.5px; }
+.u-link { font-size:12px; color:#8a9ab8; text-decoration:none; padding:0 10px; height:48px; display:flex; align-items:center; }
+.u-link:hover { color:#f0e6c8; }
+.wrap { max-width:1150px; margin:0 auto; padding:18px 16px 60px; }
+.card { background:#fff; border:1px solid #e2ddd2; border-radius:12px; padding:16px 18px; margin-bottom:14px; }
+.hdr { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:10px; flex-wrap:wrap; gap:8px; }
+.title { font-size:13px; font-weight:700; color:#1a2744; text-transform:uppercase; letter-spacing:0.5px; }
+.sub { font-size:11px; color:#888; }
+.controls { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+.lbl { font-size:10px; color:#999; text-transform:uppercase; letter-spacing:0.5px; }
+select { font-size:11px; padding:6px 8px; border:1px solid #e2ddd2; border-radius:8px; background:#fff; color:#1a2744; cursor:pointer; }
+.run { background:#e8b94a; color:#1a2744; border:none; border-radius:8px; padding:8px 20px; font-size:12px; font-weight:700; cursor:pointer; }
+.run:disabled { opacity:0.55; cursor:wait; }
+.ghost { background:#fff; color:#1a2744; border:1px solid #e2ddd2; border-radius:8px; padding:8px 14px; font-size:12px; cursor:pointer; }
+.prog { height:8px; background:#f2efe8; border-radius:4px; overflow:hidden; margin-top:12px; display:none; }
+.prog > div { height:100%; width:0%; background:#e8b94a; transition:width 0.2s; }
+.pmsg { font-size:11px; color:#888; margin-top:6px; font-family:'Courier New',monospace; }
+.scores { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:14px; }
+.eng-card { border:1px solid #e2ddd2; border-radius:10px; padding:14px; }
+.eng-name { font-size:14px; font-weight:800; margin-bottom:10px; }
+.metric { display:flex; justify-content:space-between; align-items:baseline; padding:7px 0; border-bottom:1px solid #f2efe8; }
+.metric:last-child { border-bottom:none; }
+.m-lbl { font-size:11px; color:#666; }
+.m-val { font-family:'Courier New',monospace; font-weight:700; font-size:14px; }
+.ok { color:#2d7a4f; } .warn { color:#b8860b; } .bad { color:#c0392b; }
+.badge { display:inline-block; font-size:9px; font-weight:700; border-radius:4px; padding:2px 8px; margin-left:8px; letter-spacing:0.4px; text-transform:uppercase; }
+.badge.ok { background:rgba(45,122,79,0.10); border:1px solid rgba(45,122,79,0.3); }
+.badge.warn { background:rgba(184,134,11,0.10); border:1px solid rgba(184,134,11,0.3); }
+.badge.bad { background:rgba(192,57,43,0.10); border:1px solid rgba(192,57,43,0.3); }
+table { width:100%; border-collapse:collapse; font-size:12px; }
+th { text-align:right; padding:7px 8px; color:#888; font-size:10px; text-transform:uppercase; letter-spacing:0.5px; border-bottom:1px solid #e2ddd2; }
+th:first-child, td:first-child { text-align:left; }
+td { text-align:right; padding:7px 8px; border-bottom:1px solid #f2efe8; font-family:'Courier New',monospace; }
+td:first-child { font-family:Arial,sans-serif; font-weight:600; }
+.note { font-size:11px; color:#666; line-height:1.6; margin-top:10px; }
+.chip { display:inline-block; background:#f2efe8; border:1px solid #e2ddd2; border-radius:6px; padding:3px 9px; margin:3px 4px 0 0; font-size:11px; font-family:'Courier New',monospace; }
+#results { display:none; }
+</style>
+</head>
+<body>
+<div class="u-header">
+  <span class="u-brand">🎯 Prediction Calibration Lab</span>
+  <a class="u-link" href="steam.html">← Steam Gauge</a>
+  <a class="u-link" href="dashboard.html">Dashboard</a>
+</div>
+<div class="wrap">
+
+  <div class="card">
+    <div class="hdr">
+      <div><div class="title">Backtest Setup</div>
+      <div class="sub">10 random stocks × 10 historical time points × 3 engines. At each point: fit on trailing 3Y, predict forward, score against what actually happened.</div></div>
+    </div>
+    <div class="controls">
+      <span class="lbl">Paths / cell</span>
+      <select id="btSims"><option value="1000" selected>1,000</option><option value="1500">1,500</option><option value="2500">2,500</option></select>
+      <span class="lbl">Stocks</span>
+      <select id="btNStocks"><option value="10" selected>10 random</option><option value="15">15 random</option></select>
+      <button class="ghost" id="btReroll">🎲 Re-roll stocks</button>
+      <button class="run" id="btRun">Run Backtest ▶</button>
+    </div>
+    <div id="btPicked" style="margin-top:10px"></div>
+    <div class="prog" id="btProg"><div id="btProgBar"></div></div>
+    <div class="pmsg" id="btMsg"></div>
+  </div>
+
+  <div id="results">
+    <div class="card">
+      <div class="hdr"><span class="title">Engine Scorecards</span><span class="sub" id="cellCount"></span></div>
+      <div class="scores" id="scoreCards"></div>
+      <div class="note"><b>How to read:</b> a well-calibrated engine has ~90% of actual outcomes inside its P5–P95 band, ~50% inside P25–P75, and actuals above the median ~50% of the time. Under-coverage of the 90% band means the cone is too narrow (overconfident) — GBM typically shows this because real returns have fatter tails than the log-normal assumption; Bootstrap and Factor usually cover better.</div>
+    </div>
+    <div class="card">
+      <div class="hdr"><span class="title">P(growth) Calibration</span><span class="sub">predicted probability bucket vs realized frequency of actual growth</span></div>
+      <div id="calibWrap"></div>
+      <div class="note">If the engine says "70% chance of growth", growth should occur ~70% of the time in that bucket. Large gaps = miscalibrated probabilities. Buckets with few cells are statistically weak — read n.</div>
+    </div>
+    <div class="card">
+      <div class="hdr"><span class="title">Coverage by Horizon</span><span class="sub">P5–P95 hit rate, target 90%</span></div>
+      <div id="horizonWrap"></div>
+    </div>
+    <div class="card">
+      <div class="hdr"><span class="title">Cell Detail</span><span class="sub">1Y horizon · actual vs predicted band per stock × time point</span></div>
+      <div id="detailWrap" style="overflow-x:auto"></div>
+    </div>
+    <div class="note" style="padding:0 4px">⚠ <b>Caveats:</b> anchors overlap in lookback windows and stocks move together, so the effective sample is smaller than 100 independent trials — treat pass/fail as a sanity check, not statistical proof. This tests whether the <b>bands are honest</b>, not whether the model picks winners. Survivorship: the pool contains today's liquid names.</div>
+  </div>
+</div>
+
+<script>
+const BACKEND = 'https://script.google.com/macros/s/AKfycbxbqcip3QPPRP5YUxngoWecv5nN2eKk5h9T2WYL2_vmTs3ix6Tjt_KTfKq2MDptrmPMcw/exec';
+
+/* ── liquid pool with sector proxies (long-history indices only) ── */
+const POOL = [
+  {s:'RELIANCE',x:'^CNXENERGY'},{s:'ONGC',x:'^CNXENERGY'},{s:'IOC',x:'^CNXENERGY'},{s:'BPCL',x:'^CNXENERGY'},
+  {s:'NTPC',x:'^CNXENERGY'},{s:'POWERGRID',x:'^CNXENERGY'},{s:'GAIL',x:'^CNXENERGY'},{s:'COALINDIA',x:'^CNXMETAL'},
+  {s:'TCS',x:'^CNXIT'},{s:'INFY',x:'^CNXIT'},{s:'WIPRO',x:'^CNXIT'},{s:'HCLTECH',x:'^CNXIT'},{s:'TECHM',x:'^CNXIT'},
+  {s:'HDFCBANK',x:'^NSEBANK'},{s:'ICICIBANK',x:'^NSEBANK'},{s:'SBIN',x:'^NSEBANK'},{s:'AXISBANK',x:'^NSEBANK'},
+  {s:'KOTAKBANK',x:'^NSEBANK'},{s:'BANKBARODA',x:'^CNXPSUBANK'},{s:'PNB',x:'^CNXPSUBANK'},
+  {s:'ITC',x:'^CNXFMCG'},{s:'HINDUNILVR',x:'^CNXFMCG'},{s:'NESTLEIND',x:'^CNXFMCG'},{s:'BRITANNIA',x:'^CNXFMCG'},{s:'DABUR',x:'^CNXFMCG'},
+  {s:'SUNPHARMA',x:'^CNXPHARMA'},{s:'CIPLA',x:'^CNXPHARMA'},{s:'DRREDDY',x:'^CNXPHARMA'},{s:'LUPIN',x:'^CNXPHARMA'},
+  {s:'MARUTI',x:'^CNXAUTO'},{s:'TATAMOTORS',x:'^CNXAUTO'},{s:'M&M',x:'^CNXAUTO'},{s:'HEROMOTOCO',x:'^CNXAUTO'},
+  {s:'TATASTEEL',x:'^CNXMETAL'},{s:'JSWSTEEL',x:'^CNXMETAL'},{s:'HINDALCO',x:'^CNXMETAL'},{s:'VEDL',x:'^CNXMETAL'},
+  {s:'LT',x:null},{s:'BHARTIARTL',x:null},{s:'TITAN',x:null},{s:'ULTRACEMCO',x:null},{s:'BEL',x:null},{s:'HAL',x:null}
+];
+const HORIZONS = [{n:'1M',d:21},{n:'3M',d:63},{n:'6M',d:126},{n:'1Y',d:252}];
+const ENGINES = ['gbm','boot','factor'];
+const ENG_NAME = {gbm:'GBM', boot:'Bootstrap', factor:'Factor (2F)'};
+
+/* ── engine primitives: identical logic to steam.html v2 ── */
+let _sp=null;
+function randn(){ if(_sp!==null){const s=_sp;_sp=null;return s;} let u=0,v=0; while(u===0)u=Math.random(); v=Math.random();
+  const m=Math.sqrt(-2*Math.log(u)); _sp=m*Math.sin(2*Math.PI*v); return m*Math.cos(2*Math.PI*v); }
+function pct(a,p){ const i=(a.length-1)*p, lo=Math.floor(i), hi=Math.ceil(i);
+  return lo===hi ? a[lo] : a[lo]+(a[hi]-a[lo])*(i-lo); }
+function ols2(y,x1,x2){ const n=y.length, mean=a=>a.reduce((s,v)=>s+v,0)/n;
+  const my=mean(y), m1=mean(x1);
+  const dot=(a,b,ma,mb)=>{let s=0;for(let i=0;i<n;i++)s+=(a[i]-ma)*(b[i]-mb);return s;};
+  let a,b1,b2;
+  if(x2){ const m2=mean(x2);
+    const S11=dot(x1,x1,m1,m1),S22=dot(x2,x2,m2,m2),S12=dot(x1,x2,m1,m2),S1y=dot(x1,y,m1,my),S2y=dot(x2,y,m2,my);
+    const det=S11*S22-S12*S12;
+    if(Math.abs(det)<1e-12){b1=S1y/S11;b2=0;} else {b1=(S22*S1y-S12*S2y)/det;b2=(S11*S2y-S12*S1y)/det;}
+    a=my-b1*m1-b2*m2;
+  } else { b1=dot(x1,y,m1,my)/dot(x1,x1,m1,m1); b2=0; a=my-b1*m1; }
+  const resid=new Float64Array(n);
+  for(let i=0;i<n;i++) resid[i]=y[i]-(a+b1*x1[i]+(x2?b2*x2[i]:0));
+  return {a,b1,b2,resid};
+}
+
+/* ── data ── */
+async function fetchPts(sym){
+  let j=null;
+  try{ const r=await fetch(BACKEND+'?symbol='+encodeURIComponent(sym)+'&range=10y&interval=1d');
+    if(r.ok){const d=await r.json(); if(d.chart?.result?.[0]) j=d;} }catch(e){}
+  if(!j){ const r2=await fetch('https://query1.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(sym)+'?range=10y&interval=1d');
+    if(!r2.ok) throw new Error('HTTP '+r2.status+' '+sym); j=await r2.json(); }
+  const res=j.chart?.result?.[0]; if(!res) throw new Error('no data '+sym);
+  const q=res.indicators.quote[0], pts=[];
+  res.timestamp.forEach((t,i)=>{const c=q.close[i]; if(c!=null&&isFinite(c)) pts.push({t:t*1000,c});});
+  return pts;
+}
+const dk=ms=>new Date(ms).toISOString().slice(0,10);
+
+/* one backtest cell: fit at anchor index on trailing lookback, simulate, score vs actuals */
+function runCell(stockPts, mMap, sMap, anchorIdx, sims){
+  const LOOK=750;
+  const win=stockPts.slice(anchorIdx-LOOK, anchorIdx+1);
+  const S0=win[win.length-1].c;
+  /* aligned factor returns over the window */
+  const rows=[];
+  win.forEach(p=>{ const k=dk(p.t), m=mMap.get(k), s=sMap?sMap.get(k):1;
+    if(m!=null&&s!=null) rows.push({y:p.c,m,s}); });
+  const rY=[],rM=[],rS=[];
+  for(let i=1;i<rows.length;i++){
+    const a=Math.log(rows[i].y/rows[i-1].y), b=Math.log(rows[i].m/rows[i-1].m), c=sMap?Math.log(rows[i].s/rows[i-1].s):0;
+    if(isFinite(a)&&isFinite(b)&&isFinite(c)){rY.push(a);rM.push(b);rS.push(c);}
+  }
+  const n=rY.length; if(n<400) return null;
+  const mu=rY.reduce((a,b)=>a+b,0)/n;
+  const sg=Math.sqrt(rY.reduce((a,b)=>a+(b-mu)*(b-mu),0)/(n-1));
+  const f=ols2(rY,rM,sMap?rS:null);
+  const fpart=new Float64Array(n);
+  for(let i=0;i<n;i++) fpart[i]=f.a+f.b1*rM[i]+(sMap?f.b2*rS[i]:0);
+  const R=Float64Array.from(rY);
+
+  /* actual forward multiples */
+  const actual={};
+  for(const h of HORIZONS){
+    if(anchorIdx+h.d < stockPts.length) actual[h.n]=stockPts[anchorIdx+h.d].c/S0;
+  }
+  if(!Object.keys(actual).length) return null;
+
+  const out={};
+  for(const eng of ENGINES){
+    const chk={}; HORIZONS.forEach(h=>chk[h.d]=new Float64Array(sims));
+    const maxD=Math.max(...HORIZONS.filter(h=>actual[h.n]!=null).map(h=>h.d));
+    for(let s=0;s<sims;s++){
+      let lp=0;
+      for(let t=1;t<=maxD;t++){
+        lp += eng==='gbm' ? mu+sg*randn()
+            : eng==='boot' ? R[(Math.random()*n)|0]
+            : fpart[(Math.random()*n)|0]+f.resid[(Math.random()*n)|0];
+        if(chk[t]) chk[t][s]=Math.exp(lp);
+      }
+    }
+    out[eng]={};
+    for(const h of HORIZONS){
+      if(actual[h.n]==null) continue;
+      const a=chk[h.d].slice().sort();
+      let above=0; for(let i=0;i<sims;i++) if(a[i]>1) above++;
+      out[eng][h.n]={ p5:pct(a,0.05),p25:pct(a,0.25),p50:pct(a,0.50),p75:pct(a,0.75),p95:pct(a,0.95),
+        pUp:above/sims, actual:actual[h.n] };
+    }
+  }
+  return out;
+}
+
+/* ── orchestration ── */
+let picked=[];
+function pickStocks(){
+  const nWant=parseInt(document.getElementById('btNStocks').value,10);
+  const pool=[...POOL]; picked=[];
+  while(picked.length<nWant && pool.length) picked.push(pool.splice((Math.random()*pool.length)|0,1)[0]);
+  document.getElementById('btPicked').innerHTML =
+    '<span class="lbl">Sample drawn:</span> ' + picked.map(p=>'<span class="chip">'+p.s+'</span>').join('');
+}
+document.getElementById('btReroll').addEventListener('click',pickStocks);
+pickStocks();
+
+const setProg=(f,msg)=>{ document.getElementById('btProg').style.display='block';
+  document.getElementById('btProgBar').style.width=(f*100).toFixed(0)+'%';
+  document.getElementById('btMsg').textContent=msg; };
+
+document.getElementById('btRun').addEventListener('click', async ()=>{
+  const btn=document.getElementById('btRun'); btn.disabled=true;
+  const sims=parseInt(document.getElementById('btSims').value,10);
+  try{
+    setProg(0.02,'Fetching Nifty 10Y…');
+    const mPts=await fetchPts('^NSEI');
+    const mMap=new Map(mPts.map(p=>[dk(p.t),p.c]));
+    const sectorSyms=[...new Set(picked.map(p=>p.x).filter(Boolean))];
+    const sMaps={};
+    for(let i=0;i<sectorSyms.length;i++){
+      setProg(0.05+0.10*i/sectorSyms.length,'Fetching sector index '+sectorSyms[i]+'…');
+      try{ sMaps[sectorSyms[i]]=new Map((await fetchPts(sectorSyms[i])).map(p=>[dk(p.t),p.c])); }
+      catch(e){ sMaps[sectorSyms[i]]=null; }
+    }
+    const cells=[];   /* {stock, dateLbl, res} */
+    for(let si=0; si<picked.length; si++){
+      const pk=picked[si];
+      setProg(0.15+0.8*si/picked.length, 'Backtesting '+pk.s+' ('+(si+1)+'/'+picked.length+')…');
+      await new Promise(r=>setTimeout(r,15));
+      let pts; try{ pts=await fetchPts(pk.s+'.NS'); }catch(e){ console.warn(pk.s,e.message); continue; }
+      const LOOK=750, FWD=252;
+      const first=LOOK, last=pts.length-1-FWD;
+      if(last<=first){ console.warn(pk.s,'insufficient history'); continue; }
+      const anchors=[];
+      for(let k=0;k<10;k++) anchors.push(Math.round(first + (last-first)*k/9));
+      const sMap=pk.x?sMaps[pk.x]:null;
+      for(const ai of anchors){
+        const res=runCell(pts,mMap,sMap,ai,sims);
+        if(res) cells.push({stock:pk.s, date:dk(pts[ai].t), res});
+      }
+    }
+    setProg(1,'Scoring '+cells.length+' cells…');
+    render(cells,sims);
+  }catch(e){
+    document.getElementById('btMsg').textContent='⚠ '+e.message;
+  }finally{ btn.disabled=false; }
+});
+
+/* ── scoring & rendering ── */
+function render(cells,sims){
+  document.getElementById('results').style.display='block';
+  const S={}; ENGINES.forEach(e=>S[e]={in90:0,in50:0,aboveMed:0,n:0,
+    byH:{}, buckets:Array.from({length:5},()=>({up:0,n:0,pSum:0})) });
+  ENGINES.forEach(e=>HORIZONS.forEach(h=>S[e].byH[h.n]={in90:0,n:0}));
+  cells.forEach(c=>{ ENGINES.forEach(e=>{
+    for(const hn in c.res[e]){
+      const r=c.res[e][hn]; S[e].n++;
+      if(r.actual>=r.p5&&r.actual<=r.p95) S[e].in90++;
+      if(r.actual>=r.p25&&r.actual<=r.p75) S[e].in50++;
+      if(r.actual>r.p50) S[e].aboveMed++;
+      S[e].byH[hn].n++; if(r.actual>=r.p5&&r.actual<=r.p95) S[e].byH[hn].in90++;
+      const b=Math.min(4,(r.pUp*5)|0);
+      S[e].buckets[b].n++; S[e].buckets[b].pSum+=r.pUp; if(r.actual>1) S[e].buckets[b].up++;
+    }
+  });});
+  const grade=(v,target,tol1,tol2)=>{ const d=Math.abs(v-target);
+    return d<=tol1?'ok':d<=tol2?'warn':'bad'; };
+  document.getElementById('cellCount').textContent =
+    cells.length+' stock×timepoint cells · '+S.gbm.n+' horizon evaluations per engine · '+sims.toLocaleString('en-IN')+' paths/cell';
+  document.getElementById('scoreCards').innerHTML = ENGINES.map(e=>{
+    const s=S[e], c90=s.in90/s.n*100, c50=s.in50/s.n*100, med=s.aboveMed/s.n*100;
+    const g90=grade(c90,90,4,8), g50=grade(c50,50,7,14), gm=grade(med,50,7,14);
+    const overall=[g90,g50,gm].includes('bad')?'bad':[g90,g50,gm].includes('warn')?'warn':'ok';
+    return '<div class="eng-card"><div class="eng-name">'+ENG_NAME[e]
+      +'<span class="badge '+overall+'">'+(overall==='ok'?'calibrated':overall==='warn'?'borderline':'miscalibrated')+'</span></div>'
+      +'<div class="metric"><span class="m-lbl">Actual inside P5–P95 (target 90%)</span><span class="m-val '+g90+'">'+c90.toFixed(1)+'%</span></div>'
+      +'<div class="metric"><span class="m-lbl">Actual inside P25–P75 (target 50%)</span><span class="m-val '+g50+'">'+c50.toFixed(1)+'%</span></div>'
+      +'<div class="metric"><span class="m-lbl">Actual above median (target 50%)</span><span class="m-val '+gm+'">'+med.toFixed(1)+'%</span></div>'
+      +'</div>'; }).join('');
+  /* calibration buckets */
+  const bl=['0–20%','20–40%','40–60%','60–80%','80–100%'];
+  document.getElementById('calibWrap').innerHTML =
+    '<table><tr><th>Predicted P(growth)</th>'+ENGINES.map(e=>'<th>'+ENG_NAME[e]+' realized (n)</th>').join('')+'</tr>'
+    + bl.map((b,i)=>'<tr><td>'+b+'</td>'+ENGINES.map(e=>{
+        const k=S[e].buckets[i];
+        if(!k.n) return '<td>–</td>';
+        const real=k.up/k.n*100, pred=k.pSum/k.n*100, g=grade(real,pred,12,25);
+        return '<td class="'+g+'">'+real.toFixed(0)+'% ('+k.n+')</td>'; }).join('')+'</tr>').join('')
+    +'</table>';
+  /* per-horizon coverage */
+  document.getElementById('horizonWrap').innerHTML =
+    '<table><tr><th>Horizon</th>'+ENGINES.map(e=>'<th>'+ENG_NAME[e]+'</th>').join('')+'</tr>'
+    + HORIZONS.map(h=>'<tr><td>'+h.n+'</td>'+ENGINES.map(e=>{
+        const k=S[e].byH[h.n]; if(!k.n) return '<td>–</td>';
+        const v=k.in90/k.n*100, g=grade(v,90,5,10);
+        return '<td class="'+g+'">'+v.toFixed(0)+'%</td>'; }).join('')+'</tr>').join('')
+    +'</table>';
+  /* 1Y detail grid */
+  let det='<table><tr><th>Stock</th><th>Anchor</th><th>Actual 1Y</th>'
+    +ENGINES.map(e=>'<th>'+ENG_NAME[e]+' P5–P95</th>').join('')+'</tr>';
+  cells.forEach(c=>{ const any=c.res.gbm['1Y']; if(!any) return;
+    det+='<tr><td>'+c.stock+'</td><td>'+c.date+'</td><td>'+((any.actual-1)*100).toFixed(0)+'%</td>'
+      +ENGINES.map(e=>{ const r=c.res[e]['1Y'];
+        const hit=r.actual>=r.p5&&r.actual<=r.p95;
+        return '<td class="'+(hit?'ok':'bad')+'">'+((r.p5-1)*100).toFixed(0)+'…'+((r.p95-1)*100).toFixed(0)+'% '+(hit?'✓':'✗')+'</td>'; }).join('')
+      +'</tr>'; });
+  document.getElementById('detailWrap').innerHTML = det+'</table>';
+  setProg(1,'Done — '+cells.length+' cells scored.');
+}
+</script>
+</body>
+</html>
