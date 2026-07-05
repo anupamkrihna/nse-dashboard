@@ -171,6 +171,9 @@ body {
 .tag { font-size: 10px; padding: 3px 9px; border-radius: 4px; font-weight: 500; }
 .card-1 .tag { background: rgba(232,185,74,0.12); color: #9a6f10; }
 .card-2 .tag { background: rgba(45,122,79,0.1); color: #1a5c35; }
+.card-3 { grid-column: 1 / -1; min-height: auto; }
+.card-3 .card-eyebrow { color: #1a2744; }
+.card-3 .tag { background: rgba(26,39,68,0.08); color: #1a2744; }
 
 .card-cta {
   display: inline-flex;
@@ -218,6 +221,7 @@ body {
   <nav class="u-tabs">
     <a href="dashboard.html" class="u-tab">📊 Dashboard</a>
     <a href="steam.html"     class="u-tab">🔥 Steam Gauge</a>
+    <a href="backtest.html" class="u-tab">🎯 Calibration</a>
   </nav>
   <div class="u-right">
     <div class="live-dot"></div>
@@ -263,6 +267,19 @@ body {
       </div>
       <div class="card-cta">Open Steam Gauge <span class="arrow">→</span></div>
     </a>
+    <a class="card card-3" href="backtest.html">
+      <div class="card-eyebrow">Module 03</div>
+      <div class="card-icon">🎯</div>
+      <div class="card-title">Prediction Calibration Lab</div>
+      <div class="card-desc">Backtest the Monte Carlo prediction engines against real history — 10 random stocks × 10 time points, scored on whether actual prices landed inside the predicted P5–P95 bands. Trust, but verify.</div>
+      <div class="card-tags">
+        <span class="tag">GBM vs Bootstrap vs Factor</span>
+        <span class="tag">Band Coverage</span>
+        <span class="tag">P(growth) Calibration</span>
+        <span class="tag">10Y History</span>
+      </div>
+      <div class="card-cta">Open Calibration Lab <span class="arrow">→</span></div>
+    </a>
   </div>
   <div style="font-size:11px;color:#999;text-align:center">
     GAS backend · Yahoo Finance · Upstox Analytics — no login required
@@ -274,6 +291,7 @@ body {
   <div class="footer-links">
     <a href="dashboard.html">Dashboard Pro</a>
     <a href="steam.html">Steam Gauge</a>
+    <a href="backtest.html">Calibration Lab</a>
   </div>
 </footer>
 
