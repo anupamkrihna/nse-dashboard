@@ -2055,6 +2055,18 @@ const pdState = {
 };
 const PD_SCEN = { base:null, bull:0.15, bear:-0.15, flat:0.0 };
 const PD_SCEN_LBL = { base:'Base (historical drift)', bull:'Bull · Nifty +15%/yr', bear:'Bear · Nifty −15%/yr', flat:'Flat · Nifty 0%/yr' };
+/* empirical band calibration written by backtest.html (Calibration Lab) */
+function pdCalLevels() {
+  const D = { p5:0.05, p25:0.25, p50:0.50, p75:0.75, p95:0.95 };
+  try {
+    const raw = localStorage.getItem('nse_pd_calibration');
+    if (!raw) return { L:D, tag:null, sig:'none' };
+    const c = JSON.parse(raw);
+    const L = c.levels && c.levels[pdState.engine];
+    if (!L) return { L:D, tag:null, sig:'none' };
+    return { L, tag:'⚙ calibrated ' + c.date + ' · ' + c.cells + ' backtest cells', sig:c.date + '|' + c.cells };
+  } catch (e) { return { L:D, tag:null, sig:'none' }; }
+}
 /* specific sectors first, broad composites last */
 const PD_SECTOR_PRIORITY = ['Nifty Oil & Gas','Nifty Defence','Nifty PSU Bank','Nifty Bank',
   'Nifty Financial Services','Nifty IT','Nifty Pharma','Nifty Healthcare','Nifty Auto',
@@ -2201,7 +2213,7 @@ function renderPredictTab() {
   }
   pdSyncScenarioVisibility();
   const key = flowState.symbol + '|' + pdState.engine + '|' + pdState.lookback + '|'
-            + pdState.scenario + '|' + document.getElementById('pdSims').value;
+            + pdState.scenario + '|' + document.getElementById('pdSims').value + '|' + pdCalLevels().sig;
   if (pdState.ranKey === key) return;
   runPrediction();
 }
@@ -2219,6 +2231,8 @@ async function runPrediction() {
     const sims   = parseInt(document.getElementById('pdSims').value, 10);
     const steps  = 252;
     const isFac  = pdState.engine === 'factor';
+    const CALIB  = pdCalLevels();
+    const LV     = CALIB.L;
     meta.textContent = 'Fetching ' + pdState.lookback.toUpperCase() + ' history\u2026';
 
     /* 1 ─ stock history */
@@ -2313,16 +2327,17 @@ async function runPrediction() {
       if (h.d === 252) pUp1y = pUp;
       const pCls = pUp >= 60 ? 'hi' : pUp >= 45 ? 'mid' : 'lo';
       rows += '<tr><td>' + h.name + '</td>'
-        + '<td>' + chgCell(pdPct(sorted, 0.05)) + '</td>'
+        + '<td>' + chgCell(pdPct(sorted, LV.p5)) + '</td>'
         + '<td>' + chgCell(mean) + '</td>'
-        + '<td>' + chgCell(pdPct(sorted, 0.95)) + '</td>'
+        + '<td>' + chgCell(pdPct(sorted, LV.p95)) + '</td>'
         + '<td><span class="pd-prob ' + pCls + '">' + pUp.toFixed(1) + '%</span></td></tr>';
     });
     document.getElementById('pdMatrixWrap').innerHTML =
       '<table class="own-table"><tr><th>Timeline</th><th>Worst Case (P5)</th><th>Expected (Mean)</th><th>Best Case (P95)</th><th>Chance of Growth</th></tr>' + rows + '</table>';
     document.getElementById('pdMatrixMeta').textContent =
       name + ' \u00B7 spot \u20B9' + pdFmt(S0) + ' \u00B7 trading-day horizons'
-      + (isFac ? ' \u00B7 ' + PD_SCEN_LBL[pdState.scenario] : '');
+      + (isFac ? ' \u00B7 ' + PD_SCEN_LBL[pdState.scenario] : '')
+      + (CALIB.tag ? ' \u00B7 ' + CALIB.tag : '');
 
     /* dividend note — price paths exclude dividends */
     const dy = pdDivYieldPct();
@@ -2338,8 +2353,8 @@ async function runPrediction() {
     const p5 = [], p25 = [], p50 = [], p75 = [], p95 = [];
     for (let t = 0; t < steps; t++) {
       const a = stepVals[t].slice().sort();
-      p5.push(pdPct(a, 0.05)); p25.push(pdPct(a, 0.25)); p50.push(pdPct(a, 0.50));
-      p75.push(pdPct(a, 0.75)); p95.push(pdPct(a, 0.95));
+      p5.push(pdPct(a, LV.p5)); p25.push(pdPct(a, LV.p25)); p50.push(pdPct(a, LV.p50));
+      p75.push(pdPct(a, LV.p75)); p95.push(pdPct(a, LV.p95));
     }
 
     /* 7 ─ fan chart */
@@ -2422,9 +2437,10 @@ async function runPrediction() {
     const engLbl = pdState.engine === 'gbm' ? 'GBM' : pdState.engine === 'boot' ? 'Bootstrap' : 'Factor';
     meta.textContent = name + ' \u00B7 ' + engLbl
       + (isFac ? ' \u00B7 ' + PD_SCEN_LBL[pdState.scenario] : '')
-      + ' \u00B7 ' + sims.toLocaleString('en-IN') + ' paths \u00B7 ' + pdState.lookback.toUpperCase() + ' lookback';
+      + ' \u00B7 ' + sims.toLocaleString('en-IN') + ' paths \u00B7 ' + pdState.lookback.toUpperCase() + ' lookback'
+      + (CALIB.tag ? ' \u00B7 ' + CALIB.tag : '');
 
-    pdState.ranKey = sym + '|' + pdState.engine + '|' + pdState.lookback + '|' + pdState.scenario + '|' + sims;
+    pdState.ranKey = sym + '|' + pdState.engine + '|' + pdState.lookback + '|' + pdState.scenario + '|' + sims + '|' + CALIB.sig;
   } catch (e) {
     console.error('Prediction error', e);
     document.getElementById('pdMeta').textContent = '\u26A0 ' + (e.message || 'Simulation failed');

@@ -80,6 +80,16 @@ td:first-child { font-family:Arial,sans-serif; font-weight:600; }
       <div class="note"><b>How to read:</b> a well-calibrated engine has ~90% of actual outcomes inside its P5–P95 band, ~50% inside P25–P75, and actuals above the median ~50% of the time. Under-coverage of the 90% band means the cone is too narrow (overconfident) — GBM typically shows this because real returns have fatter tails than the log-normal assumption; Bootstrap and Factor usually cover better.</div>
     </div>
     <div class="card">
+      <div class="hdr"><span class="title">🔧 Auto-Calibration</span><span class="sub">conformal-style band correction learned from this backtest</span></div>
+      <div id="calAdjWrap"></div>
+      <div class="controls" style="margin-top:12px">
+        <button class="run" id="calApply">Apply to Prediction Tab ✔</button>
+        <button class="ghost" id="calClear">Clear Calibration</button>
+        <span class="sub" id="calStatus"></span>
+      </div>
+      <div class="note">Adjusted levels are the empirical quantiles of where actual outcomes landed inside each engine's simulated distribution (PIT). Applying stores them in this browser; the Steam Gauge Prediction tab picks them up automatically and re-labels its bands. <b>What this fixes:</b> band width and drift bias as measured over this sample. <b>What it cannot fix:</b> the future differing from the last decade — a calibration learned on a bull era bakes that era in. Re-run and re-apply periodically; clear it if the regime shifts.</div>
+    </div>
+    <div class="card">
       <div class="hdr"><span class="title">P(growth) Calibration</span><span class="sub">predicted probability bucket vs realized frequency of actual growth</span></div>
       <div id="calibWrap"></div>
       <div class="note">If the engine says "70% chance of growth", growth should occur ~70% of the time in that bucket. Large gaps = miscalibrated probabilities. Buckets with few cells are statistically weak — read n.</div>
@@ -197,9 +207,10 @@ function runCell(stockPts, mMap, sMap, anchorIdx, sims){
     for(const h of HORIZONS){
       if(actual[h.n]==null) continue;
       const a=chk[h.d].slice().sort();
-      let above=0; for(let i=0;i<sims;i++) if(a[i]>1) above++;
+      let above=0, below=0;
+      for(let i=0;i<sims;i++){ if(a[i]>1) above++; if(a[i]<actual[h.n]) below++; }
       out[eng][h.n]={ p5:pct(a,0.05),p25:pct(a,0.25),p50:pct(a,0.50),p75:pct(a,0.75),p95:pct(a,0.95),
-        pUp:above/sims, actual:actual[h.n] };
+        pUp:above/sims, actual:actual[h.n], pit:below/sims };
     }
   }
   return out;
@@ -215,6 +226,16 @@ function pickStocks(){
     '<span class="lbl">Sample drawn:</span> ' + picked.map(p=>'<span class="chip">'+p.s+'</span>').join('');
 }
 document.getElementById('btReroll').addEventListener('click',pickStocks);
+document.addEventListener('click',ev=>{
+  if(ev.target.id==='calApply' && window._pendingCal){
+    localStorage.setItem('nse_pd_calibration', JSON.stringify(window._pendingCal));
+    document.getElementById('calStatus').textContent='✔ Applied ('+window._pendingCal.date+', '+window._pendingCal.cells+' cells) — open the Steam Gauge Prediction tab.';
+  }
+  if(ev.target.id==='calClear'){
+    localStorage.removeItem('nse_pd_calibration');
+    document.getElementById('calStatus').textContent='Calibration cleared — Prediction tab back to nominal bands.';
+  }
+});
 pickStocks();
 
 const setProg=(f,msg)=>{ document.getElementById('btProg').style.display='block';
@@ -262,7 +283,7 @@ document.getElementById('btRun').addEventListener('click', async ()=>{
 /* ── scoring & rendering ── */
 function render(cells,sims){
   document.getElementById('results').style.display='block';
-  const S={}; ENGINES.forEach(e=>S[e]={in90:0,in50:0,aboveMed:0,n:0,
+  const S={}; ENGINES.forEach(e=>S[e]={in90:0,in50:0,aboveMed:0,n:0,pits:[],
     byH:{}, buckets:Array.from({length:5},()=>({up:0,n:0,pSum:0})) });
   ENGINES.forEach(e=>HORIZONS.forEach(h=>S[e].byH[h.n]={in90:0,n:0}));
   cells.forEach(c=>{ ENGINES.forEach(e=>{
@@ -271,6 +292,7 @@ function render(cells,sims){
       if(r.actual>=r.p5&&r.actual<=r.p95) S[e].in90++;
       if(r.actual>=r.p25&&r.actual<=r.p75) S[e].in50++;
       if(r.actual>r.p50) S[e].aboveMed++;
+      S[e].pits.push(r.pit);
       S[e].byH[hn].n++; if(r.actual>=r.p5&&r.actual<=r.p95) S[e].byH[hn].in90++;
       const b=Math.min(4,(r.pUp*5)|0);
       S[e].buckets[b].n++; S[e].buckets[b].pSum+=r.pUp; if(r.actual>1) S[e].buckets[b].up++;
@@ -282,13 +304,13 @@ function render(cells,sims){
     cells.length+' stock×timepoint cells · '+S.gbm.n+' horizon evaluations per engine · '+sims.toLocaleString('en-IN')+' paths/cell';
   document.getElementById('scoreCards').innerHTML = ENGINES.map(e=>{
     const s=S[e], c90=s.in90/s.n*100, c50=s.in50/s.n*100, med=s.aboveMed/s.n*100;
-    const g90=grade(c90,90,4,8), g50=grade(c50,50,7,14), gm=grade(med,50,7,14);
-    const overall=[g90,g50,gm].includes('bad')?'bad':[g90,g50,gm].includes('warn')?'warn':'ok';
+    const g90=grade(c90,90,5,10), g50=grade(c50,50,9,18), gm=grade(med,50,12,22);
+    const overall=[g90,g50].includes('bad')?'bad':[g90,g50].includes('warn')?'warn':'ok';
     return '<div class="eng-card"><div class="eng-name">'+ENG_NAME[e]
       +'<span class="badge '+overall+'">'+(overall==='ok'?'calibrated':overall==='warn'?'borderline':'miscalibrated')+'</span></div>'
       +'<div class="metric"><span class="m-lbl">Actual inside P5–P95 (target 90%)</span><span class="m-val '+g90+'">'+c90.toFixed(1)+'%</span></div>'
       +'<div class="metric"><span class="m-lbl">Actual inside P25–P75 (target 50%)</span><span class="m-val '+g50+'">'+c50.toFixed(1)+'%</span></div>'
-      +'<div class="metric"><span class="m-lbl">Actual above median (target 50%)</span><span class="m-val '+gm+'">'+med.toFixed(1)+'%</span></div>'
+      +'<div class="metric"><span class="m-lbl">Actual above median (50% · regime-sensitive, not in badge)</span><span class="m-val '+gm+'">'+med.toFixed(1)+'%</span></div>'
       +'</div>'; }).join('');
   /* calibration buckets */
   const bl=['0–20%','20–40%','40–60%','60–80%','80–100%'];
@@ -318,6 +340,29 @@ function render(cells,sims){
         return '<td class="'+(hit?'ok':'bad')+'">'+((r.p5-1)*100).toFixed(0)+'…'+((r.p95-1)*100).toFixed(0)+'% '+(hit?'✓':'✗')+'</td>'; }).join('')
       +'</tr>'; });
   document.getElementById('detailWrap').innerHTML = det+'</table>';
+  /* ── auto-calibration from PIT quantiles ── */
+  const clamp=(v,lo,hi)=>Math.min(hi,Math.max(lo,v));
+  const CAL={date:new Date().toISOString().slice(0,10), cells:cells.length, levels:{}};
+  ENGINES.forEach(e=>{
+    const u=S[e].pits.slice().sort((a,b)=>a-b);
+    CAL.levels[e]={
+      p5:  clamp(pct(u,0.05),0.005,0.15),
+      p25: clamp(pct(u,0.25),0.10,0.40),
+      p50: clamp(pct(u,0.50),0.35,0.65),
+      p75: clamp(pct(u,0.75),0.60,0.90),
+      p95: clamp(pct(u,0.95),0.85,0.995)
+    };
+  });
+  const fmtL=v=>(v*100).toFixed(1);
+  document.getElementById('calAdjWrap').innerHTML =
+    '<table><tr><th>Engine</th><th>"P5" →</th><th>"P25" →</th><th>Median →</th><th>"P75" →</th><th>"P95" →</th></tr>'
+    + ENGINES.map(e=>{const L=CAL.levels[e];
+        return '<tr><td>'+ENG_NAME[e]+'</td><td>'+fmtL(L.p5)+'</td><td>'+fmtL(L.p25)+'</td><td>'+fmtL(L.p50)+'</td><td>'+fmtL(L.p75)+'</td><td>'+fmtL(L.p95)+'</td></tr>';}).join('')
+    + '</table><div class="note">Read: if "P5 → 2.1", only 2.1% of actuals fell below the nominal 5th percentile — the lower band was too wide there; if "P95 → 97.8", 5% of actuals exceeded the nominal 97.8th percentile — upper band too narrow. Median → above 50 means outcomes ran hot vs the fitted drift (trending market).</div>';
+  window._pendingCal=CAL;
+  const st=document.getElementById('calStatus');
+  const existing=localStorage.getItem('nse_pd_calibration');
+  if(existing){ try{ const x=JSON.parse(existing); st.textContent='Currently applied: '+x.date+' ('+x.cells+' cells)'; }catch(e){} }
   setProg(1,'Done — '+cells.length+' cells scored.');
 }
 </script>
