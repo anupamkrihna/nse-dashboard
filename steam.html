@@ -255,6 +255,19 @@ body { background: #f0ede6; color: #1a2744; font-family: Arial, sans-serif; font
 .news-item a:hover { color:#b8860b; }
 .news-meta { font-size:10px; color:#999; margin-top:3px; }
 .flow-note { font-size:11px; color:#666; line-height:1.6; margin-top:8px; }
+/* ── Prediction tab (Monte Carlo) ── */
+.pd-controls { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:12px; }
+.pd-group { display:flex; border:1px solid #e2ddd2; border-radius:8px; overflow:hidden; background:#fff; }
+.pd-pill { padding:6px 12px; font-size:11px; font-weight:600; color:#888; background:#fff; border:none; cursor:pointer; border-right:1px solid #e2ddd2; transition:all 0.15s; }
+.pd-pill:last-child { border-right:none; }
+.pd-pill.active { background:#1a2744; color:#f0e6c8; }
+.pd-lbl { font-size:10px; color:#999; text-transform:uppercase; letter-spacing:0.5px; margin-right:-6px; }
+select.pd-sel { font-size:11px; padding:6px 8px; border:1px solid #e2ddd2; border-radius:8px; background:#fff; color:#1a2744; cursor:pointer; }
+.pd-run { background:#e8b94a; color:#1a2744; border:none; border-radius:8px; padding:7px 18px; font-size:12px; font-weight:700; cursor:pointer; margin-left:auto; }
+.pd-run:disabled { opacity:0.55; cursor:wait; }
+.pd-chg-up { color:#2d7a4f; font-size:10px; } .pd-chg-dn { color:#c0392b; font-size:10px; }
+.pd-prob { font-weight:700; }
+.pd-prob.hi { color:#2d7a4f; } .pd-prob.mid { color:#b8860b; } .pd-prob.lo { color:#c0392b; }
 /* ── Buffett tab ── */
 .bf-scorewrap { display:flex; align-items:center; gap:22px; flex-wrap:wrap; }
 .bf-score { font-size:52px; font-weight:800; color:#1a2744; font-family:'Courier New',monospace; line-height:1; }
@@ -352,6 +365,7 @@ body { background: #f0ede6; color: #1a2744; font-family: Arial, sans-serif; font
     <div class="tab" data-tab="indices">🗂 All Indices</div>
     <div class="tab" data-tab="flow">📈 Flow &amp; News</div>
     <div class="tab" data-tab="buffett">🎩 Buffett</div>
+    <div class="tab" data-tab="predict">🎲 Prediction</div>
   </div>
 
   <!-- STEAM TAB -->
@@ -508,6 +522,50 @@ body { background: #f0ede6; color: #1a2744; font-family: Arial, sans-serif; font
       <div class="bf-out" id="bfAiOut"></div>
     </div>
     <div class="flow-note">Scores come from the rule-based five-pillar model (Moat · Value · Consistency · Ownership · Safety), batch-computed from Upstox fundamentals + Yahoo price. Research is AI with live web search. Analytical tooling, not investment advice.</div>
+  </div>
+
+  <!-- PREDICTION TAB (Monte Carlo) -->
+  <div class="tab-panel" id="tab-predict">
+    <div class="flow-card">
+      <div class="flow-hdr" style="flex-wrap:wrap;gap:8px">
+        <span class="flow-title">🎲 Monte Carlo Price Prediction</span>
+        <span class="flow-sub" id="pdMeta">Probability cone, not a forecast</span>
+      </div>
+      <div class="pd-controls">
+        <span class="pd-lbl">Engine</span>
+        <div class="pd-group" id="pdEngineBtns">
+          <button class="pd-pill active" data-eng="gbm">GBM</button>
+          <button class="pd-pill" data-eng="boot">Bootstrap</button>
+        </div>
+        <span class="pd-lbl">Lookback</span>
+        <div class="pd-group" id="pdLookBtns">
+          <button class="pd-pill" data-lb="1y">1Y</button>
+          <button class="pd-pill" data-lb="2y">2Y</button>
+          <button class="pd-pill active" data-lb="3y">3Y</button>
+        </div>
+        <span class="pd-lbl">Paths</span>
+        <select class="pd-sel" id="pdSims">
+          <option value="1000">1,000</option>
+          <option value="2500">2,500</option>
+          <option value="5000" selected>5,000</option>
+        </select>
+        <button class="pd-run" id="pdRunBtn">Run ▶</button>
+      </div>
+      <div class="flow-canvas-wrap" style="height:300px"><canvas id="pdChart"></canvas></div>
+      <div class="flow-corr-stat" id="pdStatStrip" style="display:none">
+        <div class="fcs-item">Spot<b id="pdSpot">–</b></div>
+        <div class="fcs-item">Drift μ (ann.)<b id="pdMu">–</b></div>
+        <div class="fcs-item">Volatility σ (ann.)<b id="pdSg">–</b></div>
+        <div class="fcs-item">P(above spot, 1Y)<b id="pdPUp">–</b></div>
+        <div class="fcs-item">P(touch +10%)<b id="pdT10u">–</b></div>
+        <div class="fcs-item">P(touch −10%)<b id="pdT10d">–</b></div>
+      </div>
+    </div>
+    <div class="flow-card">
+      <div class="flow-hdr"><span class="flow-title">📊 Prediction Matrix</span><span class="flow-sub" id="pdMatrixMeta"></span></div>
+      <div id="pdMatrixWrap"><div class="flow-note">Load a stock (search above), then open this tab.</div></div>
+    </div>
+    <div class="flow-note">Model assumes returns behave like the chosen lookback window (GBM: log-normal, constant volatility · Bootstrap: resampled actual daily returns). It cannot anticipate events, results, policy shocks or regime changes — read Worst/Best as the 5th/95th percentile of simulated outcomes, not targets. Analytical tooling, not investment advice.</div>
   </div>
 
   <div class="tab-panel" id="tab-sector">
@@ -980,6 +1038,7 @@ document.querySelectorAll('.tab').forEach(tab => {
     if (tab.dataset.tab === 'indices') buildIndicesPanel();
     if (tab.dataset.tab === 'flow') renderFlowTab();
     if (tab.dataset.tab === 'buffett') renderBuffettTab();
+    if (tab.dataset.tab === 'predict') renderPredictTab();
   });
 });
 
@@ -1219,6 +1278,7 @@ async function loadStock(stock) {
   flowState.symbol    = nsSym;
   flowState.rendered  = false;
   bfState.row = null; bfState.rendered = false;
+  pdResetForNewStock();
   const _ao = document.getElementById('bfAiOut'); if (_ao) _ao.innerHTML = '';
 
   try { renderSteam(stock, gasData.chart, merged); }
@@ -1950,6 +2010,253 @@ async function bfAi_(kind) {
 document.getElementById('bfVerdictBtn').addEventListener('click', () => bfAi_('verdict'));
 document.getElementById('bfResStockBtn').addEventListener('click', () => bfAi_('stock'));
 document.getElementById('bfResSectorBtn').addEventListener('click', () => bfAi_('sector'));
+
+/* ═══════════════════════════════════════════════
+   PREDICTION TAB — MONTE CARLO  (GBM + Bootstrap)
+   Ports the Colab prediction-matrix script to the
+   Steam screen. Data: GAS passthrough → Yahoo v8.
+═══════════════════════════════════════════════ */
+const pdState = {
+  engine:'gbm', lookback:'3y', running:false,
+  symbol:null, closes:null, closesKey:null, lastTs:null,
+  chart:null, ranKey:null
+};
+
+function pdResetForNewStock() {
+  pdState.symbol = null; pdState.closes = null; pdState.closesKey = null; pdState.ranKey = null;
+  if (pdState.chart) { pdState.chart.destroy(); pdState.chart = null; }
+  const w = document.getElementById('pdMatrixWrap');
+  if (w) w.innerHTML = '<div class="flow-note">Open this tab to run the simulation for the loaded stock.</div>';
+  const s = document.getElementById('pdStatStrip'); if (s) s.style.display = 'none';
+  const m = document.getElementById('pdMeta'); if (m) m.textContent = 'Probability cone, not a forecast';
+}
+
+/* Box-Muller standard normal with spare caching */
+let _pdSpare = null;
+function pdRandn() {
+  if (_pdSpare !== null) { const s = _pdSpare; _pdSpare = null; return s; }
+  let u = 0, v = 0;
+  while (u === 0) u = Math.random();
+  v = Math.random();
+  const m = Math.sqrt(-2.0 * Math.log(u));
+  _pdSpare = m * Math.sin(2.0 * Math.PI * v);
+  return m * Math.cos(2.0 * Math.PI * v);
+}
+
+function pdPct(sorted, p) {
+  const idx = (sorted.length - 1) * p;
+  const lo = Math.floor(idx), hi = Math.ceil(idx);
+  if (lo === hi) return sorted[lo];
+  return sorted[lo] + (sorted[hi] - sorted[lo]) * (idx - lo);
+}
+function pdFmt(n) { return n >= 1000 ? n.toLocaleString('en-IN', {maximumFractionDigits:0}) : n.toFixed(2); }
+function pdFutureDates(fromMs, n) {
+  const out = []; const d = new Date(fromMs);
+  while (out.length < n) {
+    d.setDate(d.getDate() + 1);
+    const wd = d.getDay();
+    if (wd !== 0 && wd !== 6) out.push(new Date(d));
+  }
+  return out;
+}
+function pdLbl(d) { return d.toLocaleDateString('en-IN', {day:'2-digit', month:'short', year:'2-digit'}); }
+
+/* 3Y (or chosen lookback) daily closes — GAS proxy first, Yahoo direct fallback */
+async function pdFetchCloses(sym, range) {
+  const key = sym + '|' + range;
+  if (pdState.closesKey === key && pdState.closes) return pdState.closes;
+  let j = null;
+  try {
+    const r = await fetch(BACKEND + '?symbol=' + encodeURIComponent(sym) + '&range=' + range + '&interval=1d');
+    if (r.ok) { const d = await r.json(); if (d.chart?.result?.[0]) j = d; }
+  } catch (e) {}
+  if (!j) {
+    const r2 = await fetch('https://query1.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(sym) + '?range=' + range + '&interval=1d');
+    if (!r2.ok) throw new Error('Yahoo chart HTTP ' + r2.status);
+    j = await r2.json();
+  }
+  const res = j.chart?.result?.[0];
+  if (!res) throw new Error('No chart data for ' + sym);
+  const q = res.indicators.quote[0];
+  const pts = [];
+  res.timestamp.forEach((t, i) => { const c = q.close[i]; if (c != null && isFinite(c)) pts.push({ t: t * 1000, c }); });
+  if (pts.length < 120) throw new Error('Insufficient history (' + pts.length + ' days)');
+  pdState.closes = pts; pdState.closesKey = key;
+  return pts;
+}
+
+function renderPredictTab() {
+  if (!flowState.symbol) {
+    document.getElementById('pdMatrixWrap').innerHTML =
+      '<div class="flow-note">Load a stock first (search above), then open this tab.</div>';
+    return;
+  }
+  const key = flowState.symbol + '|' + pdState.engine + '|' + pdState.lookback + '|' + document.getElementById('pdSims').value;
+  if (pdState.ranKey === key) return;   /* already rendered for this config */
+  runPrediction();
+}
+
+async function runPrediction() {
+  if (pdState.running) return;
+  if (!flowState.symbol) return;
+  pdState.running = true;
+  const btn  = document.getElementById('pdRunBtn');
+  const meta = document.getElementById('pdMeta');
+  btn.disabled = true; btn.textContent = '\u23F3 Running\u2026';
+  try {
+    const sym   = flowState.symbol;
+    const name  = flowState.stock ? flowState.stock.name : sym;
+    const sims  = parseInt(document.getElementById('pdSims').value, 10);
+    const steps = 252;
+    meta.textContent = 'Fetching ' + pdState.lookback.toUpperCase() + ' history\u2026';
+
+    /* 1 ─ history */
+    const pts = await pdFetchCloses(sym, pdState.lookback);
+    const closes = pts.map(p => p.c);
+    const S0 = closes[closes.length - 1];
+
+    /* 2 ─ daily log returns → μ, σ */
+    const rets = [];
+    for (let i = 1; i < closes.length; i++) {
+      const r = Math.log(closes[i] / closes[i - 1]);
+      if (isFinite(r)) rets.push(r);
+    }
+    const n  = rets.length;
+    const mu = rets.reduce((a, b) => a + b, 0) / n;
+    const sg = Math.sqrt(rets.reduce((a, b) => a + (b - mu) * (b - mu), 0) / (n - 1));
+
+    meta.textContent = 'Simulating ' + sims.toLocaleString('en-IN') + ' paths\u2026';
+    await new Promise(res => setTimeout(res, 30));   /* let UI paint */
+
+    /* 3 ─ simulate; step-major store for per-day percentiles */
+    const stepVals = Array.from({length: steps}, () => new Float64Array(sims));
+    let touchUp = 0, touchDn = 0;
+    const upLvl = S0 * 1.10, dnLvl = S0 * 0.90;
+    const gbmDrift = mu - 0.5 * sg * sg;             /* matches the Colab GBM step */
+    for (let s = 0; s < sims; s++) {
+      let p = S0, hi = S0, lo = S0;
+      for (let t = 0; t < steps; t++) {
+        const r = (pdState.engine === 'gbm')
+          ? (gbmDrift + sg * pdRandn())              /* GBM: exp((μ−σ²/2)+σZ)     */
+          : rets[(Math.random() * n) | 0];           /* bootstrap: resample history */
+        p *= Math.exp(r);
+        stepVals[t][s] = p;
+        if (p > hi) hi = p; if (p < lo) lo = p;
+      }
+      if (hi >= upLvl) touchUp++;
+      if (lo <= dnLvl) touchDn++;
+    }
+
+    /* 4 ─ prediction matrix @ checkpoints (from the Colab script) */
+    const horizons = [
+      {name:'Tomorrow', d:1}, {name:'1 Week', d:5}, {name:'1 Month', d:21},
+      {name:'3 Months', d:63}, {name:'6 Months', d:126}, {name:'1 Year', d:252}
+    ];
+    const chgCell = v => {
+      const pc = (v / S0 - 1) * 100;
+      const cls = pc >= 0 ? 'pd-chg-up' : 'pd-chg-dn';
+      return pdFmt(v) + ' <span class="' + cls + '">' + (pc >= 0 ? '+' : '') + pc.toFixed(1) + '%</span>';
+    };
+    let rows = '';
+    let pUp1y = 0;
+    horizons.forEach(h => {
+      const vals = stepVals[h.d - 1];
+      const sorted = vals.slice().sort();
+      let sum = 0, above = 0;
+      for (let i = 0; i < sims; i++) { sum += vals[i]; if (vals[i] > S0) above++; }
+      const mean = sum / sims;
+      const pUp = above / sims * 100;
+      if (h.d === 252) pUp1y = pUp;
+      const pCls = pUp >= 60 ? 'hi' : pUp >= 45 ? 'mid' : 'lo';
+      rows += '<tr><td>' + h.name + '</td>'
+        + '<td>' + chgCell(pdPct(sorted, 0.05)) + '</td>'
+        + '<td>' + chgCell(mean) + '</td>'
+        + '<td>' + chgCell(pdPct(sorted, 0.95)) + '</td>'
+        + '<td><span class="pd-prob ' + pCls + '">' + pUp.toFixed(1) + '%</span></td></tr>';
+    });
+    document.getElementById('pdMatrixWrap').innerHTML =
+      '<table class="own-table"><tr><th>Timeline</th><th>Worst Case (P5)</th><th>Expected (Mean)</th><th>Best Case (P95)</th><th>Chance of Growth</th></tr>' + rows + '</table>';
+    document.getElementById('pdMatrixMeta').textContent =
+      name + ' \u00B7 spot \u20B9' + pdFmt(S0) + ' \u00B7 trading-day horizons';
+
+    /* 5 ─ percentile bands per step for the fan chart */
+    const p5 = [], p25 = [], p50 = [], p75 = [], p95 = [];
+    for (let t = 0; t < steps; t++) {
+      const a = stepVals[t].slice().sort();
+      p5.push(pdPct(a, 0.05)); p25.push(pdPct(a, 0.25)); p50.push(pdPct(a, 0.50));
+      p75.push(pdPct(a, 0.75)); p95.push(pdPct(a, 0.95));
+    }
+
+    /* 6 ─ chart: last ~126 hist days + cone */
+    const histN = Math.min(126, pts.length);
+    const histPts = pts.slice(-histN);
+    const futDates = pdFutureDates(histPts[histPts.length - 1].t, steps);
+    const labels = [...histPts.map(p => pdLbl(new Date(p.t))), ...futDates.map(pdLbl)];
+    const H = histPts.length;
+    const pad = arr => { const out = new Array(H - 1).fill(null); out.push(S0); return out.concat(arr); };
+    const histSeries = histPts.map(p => p.c).concat(new Array(steps).fill(null));
+
+    if (pdState.chart) pdState.chart.destroy();
+    pdState.chart = new Chart(document.getElementById('pdChart').getContext('2d'), {
+      type:'line',
+      data:{ labels, datasets:[
+        { label:'History', data:histSeries, borderColor:'#1a2744', borderWidth:1.6, pointRadius:0, tension:0 },
+        { label:'P5',  data:pad(p5),  borderColor:'rgba(232,185,74,0.25)', borderWidth:0.7, pointRadius:0 },
+        { label:'P95', data:pad(p95), borderColor:'rgba(232,185,74,0.25)', borderWidth:0.7, pointRadius:0,
+          fill:'-1', backgroundColor:'rgba(232,185,74,0.10)' },
+        { label:'P25', data:pad(p25), borderColor:'rgba(232,185,74,0.45)', borderWidth:0.7, pointRadius:0 },
+        { label:'P75', data:pad(p75), borderColor:'rgba(232,185,74,0.45)', borderWidth:0.7, pointRadius:0,
+          fill:'-1', backgroundColor:'rgba(232,185,74,0.22)' },
+        { label:'Median', data:pad(p50), borderColor:'#e8b94a', borderWidth:2, pointRadius:0, borderDash:[5,3] }
+      ]},
+      options:{
+        responsive:true, maintainAspectRatio:false, animation:false,
+        interaction:{mode:'index', intersect:false},
+        plugins:{ legend:{display:false},
+          tooltip:{ filter:i => ['History','Median','P5','P95'].includes(i.dataset.label) } },
+        scales:{
+          x:{ ticks:{maxTicksLimit:10, font:{size:9}}, grid:{display:false} },
+          y:{ ticks:{font:{size:9}, callback:v => v.toLocaleString('en-IN')}, grid:{color:'rgba(0,0,0,0.05)'} }
+        }
+      }
+    });
+
+    /* 7 ─ stat strip + meta */
+    document.getElementById('pdStatStrip').style.display = 'flex';
+    document.getElementById('pdSpot').textContent = '\u20B9' + pdFmt(S0);
+    document.getElementById('pdMu').textContent   = ((Math.exp(mu * 252) - 1) * 100).toFixed(1) + '%';
+    document.getElementById('pdSg').textContent   = (sg * Math.sqrt(252) * 100).toFixed(1) + '%';
+    document.getElementById('pdPUp').textContent  = pUp1y.toFixed(1) + '%';
+    document.getElementById('pdT10u').textContent = (touchUp / sims * 100).toFixed(1) + '%';
+    document.getElementById('pdT10d').textContent = (touchDn / sims * 100).toFixed(1) + '%';
+    meta.textContent = name + ' \u00B7 ' + (pdState.engine === 'gbm' ? 'GBM' : 'Bootstrap')
+      + ' \u00B7 ' + sims.toLocaleString('en-IN') + ' paths \u00B7 ' + pdState.lookback.toUpperCase()
+      + ' lookback \u00B7 ' + n + ' daily returns';
+
+    pdState.ranKey = sym + '|' + pdState.engine + '|' + pdState.lookback + '|' + sims;
+  } catch (e) {
+    console.error('Prediction error', e);
+    document.getElementById('pdMeta').textContent = '\u26A0 ' + (e.message || 'Simulation failed');
+    document.getElementById('pdMatrixWrap').innerHTML =
+      '<div class="flow-note" style="color:#c0392b">\u26A0 ' + (e.message || 'Simulation failed') + ' \u2014 hit Run \u25B6 to retry.</div>';
+  } finally {
+    pdState.running = false;
+    btn.disabled = false; btn.textContent = 'Run \u25B6';
+  }
+}
+
+/* controls */
+document.querySelectorAll('#pdEngineBtns .pd-pill').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('#pdEngineBtns .pd-pill').forEach(x => x.classList.remove('active'));
+  b.classList.add('active'); pdState.engine = b.dataset.eng; runPrediction();
+}));
+document.querySelectorAll('#pdLookBtns .pd-pill').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('#pdLookBtns .pd-pill').forEach(x => x.classList.remove('active'));
+  b.classList.add('active'); pdState.lookback = b.dataset.lb; runPrediction();
+}));
+document.getElementById('pdSims').addEventListener('change', runPrediction);
+document.getElementById('pdRunBtn').addEventListener('click', () => { pdState.ranKey = null; runPrediction(); });
+
 </script>
 </body>
 </html>
