@@ -2058,14 +2058,42 @@ const PD_SCEN_LBL = { base:'Base (historical drift)', bull:'Bull · Nifty +15%/y
 /* empirical band calibration written by backtest.html (Calibration Lab) */
 function pdCalLevels() {
   const D = { p5:0.05, p25:0.25, p50:0.50, p75:0.75, p95:0.95 };
+  const HZ_MAP = { 'Tomorrow':'1M', '1 Week':'1M', '1 Month':'1M', '3 Months':'3M', '6 Months':'6M', '1 Year':'1Y' };
+  const none = { forH:()=>D, byH:null, tag:null, sig:'none' };
   try {
     const raw = localStorage.getItem('nse_pd_calibration');
-    if (!raw) return { L:D, tag:null, sig:'none' };
+    if (!raw) return none;
     const c = JSON.parse(raw);
-    const L = c.levels && c.levels[pdState.engine];
-    if (!L) return { L:D, tag:null, sig:'none' };
-    return { L, tag:'⚙ calibrated ' + c.date + ' · ' + c.cells + ' backtest cells', sig:c.date + '|' + c.cells };
-  } catch (e) { return { L:D, tag:null, sig:'none' }; }
+    const eng = c.levels && c.levels[pdState.engine];
+    if (!eng) return none;
+    const sig = c.date + '|' + c.cells + '|' + (c.ver || 1);
+    if (c.ver === 2) {
+      return { forH: hn => eng[HZ_MAP[hn] || hn] || D, byH: eng,
+        tag:'⚙ calibrated ' + c.date + ' · ' + c.cells + ' cells · per-horizon' + (c.source==='vault' ? ' · 26y vault' : ''), sig };
+    }
+    return { forH: () => eng, byH: null,
+      tag:'⚙ calibrated ' + c.date + ' · ' + c.cells + ' backtest cells', sig };
+  } catch (e) { return none; }
+}
+/* per-step band levels: linear interpolation between horizon checkpoints */
+function pdStepLevels(CALIB, steps) {
+  const D = { p5:0.05, p25:0.25, p50:0.50, p75:0.75, p95:0.95 };
+  const chk = [[21,'1 Month'],[63,'3 Months'],[126,'6 Months'],[252,'1 Year']];
+  const Ls = chk.map(c => CALIB.forH(c[1]) || D);
+  const keys = ['p5','p25','p50','p75','p95'];
+  const out = new Array(steps);
+  for (let t = 1; t <= steps; t++) {
+    let L;
+    if (t <= chk[0][0]) L = Ls[0];
+    else if (t >= chk[chk.length-1][0]) L = Ls[Ls.length-1];
+    else {
+      let k = 0; while (chk[k+1][0] < t) k++;
+      const f = (t - chk[k][0]) / (chk[k+1][0] - chk[k][0]);
+      L = {}; keys.forEach(q => L[q] = Ls[k][q] + (Ls[k+1][q] - Ls[k][q]) * f);
+    }
+    out[t-1] = L;
+  }
+  return out;
 }
 /* specific sectors first, broad composites last */
 const PD_SECTOR_PRIORITY = ['Nifty Oil & Gas','Nifty Defence','Nifty PSU Bank','Nifty Bank',
@@ -2232,7 +2260,7 @@ async function runPrediction() {
     const steps  = 252;
     const isFac  = pdState.engine === 'factor';
     const CALIB  = pdCalLevels();
-    const LV     = CALIB.L;
+    const STEPLV = pdStepLevels(CALIB, 252);
     meta.textContent = 'Fetching ' + pdState.lookback.toUpperCase() + ' history\u2026';
 
     /* 1 ─ stock history */
@@ -2319,6 +2347,7 @@ async function runPrediction() {
     };
     let rows = '', pUp1y = 0;
     horizons.forEach(h => {
+      const LV = CALIB.forH(h.name);
       const vals = stepVals[h.d - 1];
       const sorted = vals.slice().sort();
       let sum = 0, above = 0;
@@ -2353,8 +2382,9 @@ async function runPrediction() {
     const p5 = [], p25 = [], p50 = [], p75 = [], p95 = [];
     for (let t = 0; t < steps; t++) {
       const a = stepVals[t].slice().sort();
-      p5.push(pdPct(a, LV.p5)); p25.push(pdPct(a, LV.p25)); p50.push(pdPct(a, LV.p50));
-      p75.push(pdPct(a, LV.p75)); p95.push(pdPct(a, LV.p95));
+      const L = STEPLV[t];
+      p5.push(pdPct(a, L.p5)); p25.push(pdPct(a, L.p25)); p50.push(pdPct(a, L.p50));
+      p75.push(pdPct(a, L.p75)); p95.push(pdPct(a, L.p95));
     }
 
     /* 7 ─ fan chart */

@@ -61,6 +61,12 @@ td:first-child { font-family:Arial,sans-serif; font-weight:600; }
       <div class="sub">10 random stocks × 10 historical time points × 3 engines. At each point: fit on trailing 3Y, predict forward, score against what actually happened.</div></div>
     </div>
     <div class="controls">
+      <span class="lbl">Source</span>
+      <select id="btSource"><option value="yahoo" selected>Yahoo · 10y</option><option value="vault">Data Vault · 26y</option></select>
+      <span class="lbl">Mode</span>
+      <select id="btMode"><option value="random" selected>Random sample</option><option value="panel">Fixed panel (44)</option></select>
+      <span class="lbl">Anchors</span>
+      <select id="btAnchors"><option>10</option><option selected>20</option><option>40</option></select>
       <span class="lbl">Paths / cell</span>
       <select id="btSims"><option value="1000" selected>1,000</option><option value="1500">1,500</option><option value="2500">2,500</option></select>
       <span class="lbl">Stocks</span>
@@ -219,12 +225,19 @@ function runCell(stockPts, mMap, sMap, anchorIdx, sims){
 /* ── orchestration ── */
 let picked=[];
 function pickStocks(){
+  if(document.getElementById('btMode').value==='panel'){
+    picked=[...POOL];
+    document.getElementById('btPicked').innerHTML =
+      '<span class="lbl">Fixed measurement panel ('+picked.length+'):</span> ' + picked.map(p=>'<span class="chip">'+p.s+'</span>').join('');
+    return;
+  }
   const nWant=parseInt(document.getElementById('btNStocks').value,10);
   const pool=[...POOL]; picked=[];
   while(picked.length<nWant && pool.length) picked.push(pool.splice((Math.random()*pool.length)|0,1)[0]);
   document.getElementById('btPicked').innerHTML =
     '<span class="lbl">Sample drawn:</span> ' + picked.map(p=>'<span class="chip">'+p.s+'</span>').join('');
 }
+document.getElementById('btMode').addEventListener('change',pickStocks);
 document.getElementById('btReroll').addEventListener('click',pickStocks);
 document.addEventListener('click',ev=>{
   if(ev.target.id==='calApply' && window._pendingCal){
@@ -246,27 +259,48 @@ document.getElementById('btRun').addEventListener('click', async ()=>{
   const btn=document.getElementById('btRun'); btn.disabled=true;
   const sims=parseInt(document.getElementById('btSims').value,10);
   try{
-    setProg(0.02,'Fetching Nifty 10Y…');
-    const mPts=await fetchPts('^NSEI');
-    const mMap=new Map(mPts.map(p=>[dk(p.t),p.c]));
-    const sectorSyms=[...new Set(picked.map(p=>p.x).filter(Boolean))];
-    const sMaps={};
-    for(let i=0;i<sectorSyms.length;i++){
-      setProg(0.05+0.10*i/sectorSyms.length,'Fetching sector index '+sectorSyms[i]+'…');
-      try{ sMaps[sectorSyms[i]]=new Map((await fetchPts(sectorSyms[i])).map(p=>[dk(p.t),p.c])); }
-      catch(e){ sMaps[sectorSyms[i]]=null; }
+    const useVault=document.getElementById('btSource').value==='vault';
+    const nAnch=parseInt(document.getElementById('btAnchors').value,10);
+    let getPts, mMap; const sMaps={};
+    if(useVault){
+      setProg(0.03,'Fetching Data Vault matrix (26y)…');
+      const r=await fetch(BACKEND+'?action=vault&sub=matrix');
+      if(!r.ok) throw new Error('Vault HTTP '+r.status);
+      const vm=await r.json();
+      if(!vm.dates||!vm.dates.length) throw new Error('Vault empty — run vaultSetup() in GAS and let the backfill finish');
+      const dts=vm.dates.map(d=>Date.parse(d));
+      const toPts=arr=>{const o=[];for(let i=0;i<arr.length;i++){const v=arr[i];if(v!=null&&isFinite(v)&&v>0)o.push({t:dts[i],c:v});}return o;};
+      const cachePts={};
+      getPts=async sym=>{const k=sym.replace('.NS','');
+        const arr=vm.series[k]||vm.series[sym];
+        if(!arr) throw new Error('not in vault: '+sym);
+        return cachePts[k]||(cachePts[k]=toPts(arr));};
+      if(!vm.series['^NSEI']) throw new Error('^NSEI missing from vault');
+      mMap=new Map(toPts(vm.series['^NSEI']).map(p=>[dk(p.t),p.c]));
+      [...new Set(picked.map(p=>p.x).filter(Boolean))].forEach(x=>{
+        sMaps[x]=vm.series[x]?new Map(toPts(vm.series[x]).map(p=>[dk(p.t),p.c])):null;});
+    } else {
+      setProg(0.02,'Fetching Nifty 10Y…');
+      getPts=sym=>fetchPts(sym);
+      mMap=new Map((await fetchPts('^NSEI')).map(p=>[dk(p.t),p.c]));
+      const sectorSyms=[...new Set(picked.map(p=>p.x).filter(Boolean))];
+      for(let i=0;i<sectorSyms.length;i++){
+        setProg(0.05+0.10*i/sectorSyms.length,'Fetching sector index '+sectorSyms[i]+'…');
+        try{ sMaps[sectorSyms[i]]=new Map((await fetchPts(sectorSyms[i])).map(p=>[dk(p.t),p.c])); }
+        catch(e){ sMaps[sectorSyms[i]]=null; }
+      }
     }
     const cells=[];   /* {stock, dateLbl, res} */
     for(let si=0; si<picked.length; si++){
       const pk=picked[si];
       setProg(0.15+0.8*si/picked.length, 'Backtesting '+pk.s+' ('+(si+1)+'/'+picked.length+')…');
       await new Promise(r=>setTimeout(r,15));
-      let pts; try{ pts=await fetchPts(pk.s+'.NS'); }catch(e){ console.warn(pk.s,e.message); continue; }
+      let pts; try{ pts=await getPts(pk.s+'.NS'); }catch(e){ console.warn(pk.s,e.message); continue; }
       const LOOK=750, FWD=252;
       const first=LOOK, last=pts.length-1-FWD;
       if(last<=first){ console.warn(pk.s,'insufficient history'); continue; }
       const anchors=[];
-      for(let k=0;k<10;k++) anchors.push(Math.round(first + (last-first)*k/9));
+      for(let k=0;k<nAnch;k++) anchors.push(Math.round(first + (last-first)*k/(nAnch-1)));
       const sMap=pk.x?sMaps[pk.x]:null;
       for(const ai of anchors){
         const res=runCell(pts,mMap,sMap,ai,sims);
@@ -274,25 +308,25 @@ document.getElementById('btRun').addEventListener('click', async ()=>{
       }
     }
     setProg(1,'Scoring '+cells.length+' cells…');
-    render(cells,sims);
+    render(cells,sims,useVault?'vault':'yahoo');
   }catch(e){
     document.getElementById('btMsg').textContent='⚠ '+e.message;
   }finally{ btn.disabled=false; }
 });
 
 /* ── scoring & rendering ── */
-function render(cells,sims){
+function render(cells,sims,src){
   document.getElementById('results').style.display='block';
-  const S={}; ENGINES.forEach(e=>S[e]={in90:0,in50:0,aboveMed:0,n:0,pits:[],
+  const S={}; ENGINES.forEach(e=>S[e]={in90:0,in50:0,aboveMed:0,n:0,pits:[],pitsByH:{},
     byH:{}, buckets:Array.from({length:5},()=>({up:0,n:0,pSum:0})) });
-  ENGINES.forEach(e=>HORIZONS.forEach(h=>S[e].byH[h.n]={in90:0,n:0}));
+  ENGINES.forEach(e=>HORIZONS.forEach(h=>{S[e].byH[h.n]={in90:0,n:0};S[e].pitsByH[h.n]=[];}));
   cells.forEach(c=>{ ENGINES.forEach(e=>{
     for(const hn in c.res[e]){
       const r=c.res[e][hn]; S[e].n++;
       if(r.actual>=r.p5&&r.actual<=r.p95) S[e].in90++;
       if(r.actual>=r.p25&&r.actual<=r.p75) S[e].in50++;
       if(r.actual>r.p50) S[e].aboveMed++;
-      S[e].pits.push(r.pit);
+      S[e].pits.push(r.pit); S[e].pitsByH[hn].push(r.pit);
       S[e].byH[hn].n++; if(r.actual>=r.p5&&r.actual<=r.p95) S[e].byH[hn].in90++;
       const b=Math.min(4,(r.pUp*5)|0);
       S[e].buckets[b].n++; S[e].buckets[b].pSum+=r.pUp; if(r.actual>1) S[e].buckets[b].up++;
@@ -342,23 +376,27 @@ function render(cells,sims){
   document.getElementById('detailWrap').innerHTML = det+'</table>';
   /* ── auto-calibration from PIT quantiles ── */
   const clamp=(v,lo,hi)=>Math.min(hi,Math.max(lo,v));
-  const CAL={date:new Date().toISOString().slice(0,10), cells:cells.length, levels:{}};
-  ENGINES.forEach(e=>{
-    const u=S[e].pits.slice().sort((a,b)=>a-b);
-    CAL.levels[e]={
+  const NOM={p5:0.05,p25:0.25,p50:0.50,p75:0.75,p95:0.95};
+  const CAL={ver:2, date:new Date().toISOString().slice(0,10), cells:cells.length,
+             source:src||'yahoo', levels:{}};
+  const calLv=u=>({
       p5:  clamp(pct(u,0.05),0.005,0.15),
       p25: clamp(pct(u,0.25),0.10,0.40),
       p50: clamp(pct(u,0.50),0.35,0.65),
       p75: clamp(pct(u,0.75),0.60,0.90),
-      p95: clamp(pct(u,0.95),0.85,0.995)
-    };
+      p95: clamp(pct(u,0.95),0.85,0.995)});
+  ENGINES.forEach(e=>{ CAL.levels[e]={};
+    HORIZONS.forEach(hz=>{
+      const u=S[e].pitsByH[hz.n].slice().sort((a,b)=>a-b);
+      CAL.levels[e][hz.n]= u.length>=30 ? calLv(u) : {...NOM};
+    });
   });
   const fmtL=v=>(v*100).toFixed(1);
   document.getElementById('calAdjWrap').innerHTML =
-    '<table><tr><th>Engine</th><th>"P5" →</th><th>"P25" →</th><th>Median →</th><th>"P75" →</th><th>"P95" →</th></tr>'
-    + ENGINES.map(e=>{const L=CAL.levels[e];
-        return '<tr><td>'+ENG_NAME[e]+'</td><td>'+fmtL(L.p5)+'</td><td>'+fmtL(L.p25)+'</td><td>'+fmtL(L.p50)+'</td><td>'+fmtL(L.p75)+'</td><td>'+fmtL(L.p95)+'</td></tr>';}).join('')
-    + '</table><div class="note">Read: if "P5 → 2.1", only 2.1% of actuals fell below the nominal 5th percentile — the lower band was too wide there; if "P95 → 97.8", 5% of actuals exceeded the nominal 97.8th percentile — upper band too narrow. Median → above 50 means outcomes ran hot vs the fitted drift (trending market).</div>';
+    '<table><tr><th>Engine · Horizon</th><th>"P5" →</th><th>"P25" →</th><th>Median →</th><th>"P75" →</th><th>"P95" →</th></tr>'
+    + ENGINES.map(e=>HORIZONS.map(hz=>{const L=CAL.levels[e][hz.n];
+        return '<tr><td>'+ENG_NAME[e]+' · '+hz.n+'</td><td>'+fmtL(L.p5)+'</td><td>'+fmtL(L.p25)+'</td><td>'+fmtL(L.p50)+'</td><td>'+fmtL(L.p75)+'</td><td>'+fmtL(L.p95)+'</td></tr>';}).join('')).join('')
+    + '</table><div class="note">Per-horizon corrections (v2). Read: "P5 → 2.1" means only 2.1% of actuals fell below the nominal 5th percentile at that horizon. Median → above 50 = outcomes ran hot vs fitted drift. Horizons with fewer than 30 cells stay at nominal.</div>';
   window._pendingCal=CAL;
   const st=document.getElementById('calStatus');
   const existing=localStorage.getItem('nse_pd_calibration');
