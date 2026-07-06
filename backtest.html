@@ -277,6 +277,8 @@ document.getElementById('btRun').addEventListener('click', async ()=>{
         return cachePts[k]||(cachePts[k]=toPts(arr));};
       if(!vm.series['^NSEI']) throw new Error('^NSEI missing from vault');
       mMap=new Map(toPts(vm.series['^NSEI']).map(p=>[dk(p.t),p.c]));
+      if(mMap.size<500) throw new Error('Vault backfill still in progress — Nifty (^NSEI) not loaded yet ('
+        +mMap.size+' days). Run vaultBackfill again in the GAS editor until Vault_Log says "Backfill COMPLETE", or check ?action=vault&sub=status (state.idx must reach 55).');
       [...new Set(picked.map(p=>p.x).filter(Boolean))].forEach(x=>{
         sMaps[x]=vm.series[x]?new Map(toPts(vm.series[x]).map(p=>[dk(p.t),p.c])):null;});
     } else {
@@ -307,6 +309,7 @@ document.getElementById('btRun').addEventListener('click', async ()=>{
         if(res) cells.push({stock:pk.s, date:dk(pts[ai].t), res});
       }
     }
+    if(!cells.length) throw new Error('0 usable cells — the selected stocks have no vault data yet (backfill in progress?) or too little history. Check ?action=vault&sub=status, or switch Source back to Yahoo · 10y meanwhile.');
     setProg(1,'Scoring '+cells.length+' cells…');
     render(cells,sims,useVault?'vault':'yahoo');
   }catch(e){
