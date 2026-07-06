@@ -264,8 +264,9 @@ document.getElementById('btRun').addEventListener('click', async ()=>{
     let getPts, mMap; const sMaps={};
     if(useVault){
       setProg(0.03,'Fetching Data Vault matrix (26y)…');
-      const r=await fetch(BACKEND+'?action=vault&sub=matrix');
-      if(!r.ok) throw new Error('Vault HTTP '+r.status);
+      let r=await fetch(BACKEND+'?action=vault&sub=matrix');
+      if(!r.ok){ await new Promise(x=>setTimeout(x,2500)); r=await fetch(BACKEND+'?action=vault&sub=matrix'); }
+      if(!r.ok) throw new Error('Vault HTTP '+r.status+' — open the status URL in a tab: if it fails too, the web-app deployment changed. Fix: GAS → Deploy → Manage deployments → pencil on the EXISTING deployment → New version → Deploy (never "New deployment").');
       const vm=await r.json();
       if(!vm.dates||!vm.dates.length) throw new Error('Vault empty — run vaultSetup() in GAS and let the backfill finish');
       const dts=vm.dates.map(d=>Date.parse(d));
