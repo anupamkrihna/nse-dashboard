@@ -532,6 +532,7 @@ select.pd-sel { font-size:11px; padding:6px 8px; border:1px solid #e2ddd2; borde
 
   <!-- PREDICTION TAB (Monte Carlo) -->
   <div class="tab-panel" id="tab-predict">
+    <div class="flow-note" id="pdCalBanner" style="display:none;background:#fff;border:1px solid #e8b94a;border-radius:10px;padding:10px 14px;margin-bottom:12px"></div>
     <div class="flow-card">
       <div class="flow-hdr" style="flex-wrap:wrap;gap:8px">
         <span class="flow-title">🎲 Monte Carlo Price Prediction</span>
@@ -2056,10 +2057,58 @@ const pdState = {
 const PD_SCEN = { base:null, bull:0.15, bear:-0.15, flat:0.0 };
 const PD_SCEN_LBL = { base:'Base (historical drift)', bull:'Bull · Nifty +15%/yr', bear:'Bear · Nifty −15%/yr', flat:'Flat · Nifty 0%/yr' };
 /* empirical band calibration written by backtest.html (Calibration Lab) */
+/* ── learning-loop state (served by ?action=cal) ── */
+const pdRemote = { loaded:false, champ:null, championStatus:null, pending:null, health:null };
+async function pdFetchCalState(force) {
+  if (pdRemote.loaded && !force) return;
+  try {
+    const r = await fetch(BACKEND + '?action=cal&sub=state');
+    if (r.ok) {
+      const j = await r.json();
+      pdRemote.champ = j.champion || null;
+      pdRemote.championStatus = j.championStatus || null;
+      pdRemote.pending = j.pending || null;
+      pdRemote.health = j.health || null;
+    }
+  } catch (e) {}
+  pdRemote.loaded = true;
+  pdRenderCalBanner();
+}
+function pdRenderCalBanner() {
+  const el = document.getElementById('pdCalBanner');
+  if (!el) return;
+  if (pdRemote.pending) {
+    const p = pdRemote.pending;
+    el.style.display = '';
+    el.innerHTML = '\uD83D\uDD14 <b>Calibration v' + p.version + ' proposed</b> \u00B7 ' + p.date
+      + ' \u00B7 ' + p.cells + ' cells'
+      + (p.status === 'QUARANTINED' ? ' \u00B7 <span style="color:#c0392b;font-weight:700">\u26A0 QUARANTINED \u2014 outside stability corridor, review before approving</span>' : '')
+      + ' &nbsp;<button class="pd-run" style="padding:4px 14px;margin-left:6px" onclick="pdCalAct(\'approve\',' + p.version + ')">Approve \u2714</button>'
+      + ' <button style="padding:5px 12px;background:#fff;border:1px solid #e2ddd2;border-radius:8px;font-size:11px;cursor:pointer" onclick="pdCalAct(\'reject\',' + p.version + ')">Reject \u2715</button>';
+  } else el.style.display = 'none';
+}
+async function pdCalAct(act, ver) {
+  const el = document.getElementById('pdCalBanner');
+  if (el) el.innerHTML = '\u23F3 ' + (act === 'approve' ? 'Promoting' : 'Rejecting') + ' v' + ver + '\u2026';
+  try { await fetch(BACKEND + '?action=cal&sub=' + act + '&ver=' + ver); } catch (e) {}
+  pdState.ranKey = null;
+  await pdFetchCalState(true);
+  runPrediction();
+}
+
 function pdCalLevels() {
   const D = { p5:0.05, p25:0.25, p50:0.50, p75:0.75, p95:0.95 };
   const HZ_MAP = { 'Tomorrow':'1M', '1 Week':'1M', '1 Month':'1M', '3 Months':'3M', '6 Months':'6M', '1 Year':'1Y' };
   const none = { forH:()=>D, byH:null, tag:null, sig:'none' };
+  /* 1st priority: live champion from the learning loop */
+  if (pdRemote.champ && pdRemote.champ.levels && pdRemote.champ.levels[pdState.engine]) {
+    const c = pdRemote.champ, eng = c.levels[pdState.engine];
+    const hs = pdRemote.health && pdRemote.health.status === 'warn' ? ' \u00B7 \u26A0 drift watch' : '';
+    return { forH: hn => eng[HZ_MAP[hn] || hn] || D, byH: eng,
+      tag: '\u2699 auto-cal v' + c.version + ' \u00B7 ' + c.date + ' \u00B7 ' + c.cells + ' cells' + hs,
+      sig: 'auto' + c.version + '|' + c.date };
+  }
+  /* 2nd priority: manual Apply from the Calibration Lab (localStorage) */
   try {
     const raw = localStorage.getItem('nse_pd_calibration');
     if (!raw) return none;
@@ -2069,10 +2118,10 @@ function pdCalLevels() {
     const sig = c.date + '|' + c.cells + '|' + (c.ver || 1);
     if (c.ver === 2) {
       return { forH: hn => eng[HZ_MAP[hn] || hn] || D, byH: eng,
-        tag:'⚙ calibrated ' + c.date + ' · ' + c.cells + ' cells · per-horizon' + (c.source==='vault' ? ' · 26y vault' : ''), sig };
+        tag:'\u2699 calibrated ' + c.date + ' \u00B7 ' + c.cells + ' cells \u00B7 per-horizon' + (c.source==='vault' ? ' \u00B7 26y vault' : ''), sig };
     }
     return { forH: () => eng, byH: null,
-      tag:'⚙ calibrated ' + c.date + ' · ' + c.cells + ' backtest cells', sig };
+      tag:'\u2699 calibrated ' + c.date + ' \u00B7 ' + c.cells + ' backtest cells', sig };
   } catch (e) { return none; }
 }
 /* per-step band levels: linear interpolation between horizon checkpoints */
@@ -2233,12 +2282,13 @@ function pdSyncScenarioVisibility() {
   document.getElementById('pdScenBtns').style.display = on ? 'flex' : 'none';
 }
 
-function renderPredictTab() {
+async function renderPredictTab() {
   if (!flowState.symbol) {
     document.getElementById('pdMatrixWrap').innerHTML =
       '<div class="flow-note">Load a stock first (search above), then open this tab.</div>';
     return;
   }
+  await pdFetchCalState();
   pdSyncScenarioVisibility();
   const key = flowState.symbol + '|' + pdState.engine + '|' + pdState.lookback + '|'
             + pdState.scenario + '|' + document.getElementById('pdSims').value + '|' + pdCalLevels().sig;
