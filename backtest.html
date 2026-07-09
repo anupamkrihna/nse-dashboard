@@ -67,6 +67,8 @@ td:first-child { font-family:Arial,sans-serif; font-weight:600; }
       <select id="btMode"><option value="random" selected>Random sample</option><option value="panel">Fixed panel (44)</option></select>
       <span class="lbl">Anchors</span>
       <select id="btAnchors"><option>10</option><option selected>20</option><option>40</option></select>
+      <span class="lbl">Regime Lens</span>
+      <select id="btLens"><option value="off" selected>Off</option><option value="on">On (Boot+Factor)</option></select>
       <span class="lbl">Paths / cell</span>
       <select id="btSims"><option value="1000" selected>1,000</option><option value="1500">1,500</option><option value="2500">2,500</option></select>
       <span class="lbl">Stocks</span>
@@ -130,7 +132,64 @@ const POOL = [
 ];
 const HORIZONS = [{n:'1M',d:21},{n:'3M',d:63},{n:'6M',d:126},{n:'1Y',d:252}];
 const ENGINES = ['gbm','boot','factor'];
-const ENG_NAME = {gbm:'GBM', boot:'Bootstrap', factor:'Factor (2F)'};
+const ENG_NAME = {gbm:'GBM·t', boot:'Block Boot', factor:'Factor (2F)'};
+
+/* ── engine primitives v3: Student-t GBM, stationary block bootstrap,
+      regime-conditional weights (Phase 2 + 4) ── */
+function estNu(rets,mu,sg){          /* excess kurtosis → t degrees of freedom */
+  const n=rets.length; let m4=0;
+  for(let i=0;i<n;i++){const d=rets[i]-mu; m4+=d*d*d*d;}
+  m4/=n; const g2=m4/(sg*sg*sg*sg)-3;
+  if(!(g2>0.3)) return 30;           /* near-normal window → t collapses to normal */
+  return Math.min(30,Math.max(4.5,4+6/g2));
+}
+function gammaMT(k){                 /* Marsaglia-Tsang, exact for k>=1 */
+  const d=k-1/3, c=1/Math.sqrt(9*d);
+  while(true){ let x,v;
+    do{ x=randn(); v=1+c*x; }while(v<=0);
+    v=v*v*v; const u=Math.random();
+    if(u<1-0.0331*x*x*x*x) return d*v;
+    if(Math.log(u)<0.5*x*x+d*(1-v+Math.log(v))) return d*v;
+  }
+}
+function randT(nu){                  /* unit-variance Student-t, exact chi2 */
+  const chi=2*gammaMT(nu/2);
+  return randn()/Math.sqrt(chi/nu)*Math.sqrt((nu-2)/nu);
+}
+const BLOCK_P=1/10;                  /* stationary bootstrap, mean block 10 days */
+function makeSampler(n,weights){
+  let j=-1,cum=null,total=0;
+  if(weights){cum=new Float64Array(n);let t=0;for(let i=0;i<n;i++){t+=weights[i];cum[i]=t;}total=t;}
+  const start=()=>{ if(!cum) return (Math.random()*n)|0;
+    const x=Math.random()*total; let lo=0,hi=n-1;
+    while(lo<hi){const m=(lo+hi)>>1; if(cum[m]<x)lo=m+1;else hi=m;} return lo; };
+  return ()=>{ if(j<0||Math.random()<BLOCK_P) j=start(); else j=(j+1)%n; return j; };
+}
+/* stock-derived regime features from the fit-window returns:
+   21d realized vol, 12m momentum, drawdown of the cum-return path.
+   Weights favour historical days whose regime resembles 'today'. */
+function regimeWeights(rets){
+  const n=rets.length;
+  const rv=new Float64Array(n),mom=new Float64Array(n),dd=new Float64Array(n);
+  let sum=0,sumsq=0; const q=[]; let msum=0; const mq=[];
+  let lp=0,peak=0;
+  for(let i=0;i<n;i++){
+    const r=rets[i];
+    q.push(r); sum+=r; sumsq+=r*r;
+    if(q.length>21){const o=q.shift(); sum-=o; sumsq-=o*o;}
+    const k=q.length,m=sum/k;
+    rv[i]=Math.sqrt(Math.max(sumsq/k-m*m,1e-12));
+    mq.push(r); msum+=r; if(mq.length>252) msum-=mq.shift();
+    mom[i]=msum;
+    lp+=r; if(lp>peak) peak=lp; dd[i]=lp-peak;
+  }
+  const zf=a=>{const m=a.reduce((x,y)=>x+y,0)/n;const s=Math.sqrt(a.reduce((x,y)=>x+(y-m)*(y-m),0)/n)||1;return Array.from(a,v=>(v-m)/s);};
+  const Z=[zf(rv),zf(mom),zf(dd)], zn=Z.map(a=>a[n-1]);
+  const w=new Float64Array(n);
+  for(let i=0;i<n;i++){let d=0;for(let f2=0;f2<3;f2++){const e=Z[f2][i]-zn[f2];d+=e*e;}w[i]=Math.exp(-0.5*d);}
+  let below=0; for(let i=0;i<n;i++) if(rv[i]<rv[n-1]) below++;
+  return {w, rvPct:below/n*100, mom:(Math.exp(mom[n-1])-1)*100, dd:(Math.exp(dd[n-1])-1)*100};
+}
 
 /* ── engine primitives: identical logic to steam.html v2 ── */
 let _sp=null;
@@ -168,7 +227,7 @@ async function fetchPts(sym){
 const dk=ms=>new Date(ms).toISOString().slice(0,10);
 
 /* one backtest cell: fit at anchor index on trailing lookback, simulate, score vs actuals */
-function runCell(stockPts, mMap, sMap, anchorIdx, sims){
+function runCell(stockPts, mMap, sMap, anchorIdx, sims, lens){
   const LOOK=750;
   const win=stockPts.slice(anchorIdx-LOOK, anchorIdx+1);
   const S0=win[win.length-1].c;
@@ -196,16 +255,21 @@ function runCell(stockPts, mMap, sMap, anchorIdx, sims){
   }
   if(!Object.keys(actual).length) return null;
 
+  const nu = estNu(rY,mu,sg);
+  const RW = lens ? regimeWeights(rY) : null;
   const out={};
   for(const eng of ENGINES){
+    const sB = makeSampler(n, RW ? RW.w : null);        /* block sampler (weighted if lens) */
+    const sE = makeSampler(n, null);                    /* residual blocks: unweighted      */
+    const R2 = Float64Array.from(rY);
     const chk={}; HORIZONS.forEach(h=>chk[h.d]=new Float64Array(sims));
     const maxD=Math.max(...HORIZONS.filter(h=>actual[h.n]!=null).map(h=>h.d));
     for(let s=0;s<sims;s++){
       let lp=0;
       for(let t=1;t<=maxD;t++){
-        lp += eng==='gbm' ? mu+sg*randn()
-            : eng==='boot' ? R[(Math.random()*n)|0]
-            : fpart[(Math.random()*n)|0]+f.resid[(Math.random()*n)|0];
+        lp += eng==='gbm' ? mu+sg*randT(nu)
+            : eng==='boot' ? R2[sB()]
+            : fpart[sB()]+f.resid[sE()];
         if(chk[t]) chk[t][s]=Math.exp(lp);
       }
     }
@@ -261,6 +325,7 @@ document.getElementById('btRun').addEventListener('click', async ()=>{
   try{
     const useVault=document.getElementById('btSource').value==='vault';
     const nAnch=parseInt(document.getElementById('btAnchors').value,10);
+    const lensOn=document.getElementById('btLens').value==='on';
     let getPts, mMap; const sMaps={};
     if(useVault){
       setProg(0.03,'Fetching Data Vault matrix (26y)…');
@@ -306,7 +371,7 @@ document.getElementById('btRun').addEventListener('click', async ()=>{
       for(let k=0;k<nAnch;k++) anchors.push(Math.round(first + (last-first)*k/(nAnch-1)));
       const sMap=pk.x?sMaps[pk.x]:null;
       for(const ai of anchors){
-        const res=runCell(pts,mMap,sMap,ai,sims);
+        const res=runCell(pts,mMap,sMap,ai,sims,lensOn);
         if(res) cells.push({stock:pk.s, date:dk(pts[ai].t), res});
       }
     }
