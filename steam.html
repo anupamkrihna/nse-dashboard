@@ -2199,17 +2199,22 @@ function pdRandT(nu) {               /* unit-variance Student-t, exact chi2 */
   return pdRandn() / Math.sqrt(chi/nu) * Math.sqrt((nu-2)/nu);
 }
 const PD_BLOCK_P = 1/10;   /* stationary bootstrap, mean block 10 trading days */
+const PD_LENS_TAU = 50;    /* regime conditioning fades with sim time (e-fold 50 trading days) */
 function pdMakeSampler(n, weights) {
   let j = -1, cum = null, total = 0;
   if (weights) { cum = new Float64Array(n); let t = 0;
     for (let i = 0; i < n; i++) { t += weights[i]; cum[i] = t; } total = t; }
-  const start = () => {
-    if (!cum) return (Math.random()*n)|0;
+  const startW = () => {
     const x = Math.random()*total; let lo = 0, hi = n-1;
     while (lo < hi) { const m = (lo+hi)>>1; if (cum[m] < x) lo = m+1; else hi = m; }
     return lo;
   };
-  return () => { if (j < 0 || Math.random() < PD_BLOCK_P) j = start(); else j = (j+1)%n; return j; };
+  return (pCond) => {
+    if (j < 0 || Math.random() < PD_BLOCK_P)
+      j = (cum && Math.random() < (pCond || 0)) ? startW() : (Math.random()*n)|0;
+    else j = (j+1)%n;
+    return j;
+  };
 }
 /* stock-derived regime: 21d realized vol, 12m momentum, drawdown — from the fit window */
 function pdRegime(rets) {
@@ -2430,11 +2435,11 @@ async function runPrediction() {
     let stepFn;
     if (pdState.engine === 'gbm') {
       const nu = pdEstNu(rets, mu, sg);              /* Student-t tails, df from the window's own kurtosis */
-      stepFn = () => mu + sg * pdRandT(nu);
+      stepFn = (t) => mu + sg * pdRandT(nu);
     } else if (pdState.engine === 'boot') {
       const R2 = Float64Array.from(rets);
       const sB = pdMakeSampler(n, lensOn ? RG.w : null);   /* stationary blocks; lens = regime-weighted starts */
-      stepFn = () => R2[sB()];
+      stepFn = (t) => R2[sB(lensOn ? Math.exp(-t/PD_LENS_TAU) : 0)];
     } else {
       const F = fac;
       const FRG = lensOn ? pdRegime(F.rYa) : null;   /* weight factor rows by the stock's aligned regime */
@@ -2442,7 +2447,7 @@ async function runPrediction() {
       for (let i = 0; i < F.fN; i++) fpart[i] = F.a + F.b1*(F.rM[i]+F.dM) + F.b2*(F.rS[i]+F.dS);
       const sB = pdMakeSampler(F.fN, FRG ? FRG.w : null);
       const sE = pdMakeSampler(F.fN, null);          /* residual blocks stay unweighted */
-      stepFn = () => fpart[sB()] + F.resid[sE()];
+      stepFn = (t) => fpart[sB(FRG ? Math.exp(-t/PD_LENS_TAU) : 0)] + F.resid[sE(0)];
     }
 
     /* 4 ─ simulate; step-major store for per-day percentiles */
@@ -2452,7 +2457,7 @@ async function runPrediction() {
     for (let s = 0; s < sims; s++) {
       let p = S0, hi = S0, lo = S0;
       for (let t = 0; t < steps; t++) {
-        p *= Math.exp(stepFn());
+        p *= Math.exp(stepFn(t + 1));
         stepVals[t][s] = p;
         if (p > hi) hi = p; if (p < lo) lo = p;
       }

@@ -68,7 +68,7 @@ td:first-child { font-family:Arial,sans-serif; font-weight:600; }
       <span class="lbl">Anchors</span>
       <select id="btAnchors"><option>10</option><option selected>20</option><option>40</option></select>
       <span class="lbl">Regime Lens</span>
-      <select id="btLens"><option value="off" selected>Off</option><option value="on">On (Boot+Factor)</option></select>
+      <select id="btLens"><option value="off" selected>Off</option><option value="on">On · τ-decay (Boot+Factor)</option></select>
       <span class="lbl">Paths / cell</span>
       <select id="btSims"><option value="1000" selected>1,000</option><option value="1500">1,500</option><option value="2500">2,500</option></select>
       <span class="lbl">Stocks</span>
@@ -157,13 +157,20 @@ function randT(nu){                  /* unit-variance Student-t, exact chi2 */
   return randn()/Math.sqrt(chi/nu)*Math.sqrt((nu-2)/nu);
 }
 const BLOCK_P=1/10;                  /* stationary bootstrap, mean block 10 days */
+const LENS_TAU=50;                   /* regime conditioning half-life ~35d (e-fold 50d) */
 function makeSampler(n,weights){
+  /* returns next(pCond): at each block restart, use a regime-weighted start
+     with probability pCond, else uniform. pCond decays with sim time so the
+     lens shapes the near cone strongly and fades to climate at long range. */
   let j=-1,cum=null,total=0;
   if(weights){cum=new Float64Array(n);let t=0;for(let i=0;i<n;i++){t+=weights[i];cum[i]=t;}total=t;}
-  const start=()=>{ if(!cum) return (Math.random()*n)|0;
-    const x=Math.random()*total; let lo=0,hi=n-1;
+  const startW=()=>{ const x=Math.random()*total; let lo=0,hi=n-1;
     while(lo<hi){const m=(lo+hi)>>1; if(cum[m]<x)lo=m+1;else hi=m;} return lo; };
-  return ()=>{ if(j<0||Math.random()<BLOCK_P) j=start(); else j=(j+1)%n; return j; };
+  return (pCond)=>{
+    if(j<0||Math.random()<BLOCK_P)
+      j=(cum&&Math.random()<(pCond||0)) ? startW() : (Math.random()*n)|0;
+    else j=(j+1)%n;
+    return j; };
 }
 /* stock-derived regime features from the fit-window returns:
    21d realized vol, 12m momentum, drawdown of the cum-return path.
@@ -267,9 +274,10 @@ function runCell(stockPts, mMap, sMap, anchorIdx, sims, lens){
     for(let s=0;s<sims;s++){
       let lp=0;
       for(let t=1;t<=maxD;t++){
+        const pC = RW ? Math.exp(-t/LENS_TAU) : 0;
         lp += eng==='gbm' ? mu+sg*randT(nu)
-            : eng==='boot' ? R2[sB()]
-            : fpart[sB()]+f.resid[sE()];
+            : eng==='boot' ? R2[sB(pC)]
+            : fpart[sB(pC)]+f.resid[sE(0)];
         if(chk[t]) chk[t][s]=Math.exp(lp);
       }
     }
