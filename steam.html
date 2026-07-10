@@ -549,6 +549,7 @@ select.pd-sel { font-size:11px; padding:6px 8px; border:1px solid #e2ddd2; borde
         <div class="pd-group" id="pdLensBtns">
           <button class="pd-pill active" data-lens="off">Off</button>
           <button class="pd-pill" data-lens="on">Lens</button>
+          <button class="pd-pill" data-lens="v2">Lens+</button>
         </div>
         <span class="pd-lbl">Lookback</span>
         <div class="pd-group" id="pdLookBtns">
@@ -2217,7 +2218,7 @@ function pdMakeSampler(n, weights) {
   };
 }
 /* stock-derived regime: 21d realized vol, 12m momentum, drawdown — from the fit window */
-function pdRegime(rets) {
+function pdRegime(rets, ext) {
   const n = rets.length;
   const rv = new Float64Array(n), mom = new Float64Array(n), dd = new Float64Array(n);
   let sum = 0, sumsq = 0; const q = []; let msum = 0; const mq = [];
@@ -2234,11 +2235,17 @@ function pdRegime(rets) {
   }
   const zf = a => { const m = a.reduce((x,y)=>x+y,0)/n;
     const s = Math.sqrt(a.reduce((x,y)=>x+(y-m)*(y-m),0)/n)||1; return Array.from(a, v=>(v-m)/s); };
-  const Z = [zf(rv), zf(mom), zf(dd)], zn = Z.map(a => a[n-1]);
+  const Z = [zf(rv), zf(mom), zf(dd)];
+  if (ext) ext.forEach(a => { if (!a) return;
+    const vals = a.filter(v => v != null);
+    if (vals.length < n*0.5) return;
+    const fill = vals.reduce((x,y)=>x+y,0)/vals.length;
+    Z.push(zf(Float64Array.from(a, v => v==null ? fill : v))); });
+  const nf = Z.length, zn = Z.map(a => a[n-1]);
   const w = new Float64Array(n);
   for (let i = 0; i < n; i++) { let d = 0;
-    for (let f2 = 0; f2 < 3; f2++) { const e = Z[f2][i]-zn[f2]; d += e*e; }
-    w[i] = Math.exp(-0.5*d); }
+    for (let f2 = 0; f2 < nf; f2++) { const e = Z[f2][i]-zn[f2]; d += e*e; }
+    w[i] = Math.exp(-0.5*d*3/nf); }
   let below = 0; for (let i = 0; i < n; i++) if (rv[i] < rv[n-1]) below++;
   return { w, rvPct: below/n*100, mom: (Math.exp(mom[n-1])-1)*100, dd: (Math.exp(dd[n-1])-1)*100 };
 }
@@ -2257,6 +2264,27 @@ function pdFutureDates(fromMs, n) {
     const wd = d.getDay();
     if (wd !== 0 && wd !== 6) out.push(new Date(d));
   }
+  return out;
+}
+function pdDk(ms) { return new Date(ms).toISOString().slice(0, 10); }
+/* Lens+ market regime series: blended VIX (India VIX; scaled US VIX pre-2008) + S&P 3M momentum */
+async function pdMktSeries(range) {
+  const key = 'MKT|' + range;
+  if (pdState.cache[key]) return pdState.cache[key];
+  const grab = async sym => { try { return await pdFetchChartPts(sym, range); } catch (e) { return null; } };
+  const [iv, uv, gs] = [await grab('^INDIAVIX'), await grab('^VIX'), await grab('^GSPC')];
+  const toMap = pts => { const m = new Map(); (pts||[]).forEach(p => m.set(pdDk(p.t), p.c)); return m; };
+  const ivM = toMap(iv), uvM = toMap(uv);
+  let scale = 1.15;
+  { const r = []; ivM.forEach((v, d) => { if (uvM.has(d)) r.push(v / uvM.get(d)); });
+    if (r.length > 100) { r.sort((a,b)=>a-b); scale = r[(r.length/2)|0]; } }
+  const vixMap = new Map();
+  uvM.forEach((v, d) => vixMap.set(d, v * scale));
+  ivM.forEach((v, d) => vixMap.set(d, v));
+  const gMap = new Map();
+  if (gs) for (let i = 63; i < gs.length; i++) gMap.set(pdDk(gs[i].t), Math.log(gs[i].c / gs[i-63].c));
+  const out = { vixMap, gMap };
+  pdState.cache[key] = out;
   return out;
 }
 function pdLbl(d) { return d.toLocaleDateString('en-IN', {day:'2-digit', month:'short', year:'2-digit'}); }
@@ -2302,16 +2330,16 @@ function pdAlignReturns(stockPts, mPts, sPts) {
   const rows = [];
   stockPts.forEach(p => {
     const k = dk(p.t), m = mMap.get(k), s = sMap ? sMap.get(k) : 1;
-    if (m != null && s != null) rows.push({ y: p.c, m, s });
+    if (m != null && s != null) rows.push({ y: p.c, m, s, k });
   });
-  const rY = [], rM = [], rS = [];
+  const rY = [], rM = [], rS = [], ks = [];
   for (let i = 1; i < rows.length; i++) {
     const a = Math.log(rows[i].y / rows[i-1].y);
     const b = Math.log(rows[i].m / rows[i-1].m);
     const c = sMap ? Math.log(rows[i].s / rows[i-1].s) : 0;
-    if (isFinite(a) && isFinite(b) && isFinite(c)) { rY.push(a); rM.push(b); rS.push(c); }
+    if (isFinite(a) && isFinite(b) && isFinite(c)) { rY.push(a); rM.push(b); rS.push(c); ks.push(rows[i].k); }
   }
-  return { rY, rM, rS, n: rY.length };
+  return { rY, rM, rS, ks, n: rY.length };
 }
 
 /* OLS  y = a + b1·x1 (+ b2·x2), closed-form via normal equations */
@@ -2391,10 +2419,10 @@ async function runPrediction() {
     const pts = await pdFetchChartPts(sym, pdState.lookback);
     const closes = pts.map(p => p.c);
     const S0 = closes[closes.length - 1];
-    const rets = [];
+    const rets = [], retKs = [];
     for (let i = 1; i < closes.length; i++) {
       const r = Math.log(closes[i] / closes[i-1]);
-      if (isFinite(r)) rets.push(r);
+      if (isFinite(r)) { rets.push(r); retKs.push(pdDk(pts[i].t)); }
     }
     const n  = rets.length;
     const mu = rets.reduce((a, b) => a + b, 0) / n;
@@ -2423,15 +2451,23 @@ async function runPrediction() {
       }
       const target = PD_SCEN[pdState.scenario];
       const dM = target == null ? 0 : (Math.log(1 + target) / 252 - muM);
-      fac = { ...ols, rM: al.rM, rS: al.rS, rYa: al.rY, fN: al.n, dM, dS: kappa * dM, kappa, muM };
+      fac = { ...ols, rM: al.rM, rS: al.rS, rYa: al.rY, ks: al.ks, fN: al.n, dM, dS: kappa * dM, kappa, muM };
     }
 
     meta.textContent = 'Simulating ' + sims.toLocaleString('en-IN') + ' paths\u2026';
     await new Promise(res => setTimeout(res, 30));   /* let UI paint */
 
     /* 3 ─ per-step draw function by engine */
-    const RG = pdRegime(rets);                       /* always computed — feeds the stat strip */
-    const lensOn = pdState.lens === 'on' && pdState.engine !== 'gbm';
+    const lensMode = pdState.lens;                   /* off | on (v1) | v2 (+VIX/global) */
+    const lensOn = lensMode !== 'off' && pdState.engine !== 'gbm';
+    let mkt = null, extB = null;
+    if (lensMode === 'v2' && pdState.engine !== 'gbm') {
+      meta.textContent = 'Fetching VIX / global regime series…';
+      mkt = await pdMktSeries(pdState.lookback);
+      extB = [ retKs.map(k => mkt.vixMap.has(k) ? mkt.vixMap.get(k) : null),
+               retKs.map(k => mkt.gMap.has(k)  ? mkt.gMap.get(k)  : null) ];
+    }
+    const RG = pdRegime(rets, extB);                 /* stat strip + v1/v2 weights for boot */
     let stepFn;
     if (pdState.engine === 'gbm') {
       const nu = pdEstNu(rets, mu, sg);              /* Student-t tails, df from the window's own kurtosis */
@@ -2442,7 +2478,10 @@ async function runPrediction() {
       stepFn = (t) => R2[sB(lensOn ? Math.exp(-t/PD_LENS_TAU) : 0)];
     } else {
       const F = fac;
-      const FRG = lensOn ? pdRegime(F.rYa) : null;   /* weight factor rows by the stock's aligned regime */
+      let extF = null;
+      if (lensMode === 'v2' && mkt) extF = [ F.ks.map(k => mkt.vixMap.has(k) ? mkt.vixMap.get(k) : null),
+                                             F.ks.map(k => mkt.gMap.has(k)  ? mkt.gMap.get(k)  : null) ];
+      const FRG = lensOn ? pdRegime(F.rYa, extF) : null;
       const fpart = new Float64Array(F.fN);
       for (let i = 0; i < F.fN; i++) fpart[i] = F.a + F.b1*(F.rM[i]+F.dM) + F.b2*(F.rS[i]+F.dS);
       const sB = pdMakeSampler(F.fN, FRG ? FRG.w : null);
@@ -2597,7 +2636,7 @@ async function runPrediction() {
                 : 'Scenario shifts flow to the stock through \u03B2; residual risk stays constant across scenarios.');
     } else profCard.style.display = 'none';
 
-    const engLbl = (pdState.engine === 'gbm' ? 'GBM·t' : pdState.engine === 'boot' ? 'Block Boot' : 'Factor') + (lensOn ? ' · regime lens' : '');
+    const engLbl = (pdState.engine === 'gbm' ? 'GBM·t' : pdState.engine === 'boot' ? 'Block Boot' : 'Factor') + (lensOn ? (lensMode === 'v2' ? ' · regime lens+ (VIX)' : ' · regime lens') : '');
     meta.textContent = name + ' \u00B7 ' + engLbl
       + (isFac ? ' \u00B7 ' + PD_SCEN_LBL[pdState.scenario] : '')
       + ' \u00B7 ' + sims.toLocaleString('en-IN') + ' paths \u00B7 ' + pdState.lookback.toUpperCase() + ' lookback'

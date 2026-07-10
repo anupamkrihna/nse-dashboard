@@ -64,11 +64,11 @@ td:first-child { font-family:Arial,sans-serif; font-weight:600; }
       <span class="lbl">Source</span>
       <select id="btSource"><option value="yahoo" selected>Yahoo · 10y</option><option value="vault">Data Vault · 26y</option></select>
       <span class="lbl">Mode</span>
-      <select id="btMode"><option value="random" selected>Random sample</option><option value="panel">Fixed panel (44)</option></select>
+      <select id="btMode"><option value="random" selected>Random sample</option><option value="panel">Fixed panel (108)</option></select>
       <span class="lbl">Anchors</span>
       <select id="btAnchors"><option>10</option><option selected>20</option><option>40</option></select>
       <span class="lbl">Regime Lens</span>
-      <select id="btLens"><option value="off" selected>Off</option><option value="on">On · τ-decay (Boot+Factor)</option></select>
+      <select id="btLens"><option value="off" selected>Off</option><option value="v1">v1 · stock regime</option><option value="v2">v2 · +VIX/global</option></select>
       <span class="lbl">Paths / cell</span>
       <select id="btSims"><option value="1000" selected>1,000</option><option value="1500">1,500</option><option value="2500">2,500</option></select>
       <span class="lbl">Stocks</span>
@@ -128,7 +128,9 @@ const POOL = [
   {s:'SUNPHARMA',x:'^CNXPHARMA'},{s:'CIPLA',x:'^CNXPHARMA'},{s:'DRREDDY',x:'^CNXPHARMA'},{s:'LUPIN',x:'^CNXPHARMA'},
   {s:'MARUTI',x:'^CNXAUTO'},{s:'TATAMOTORS',x:'^CNXAUTO'},{s:'M&M',x:'^CNXAUTO'},{s:'HEROMOTOCO',x:'^CNXAUTO'},
   {s:'TATASTEEL',x:'^CNXMETAL'},{s:'JSWSTEEL',x:'^CNXMETAL'},{s:'HINDALCO',x:'^CNXMETAL'},{s:'VEDL',x:'^CNXMETAL'},
-  {s:'LT',x:null},{s:'BHARTIARTL',x:null},{s:'TITAN',x:null},{s:'ULTRACEMCO',x:null},{s:'BEL',x:null},{s:'HAL',x:null}
+  {s:'LT',x:null},{s:'BHARTIARTL',x:null},{s:'TITAN',x:null},{s:'ULTRACEMCO',x:null},{s:'BEL',x:null},{s:'HAL',x:null},
+  /* Phase 1b stratified additions (64) */
+  {s:'PERSISTENT',x:'^CNXIT'},{s:'COFORGE',x:'^CNXIT'},{s:'MPHASIS',x:'^CNXIT'},{s:'OFSS',x:'^CNXIT'},{s:'TATAELXSI',x:'^CNXIT'},{s:'CYIENT',x:'^CNXIT'},{s:'INDUSINDBK',x:'^NSEBANK'},{s:'FEDERALBNK',x:'^NSEBANK'},{s:'CANBK',x:'^CNXPSUBANK'},{s:'UNIONBANK',x:'^CNXPSUBANK'},{s:'BAJFINANCE',x:null},{s:'CHOLAFIN',x:null},{s:'SHRIRAMFIN',x:null},{s:'MUTHOOTFIN',x:null},{s:'BHEL',x:null},{s:'BEML',x:null},{s:'GRSE',x:null},{s:'COCHINSHIP',x:null},{s:'MAZDOCK',x:null},{s:'BDL',x:null},{s:'SOLARINDS',x:null},{s:'CUMMINSIND',x:null},{s:'SIEMENS',x:null},{s:'ABB',x:null},{s:'DIVISLAB',x:'^CNXPHARMA'},{s:'TORNTPHARM',x:'^CNXPHARMA'},{s:'AUROPHARMA',x:'^CNXPHARMA'},{s:'IPCALAB',x:'^CNXPHARMA'},{s:'BIOCON',x:'^CNXPHARMA'},{s:'GLENMARK',x:'^CNXPHARMA'},{s:'BAJAJ-AUTO',x:'^CNXAUTO'},{s:'EICHERMOT',x:'^CNXAUTO'},{s:'ASHOKLEY',x:'^CNXAUTO'},{s:'MOTHERSON',x:'^CNXAUTO'},{s:'BHARATFORG',x:'^CNXAUTO'},{s:'EXIDEIND',x:'^CNXAUTO'},{s:'ESCORTS',x:'^CNXAUTO'},{s:'HINDPETRO',x:'^CNXENERGY'},{s:'PETRONET',x:'^CNXENERGY'},{s:'IGL',x:'^CNXENERGY'},{s:'TATAPOWER',x:'^CNXENERGY'},{s:'TORNTPOWER',x:'^CNXENERGY'},{s:'NHPC',x:'^CNXENERGY'},{s:'OIL',x:'^CNXENERGY'},{s:'NMDC',x:'^CNXMETAL'},{s:'SAIL',x:'^CNXMETAL'},{s:'JINDALSTEL',x:'^CNXMETAL'},{s:'NATIONALUM',x:'^CNXMETAL'},{s:'MARICO',x:'^CNXFMCG'},{s:'GODREJCP',x:'^CNXFMCG'},{s:'COLPAL',x:'^CNXFMCG'},{s:'TATACONSUM',x:'^CNXFMCG'},{s:'UNITDSPR',x:'^CNXFMCG'},{s:'DLF',x:'^CNXREALTY'},{s:'GODREJPROP',x:'^CNXREALTY'},{s:'OBEROIRLTY',x:'^CNXREALTY'},{s:'SOBHA',x:'^CNXREALTY'},{s:'AMBUJACEM',x:null},{s:'ACC',x:null},{s:'ASIANPAINT',x:null},{s:'GRASIM',x:null},{s:'INDHOTEL',x:null},{s:'UPL',x:null},{s:'CONCOR',x:null},{s:'ADANIENT',x:null}
 ];
 const HORIZONS = [{n:'1M',d:21},{n:'3M',d:63},{n:'6M',d:126},{n:'1Y',d:252}];
 const ENGINES = ['gbm','boot','factor'];
@@ -175,7 +177,7 @@ function makeSampler(n,weights){
 /* stock-derived regime features from the fit-window returns:
    21d realized vol, 12m momentum, drawdown of the cum-return path.
    Weights favour historical days whose regime resembles 'today'. */
-function regimeWeights(rets){
+function regimeWeights(rets,ext){
   const n=rets.length;
   const rv=new Float64Array(n),mom=new Float64Array(n),dd=new Float64Array(n);
   let sum=0,sumsq=0; const q=[]; let msum=0; const mq=[];
@@ -191,9 +193,15 @@ function regimeWeights(rets){
     lp+=r; if(lp>peak) peak=lp; dd[i]=lp-peak;
   }
   const zf=a=>{const m=a.reduce((x,y)=>x+y,0)/n;const s=Math.sqrt(a.reduce((x,y)=>x+(y-m)*(y-m),0)/n)||1;return Array.from(a,v=>(v-m)/s);};
-  const Z=[zf(rv),zf(mom),zf(dd)], zn=Z.map(a=>a[n-1]);
+  const Z=[zf(rv),zf(mom),zf(dd)];
+  if(ext) ext.forEach(a=>{ if(!a) return;
+    const vals=a.filter(v=>v!=null);
+    if(vals.length<n*0.5) return;                    /* too sparse — skip feature */
+    const fill=vals.reduce((x,y)=>x+y,0)/vals.length;
+    Z.push(zf(Float64Array.from(a,v=>v==null?fill:v))); });
+  const nf=Z.length, zn=Z.map(a=>a[n-1]);
   const w=new Float64Array(n);
-  for(let i=0;i<n;i++){let d=0;for(let f2=0;f2<3;f2++){const e=Z[f2][i]-zn[f2];d+=e*e;}w[i]=Math.exp(-0.5*d);}
+  for(let i=0;i<n;i++){let d=0;for(let f2=0;f2<nf;f2++){const e=Z[f2][i]-zn[f2];d+=e*e;}w[i]=Math.exp(-0.5*d*3/nf);}
   let below=0; for(let i=0;i<n;i++) if(rv[i]<rv[n-1]) below++;
   return {w, rvPct:below/n*100, mom:(Math.exp(mom[n-1])-1)*100, dd:(Math.exp(dd[n-1])-1)*100};
 }
@@ -234,18 +242,18 @@ async function fetchPts(sym){
 const dk=ms=>new Date(ms).toISOString().slice(0,10);
 
 /* one backtest cell: fit at anchor index on trailing lookback, simulate, score vs actuals */
-function runCell(stockPts, mMap, sMap, anchorIdx, sims, lens){
+function runCell(stockPts, mMap, sMap, anchorIdx, sims, lensMode, mkt){
   const LOOK=750;
   const win=stockPts.slice(anchorIdx-LOOK, anchorIdx+1);
   const S0=win[win.length-1].c;
   /* aligned factor returns over the window */
   const rows=[];
   win.forEach(p=>{ const k=dk(p.t), m=mMap.get(k), s=sMap?sMap.get(k):1;
-    if(m!=null&&s!=null) rows.push({y:p.c,m,s}); });
-  const rY=[],rM=[],rS=[];
+    if(m!=null&&s!=null) rows.push({y:p.c,m,s,k}); });
+  const rY=[],rM=[],rS=[],rK=[];
   for(let i=1;i<rows.length;i++){
     const a=Math.log(rows[i].y/rows[i-1].y), b=Math.log(rows[i].m/rows[i-1].m), c=sMap?Math.log(rows[i].s/rows[i-1].s):0;
-    if(isFinite(a)&&isFinite(b)&&isFinite(c)){rY.push(a);rM.push(b);rS.push(c);}
+    if(isFinite(a)&&isFinite(b)&&isFinite(c)){rY.push(a);rM.push(b);rS.push(c);rK.push(rows[i].k);}
   }
   const n=rY.length; if(n<400) return null;
   const mu=rY.reduce((a,b)=>a+b,0)/n;
@@ -263,7 +271,13 @@ function runCell(stockPts, mMap, sMap, anchorIdx, sims, lens){
   if(!Object.keys(actual).length) return null;
 
   const nu = estNu(rY,mu,sg);
-  const RW = lens ? regimeWeights(rY) : null;
+  let ext=null;
+  if(lensMode==='v2'&&mkt){
+    const vixA=rK.map(k=>mkt.vixMap.has(k)?mkt.vixMap.get(k):null);
+    const gA  =rK.map(k=>mkt.gMap.has(k)?mkt.gMap.get(k):null);
+    ext=[vixA,gA];
+  }
+  const RW = (lensMode==='v1'||lensMode==='v2') ? regimeWeights(rY,ext) : null;
   const out={};
   for(const eng of ENGINES){
     const sB = makeSampler(n, RW ? RW.w : null);        /* block sampler (weighted if lens) */
@@ -333,14 +347,31 @@ document.getElementById('btRun').addEventListener('click', async ()=>{
   try{
     const useVault=document.getElementById('btSource').value==='vault';
     const nAnch=parseInt(document.getElementById('btAnchors').value,10);
-    const lensOn=document.getElementById('btLens').value==='on';
+    const lensMode=document.getElementById('btLens').value;   /* off|v1|v2 */
+    let mkt=null;
+    if(lensMode==='v2'){ const vm0=window.vm0||{series:{},dates:[]};
+      setProg(0.05,'Building VIX/global regime series…');
+      const getSeries=async k=>{ if(useVault){ if(!vm0.series[k]) return null;
+          const o=new Map(); vm0.dates.forEach((d,i)=>{const v=vm0.series[k][i]; if(v!=null)o.set(d,v);}); return o; }
+        try{ return new Map((await fetchPts(k)).map(p=>[dk(p.t),p.c])); }catch(e){ return null; } };
+      const iv=await getSeries('^INDIAVIX'), uv=await getSeries('^VIX'), gs=await getSeries('^GSPC');
+      let scale=1.15;
+      if(iv&&uv){ const r=[]; iv.forEach((v,d)=>{ if(uv.has(d)) r.push(v/uv.get(d)); });
+        if(r.length>100){ r.sort((a,b)=>a-b); scale=r[(r.length/2)|0]; } }
+      const vixMap=new Map();
+      if(uv) uv.forEach((v,d)=>vixMap.set(d,v*scale));
+      if(iv) iv.forEach((v,d)=>vixMap.set(d,v));
+      const gMap=new Map();
+      if(gs){ const ds=[...gs.keys()].sort(); for(let i=63;i<ds.length;i++) gMap.set(ds[i],Math.log(gs.get(ds[i])/gs.get(ds[i-63]))); }
+      mkt={vixMap,gMap};
+    }
     let getPts, mMap; const sMaps={};
     if(useVault){
       setProg(0.03,'Fetching Data Vault matrix (26y)…');
       let r=await fetch(BACKEND+'?action=vault&sub=matrix');
       if(!r.ok){ await new Promise(x=>setTimeout(x,2500)); r=await fetch(BACKEND+'?action=vault&sub=matrix'); }
       if(!r.ok) throw new Error('Vault HTTP '+r.status+' — open the status URL in a tab: if it fails too, the web-app deployment changed. Fix: GAS → Deploy → Manage deployments → pencil on the EXISTING deployment → New version → Deploy (never "New deployment").');
-      const vm=await r.json();
+      const vm=await r.json(); window.vm0=vm;
       if(!vm.dates||!vm.dates.length) throw new Error('Vault empty — run vaultSetup() in GAS and let the backfill finish');
       const dts=vm.dates.map(d=>Date.parse(d));
       const toPts=arr=>{const o=[];for(let i=0;i<arr.length;i++){const v=arr[i];if(v!=null&&isFinite(v)&&v>0)o.push({t:dts[i],c:v});}return o;};
@@ -379,7 +410,7 @@ document.getElementById('btRun').addEventListener('click', async ()=>{
       for(let k=0;k<nAnch;k++) anchors.push(Math.round(first + (last-first)*k/(nAnch-1)));
       const sMap=pk.x?sMaps[pk.x]:null;
       for(const ai of anchors){
-        const res=runCell(pts,mMap,sMap,ai,sims,lensOn);
+        const res=runCell(pts,mMap,sMap,ai,sims,lensMode,mkt);
         if(res) cells.push({stock:pk.s, date:dk(pts[ai].t), res});
       }
     }
