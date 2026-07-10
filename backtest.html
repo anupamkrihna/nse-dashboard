@@ -107,6 +107,11 @@ td:first-child { font-family:Arial,sans-serif; font-weight:600; }
       <div id="horizonWrap"></div>
     </div>
     <div class="card">
+      <div class="hdr"><span class="title">Regime-Split — Lens Exam</span><span class="sub">1M+3M cells bucketed by anchor-date VIX tercile · coverage AND band width — compare this card across Off / v1 / v2 runs</span></div>
+      <div id="regimeWrap"><div class="note">Requires the Data Vault source (VIX history for anchor tagging).</div></div>
+      <div class="note"><b>How to judge the lens:</b> lens-off typically over-covers Calm (bands wastefully wide) and under-covers Storm (too narrow). A working lens pulls both toward 90% — and/or delivers the same coverage with a narrower Calm width. Same average, better allocation.</div>
+    </div>
+    <div class="card">
       <div class="hdr"><span class="title">Cell Detail</span><span class="sub">1Y horizon · actual vs predicted band per stock × time point</span></div>
       <div id="detailWrap" style="overflow-x:auto"></div>
     </div>
@@ -349,7 +354,7 @@ document.getElementById('btRun').addEventListener('click', async ()=>{
     const nAnch=parseInt(document.getElementById('btAnchors').value,10);
     const lensMode=document.getElementById('btLens').value;   /* off|v1|v2 */
     let mkt=null;
-    if(lensMode==='v2'){ const vm0=window.vm0||{series:{},dates:[]};
+    if(lensMode==='v2' || useVault){ const vm0=window.vm0||{series:{},dates:[]};
       setProg(0.05,'Building VIX/global regime series…');
       const getSeries=async k=>{ if(useVault){ if(!vm0.series[k]) return null;
           const o=new Map(); vm0.dates.forEach((d,i)=>{const v=vm0.series[k][i]; if(v!=null)o.set(d,v);}); return o; }
@@ -364,6 +369,11 @@ document.getElementById('btRun').addEventListener('click', async ()=>{
       const gMap=new Map();
       if(gs){ const ds=[...gs.keys()].sort(); for(let i=63;i<ds.length;i++) gMap.set(ds[i],Math.log(gs.get(ds[i])/gs.get(ds[i-63]))); }
       mkt={vixMap,gMap};
+      /* percentile rank of anchor-date VIX over full history — regime tagging */
+      const vAll=[...vixMap.values()].sort((a,b)=>a-b);
+      mkt.vixPct=d=>{ if(!vixMap.has(d)||!vAll.length) return null;
+        const v=vixMap.get(d); let lo=0,hi=vAll.length;
+        while(lo<hi){const m=(lo+hi)>>1; if(vAll[m]<v)lo=m+1;else hi=m;} return lo/vAll.length*100; };
     }
     let getPts, mMap; const sMaps={};
     if(useVault){
@@ -410,8 +420,9 @@ document.getElementById('btRun').addEventListener('click', async ()=>{
       for(let k=0;k<nAnch;k++) anchors.push(Math.round(first + (last-first)*k/(nAnch-1)));
       const sMap=pk.x?sMaps[pk.x]:null;
       for(const ai of anchors){
-        const res=runCell(pts,mMap,sMap,ai,sims,lensMode,mkt);
-        if(res) cells.push({stock:pk.s, date:dk(pts[ai].t), res});
+        const res=runCell(pts,mMap,sMap,ai,sims,lensMode,lensMode==='v2'?mkt:null);
+        if(res) cells.push({stock:pk.s, date:dk(pts[ai].t), res,
+          vixPct: mkt&&mkt.vixPct ? mkt.vixPct(dk(pts[ai].t)) : null});
       }
     }
     if(!cells.length) throw new Error('0 usable cells — the selected stocks have no vault data yet (backfill in progress?) or too little history. Check ?action=vault&sub=status, or switch Source back to Yahoo · 10y meanwhile.');
@@ -482,6 +493,29 @@ function render(cells,sims,src){
         return '<td class="'+(hit?'ok':'bad')+'">'+((r.p5-1)*100).toFixed(0)+'…'+((r.p95-1)*100).toFixed(0)+'% '+(hit?'✓':'✗')+'</td>'; }).join('')
       +'</tr>'; });
   document.getElementById('detailWrap').innerHTML = det+'</table>';
+  /* ── regime-split lens exam (1M+3M cells, VIX terciles) ── */
+  (function(){
+    const tagged=cells.filter(c=>c.vixPct!=null);
+    const el=document.getElementById('regimeWrap');
+    if(!tagged.length){ el.innerHTML='<div class="note">No VIX tagging available on this run.</div>'; return; }
+    const buckets=[['Calm (VIX < 33rd pct)',c=>c.vixPct<33.33],['Normal',c=>c.vixPct>=33.33&&c.vixPct<66.67],['Storm (VIX > 67th pct)',c=>c.vixPct>=66.67]];
+    let html='<table><tr><th>Anchor regime</th>'+ENGINES.map(e=>'<th>'+ENG_NAME[e]+' cov / width</th>').join('')+'</tr>';
+    buckets.forEach(b=>{
+      const cs=tagged.filter(b[1]);
+      html+='<tr><td>'+b[0]+' · n'+cs.length+'</td>'+ENGINES.map(e=>{
+        let inb=0,n=0; const ws=[];
+        cs.forEach(c=>['1M','3M'].forEach(hn=>{ const r=c.res[e][hn]; if(!r) return;
+          n++; if(r.actual>=r.p5&&r.actual<=r.p95) inb++;
+          ws.push((r.p95-r.p5)*100); }));
+        if(!n) return '<td>–</td>';
+        ws.sort((a,b)=>a-b);
+        const cov=inb/n*100, w=ws[(ws.length/2)|0];
+        const g=Math.abs(cov-90)<=5?'ok':Math.abs(cov-90)<=10?'warn':'bad';
+        return '<td class="'+g+'">'+cov.toFixed(0)+'% / '+w.toFixed(0)+'pp</td>'; }).join('')+'</tr>';
+    });
+    el.innerHTML=html+'</table>';
+  })();
+
   /* ── auto-calibration from PIT quantiles ── */
   const clamp=(v,lo,hi)=>Math.min(hi,Math.max(lo,v));
   const NOM={p5:0.05,p25:0.25,p50:0.50,p75:0.75,p95:0.95};
