@@ -378,6 +378,7 @@ select:focus, input[type=text]:focus { border-color: #e8b94a; }
     <div class="sb-tab" data-panel="signallab" onclick="switchTab(this,'signallab')"><span class="tab-icon">⚗️</span>Signal Lab</div>
     <div class="sb-tab" data-panel="macro"      onclick="switchTab(this,'macro')"><span class="tab-icon">🌐</span>Macro Intel</div>
     <div class="sb-tab" data-panel="fiidii"     onclick="switchTab(this,'fiidii')"><span class="tab-icon">💰</span>FII / DII</div>
+    <div class="sb-tab" data-panel="sector"     onclick="switchTab(this,'sector')"><span class="tab-icon">🔄</span>Sector Rotation</div>
     <div style="flex:1"></div>
     <div class="sb-bottom">
       <a href="steam.html" class="sb-link">🔥 Open Steam Gauge →</a>
@@ -958,6 +959,27 @@ select:focus, input[type=text]:focus { border-color: #e8b94a; }
         </div>
       </div>
 
+    </div>
+
+    <!-- ══ SECTOR ROTATION ══ -->
+    <div class="tab-panel" id="panel-sector">
+      <div class="card" style="margin-bottom:14px">
+        <div class="card-head">
+          <div>
+            <div class="card-title">🔄 Sector Rotation &amp; Leadership Odds</div>
+            <div class="card-sub" id="secSub">Regime-gated · leadership odds appear only in a confirmed post-drawdown recovery · self-validated weekly</div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <span id="secRegimePill" style="font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px;background:#eee;color:#555">regime · —</span>
+            <button class="btn" style="font-size:11px" onclick="loadSectorRotation(true)">↻ Refresh</button>
+          </div>
+        </div>
+        <div class="card-body">
+          <div id="secLeadership" style="margin-bottom:16px"></div>
+          <div id="secRotation"></div>
+          <div id="secMeta" style="font-size:10px;color:#aaa;margin-top:12px"></div>
+        </div>
+      </div>
     </div>
 
   </main>
@@ -4621,6 +4643,76 @@ const _origSwitchTab = switchTab;
 switchTab = function(el, panel) {
   _origSwitchTab(el, panel);
   if (panel === 'macro' && !macroLoaded) loadMacro();
+};
+
+/* ═══════════════════════════════════════════════
+   SECTOR ROTATION  (reads GAS ?action=sector&sub=state)
+   Regime-gated leadership odds + relative-strength rotation.
+   Degrades gracefully if the backend route isn't live yet.
+═══════════════════════════════════════════════ */
+let sectorLoaded = false;
+async function loadSectorRotation(force){
+  if (sectorLoaded && !force) return;
+  sectorLoaded = true;
+  const lead = document.getElementById('secLeadership');
+  const rot  = document.getElementById('secRotation');
+  const meta = document.getElementById('secMeta');
+  const pill = document.getElementById('secRegimePill');
+  lead.innerHTML = '<div style="color:#888;font-size:12px;padding:10px">Loading sector state…</div>';
+  rot.innerHTML = '';
+  try {
+    const r = await fetch(BACKEND + '?action=sector&sub=state');
+    const d = await r.json();
+    if (!d || d.error) {
+      lead.innerHTML = '<div style="color:#c0392b;font-size:12px;padding:10px">'+
+        ((d && d.error) ? d.error : 'No sector data yet.')+
+        '<br><span style="color:#888;font-size:11px">The sector engine returns data once the GAS route + weekly refresh are live and the sector indices are in the Vault.</span></div>';
+      return;
+    }
+    renderSectorState(d, {lead:lead, rot:rot, meta:meta, pill:pill});
+  } catch(e){
+    lead.innerHTML = '<div style="color:#c0392b;font-size:12px;padding:10px">Failed to load: '+(e.message||e)+'</div>';
+  }
+}
+function secFmtPct(x){ return (x==null)?'—':((x>=0?'+':'')+(x*100).toFixed(1)+'%'); }
+function renderSectorState(d, el){
+  const rColors = { recovery:['#e6f5ec','#1e7d34'], falling:['#fdeceb','#c0392b'], normal:['#f1efe8','#555'], unknown:['#eee','#888'] };
+  const rc = rColors[d.regime] || rColors.unknown;
+  el.pill.style.background = rc[0]; el.pill.style.color = rc[1];
+  el.pill.textContent = 'regime · ' + (d.regime||'—');
+  if (d.leadership && d.leadership.top && d.leadership.top.length){
+    const conf = (d.confidence && d.confidence['12M']!=null) ? (' · historical top-3 hit '+Math.round(d.confidence['12M']*100)+'% (12M)') : '';
+    el.lead.innerHTML =
+      '<div style="font-size:12px;font-weight:700;color:#1a2744;margin-bottom:8px">🎯 Leadership odds — most beaten-down'+conf+'</div>'+
+      '<div style="display:flex;gap:10px;flex-wrap:wrap">'+
+      d.leadership.top.map(function(t){
+        return '<div style="flex:1;min-width:120px;background:#fbf7ea;border:1px solid #e8d9a8;border-radius:8px;padding:10px 12px">'+
+          '<div style="font-size:11px;color:#b8860b;font-weight:700">#'+t.rank+' odds</div>'+
+          '<div style="font-size:15px;font-weight:700;color:#1a2744">'+t.label+'</div>'+
+          '<div style="font-size:11px;color:#777">beatdown '+secFmtPct(t.beatdown)+'</div></div>';
+      }).join('')+'</div>'+
+      '<div style="font-size:10px;color:#b8860b;margin-top:6px">⚠ '+(d.leadership.note||'')+'</div>';
+  } else {
+    el.lead.innerHTML = '<div style="background:#f7f5f0;border:1px dashed #ccc;border-radius:8px;padding:12px;font-size:12px;color:#777">'+
+      'No leadership call — the market isn\'t in a post-drawdown recovery. Outside recovery regimes, "most beaten-down" is a value trap, so the panel stays silent here by design.</div>';
+  }
+  const rows = (d.rotation||[]).map(function(r){
+    const c3 = (r.rs3>=0)?'#1e7d34':'#c0392b', c6 = (r.rs6>=0)?'#1e7d34':'#c0392b';
+    return '<tr><td style="text-align:left">'+r.rank+'. '+r.label+'</td>'+
+      '<td style="color:'+c3+'">'+secFmtPct(r.rs3)+'</td>'+
+      '<td style="color:'+c6+'">'+secFmtPct(r.rs6)+'</td>'+
+      '<td>'+secFmtPct(r.beatdown)+'</td></tr>';
+  }).join('');
+  el.rot.innerHTML =
+    '<div style="font-size:12px;font-weight:700;color:#1a2744;margin:6px 0">📊 Rotation standing — relative strength vs Nifty</div>'+
+    '<table class="data-table"><thead><tr><th style="text-align:left">Sector</th><th>RS 3M</th><th>RS 6M</th><th>Beatdown</th></tr></thead><tbody>'+rows+'</tbody></table>';
+  el.meta.textContent = 'As of '+(d.date||'—')+' · '+((d.rotation||[]).length)+' sectors · valuation leg: '+(d.valuationLeg||'pending')+'. Odds are conditional and beta-heavy — not buy signals.';
+}
+// Hook: load sector rotation lazily on first open
+const _origSwitchTabSector = switchTab;
+switchTab = function(el, panel){
+  _origSwitchTabSector(el, panel);
+  if (panel === 'sector' && !sectorLoaded) loadSectorRotation();
 };
 
 
