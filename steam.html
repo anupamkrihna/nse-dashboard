@@ -362,6 +362,7 @@ select.pd-sel { font-size:11px; padding:6px 8px; border:1px solid #e2ddd2; borde
     <div class="mbadge-row" id="membershipRow">
       <span class="no-member">Search a stock to see its index memberships.</span>
     </div>
+    <div id="sectorBadge" style="margin-top:10px"></div>
   </div>
 
   <!-- Tabs -->
@@ -1143,6 +1144,34 @@ function renderMembership(sym) {
     : `<span class="no-member">Not found in tracked indices — may be in broader Nifty 500 universe.</span>`;
 }
 
+/* Sector standing badge — reads GAS ?action=sector&sub=stock. Stays silent
+   if the stock has no sector mapping or the backend route isn't live yet. */
+async function renderSectorBadge(sym){
+  const box = document.getElementById('sectorBadge');
+  if (!box) return;
+  box.innerHTML = '';
+  try {
+    const r = await fetch(BACKEND + '?action=sector&sub=stock&sym=' + encodeURIComponent(sym));
+    const d = await r.json();
+    if (!d || !d.ok) { box.innerHTML = ''; return; }
+    const rColors = { recovery:['#e6f5ec','#1e7d34'], falling:['#fdeceb','#c0392b'], normal:['#f1efe8','#555'], unknown:['#eee','#888'] };
+    const rc = rColors[d.regime] || rColors.unknown;
+    let parts = '<span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:14px;background:'+rc[0]+';color:'+rc[1]+'">Sector · '+(d.sectorLabel||'—')+' ('+(d.regime||'—')+')</span>';
+    if (d.rotation && d.rotation.rank!=null && d.totalSectors){
+      parts += '<span style="font-size:11px;color:#555;margin-left:8px">RS rank '+d.rotation.rank+'/'+d.totalSectors+'</span>';
+    }
+    if (d.leadership){
+      const conf = (d.confidence && d.confidence['12M']!=null) ? (' · '+Math.round(d.confidence['12M']*100)+'% hist top-3') : '';
+      parts += '<span style="font-size:11px;font-weight:700;color:#b8860b;margin-left:8px">🎯 Leadership odds #'+d.leadership.rank+conf+'</span>';
+    } else if (d.regime === 'recovery'){
+      parts += '<span style="font-size:11px;color:#999;margin-left:8px">not in leadership top-3</span>';
+    } else {
+      parts += '<span style="font-size:11px;color:#999;margin-left:8px">no leadership signal outside recovery</span>';
+    }
+    box.innerHTML = '<div style="display:flex;align-items:center;flex-wrap:wrap;gap:2px">'+parts+'</div>';
+  } catch(e){ box.innerHTML = ''; }
+}
+
 /* ═══════════════════════════════════════════════
    DATA FETCH — DUAL SOURCE
 ═══════════════════════════════════════════════ */
@@ -1261,6 +1290,7 @@ async function loadStock(stock) {
   ['hMcap','hPE','h52H','h52L','hEPS','hPB'].forEach(id => document.getElementById(id).textContent = '…');
 
   renderMembership(stock.sym);
+  renderSectorBadge(stock.sym);
   renderPeers(stock);
 
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
