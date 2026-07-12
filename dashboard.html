@@ -4696,16 +4696,21 @@ function renderSectorState(d, el){
     el.lead.innerHTML = '<div style="background:#f7f5f0;border:1px dashed #ccc;border-radius:8px;padding:12px;font-size:12px;color:#777">'+
       'No leadership call — the market isn\'t in a post-drawdown recovery. Outside recovery regimes, "most beaten-down" is a value trap, so the panel stays silent here by design.</div>';
   }
+  const hasVal = !!d.hasValuation;
+  const valColors = {cheap:'#1e7d34', rich:'#c0392b', fair:'#888'};
   const rows = (d.rotation||[]).map(function(r){
     const c3 = (r.rs3>=0)?'#1e7d34':'#c0392b', c6 = (r.rs6>=0)?'#1e7d34':'#c0392b';
+    const valTd = hasVal ? ('<td style="color:'+(valColors[r.valLabel]||'#888')+'">'+
+       (r.valPctile!=null ? (Math.round(r.valPctile*100)+'th'+(r.valLabel?(' · '+r.valLabel):'')) : '—')+'</td>') : '';
     return '<tr><td style="text-align:left">'+r.rank+'. '+r.label+'</td>'+
       '<td style="color:'+c3+'">'+secFmtPct(r.rs3)+'</td>'+
       '<td style="color:'+c6+'">'+secFmtPct(r.rs6)+'</td>'+
-      '<td>'+secFmtPct(r.beatdown)+'</td></tr>';
+      '<td>'+secFmtPct(r.beatdown)+'</td>'+valTd+'</tr>';
   }).join('');
+  const valTh = hasVal ? '<th>Valuation</th>' : '';
   el.rot.innerHTML =
     '<div style="font-size:12px;font-weight:700;color:#1a2744;margin:6px 0">📊 Rotation standing — relative strength vs Nifty</div>'+
-    '<table class="data-table"><thead><tr><th style="text-align:left">Sector</th><th>RS 3M</th><th>RS 6M</th><th>Beatdown</th></tr></thead><tbody>'+rows+'</tbody></table>';
+    '<table class="data-table"><thead><tr><th style="text-align:left">Sector</th><th>RS 3M</th><th>RS 6M</th><th>Beatdown</th>'+valTh+'</tr></thead><tbody>'+rows+'</tbody></table>';
   el.meta.textContent = 'As of '+(d.date||'—')+' · '+((d.rotation||[]).length)+' sectors · valuation leg: '+(d.valuationLeg||'pending')+'. Odds are conditional and beta-heavy — not buy signals.';
 }
 // Hook: load sector rotation lazily on first open
