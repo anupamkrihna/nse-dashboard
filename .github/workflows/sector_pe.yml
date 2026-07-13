@@ -1,0 +1,43 @@
+name: Sector PE Collector
+
+on:
+  schedule:
+    - cron: '30 14 * * 1-5'        # ~20:00 IST, weekdays (14:30 UTC)
+  workflow_dispatch:               # manual run button, with optional backfill
+    inputs:
+      backfill:
+        description: 'Attempt multi-year historical backfill (one-off)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write                  # allow the job to commit sector_pe.csv back
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install deps
+        run: pip install requests pandas
+
+      - name: Collect sector P/E
+        run: |
+          if [ "${{ github.event.inputs.backfill }}" = "true" ]; then
+            python collect_sector_pe.py --backfill --years 6
+          else
+            python collect_sector_pe.py
+          fi
+
+      - name: Commit updated CSV
+        run: |
+          git config user.name  "sector-pe-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add sector_pe.csv
+          git diff --staged --quiet || git commit -m "sector_pe.csv update $(date -u +%Y-%m-%d)"
+          git push
