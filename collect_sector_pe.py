@@ -79,7 +79,13 @@ def fetch_name(sess, name, start, end):
             "','endDate':'" + end + "','indexName':'" + name + "'}"}
     r = sess.post(ENDPOINT, json=body, timeout=45)
     r.raise_for_status()
-    d = r.json().get('d')
+    try:
+        d = r.json().get('d')
+    except Exception:
+        # not JSON — niftyindices returned an HTML challenge/cookie page. Show what it was.
+        snippet = (r.text or '')[:220].replace('\n', ' ').replace('\r', ' ')
+        print(f'    HTTP {r.status_code}, {len(r.text or "")} bytes, non-JSON body: [{snippet}]')
+        raise
     if not d:
         return None
     recs = json.loads(d)
