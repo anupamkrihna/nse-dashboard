@@ -52,10 +52,17 @@ ORDER = ['^CNXIT','^CNXAUTO','^CNXPHARMA','^CNXFMCG','^CNXMETAL',
 def make_session():
     s = requests.Session()
     s.headers.update(HEADERS)
-    try:
-        s.get('https://niftyindices.com', timeout=30)   # seed cookies
-    except Exception:
-        pass
+    # Warm up so niftyindices sets its session cookies; without them the API POST
+    # gets bounced to the 89 KB HTML page. Hit home, then the referer report page,
+    # carrying cookies forward.
+    for url in ('https://niftyindices.com/',
+                'https://niftyindices.com/reports/historical-data'):
+        try:
+            s.get(url, timeout=30)
+            time.sleep(1)
+        except Exception as e:
+            print(f'   warmup {url} -> {str(e)[:60]}')
+    print(f'   session cookies: {list(s.cookies.keys()) or "NONE"}')
     return s
 
 
