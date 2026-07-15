@@ -373,6 +373,7 @@ select.pd-sel { font-size:11px; padding:6px 8px; border:1px solid #e2ddd2; borde
     <div class="tab" data-tab="flow">📈 Flow &amp; News</div>
     <div class="tab" data-tab="buffett">🎩 Buffett</div>
     <div class="tab" data-tab="predict">🎲 Prediction</div>
+    <div class="tab" data-tab="signals">⚡ Signals</div>
   </div>
 
   <!-- STEAM TAB -->
@@ -645,6 +646,146 @@ select.pd-sel { font-size:11px; padding:6px 8px; border:1px solid #e2ddd2; borde
     </div>
     <div id="indicesContainer"></div>
     <div id="chipsPanel" style="display:none"></div>
+  </div>
+
+  <!-- ═══════════ SIGNALS TAB (EMA/volume engine · additive block) ═══════════ -->
+  <style>
+  /* scoped: signal panel — approved dark navy/gold card, sp- prefixed to avoid collisions */
+  #tab-signals{
+    --spbg:#0e1a30; --sppanel:#16233f; --sppanel2:#1b2b4a; --spedge:#26374f;
+    --spink:#eef0ea; --spmuted:#8fa1c2; --spfaint:#63769a;
+    --spgold:#e8b94a; --spbull:#5ee08a; --spbear:#f0655a; --spslate:#56688c;
+    --spfastc:#6db6ff; --spmidc:#e8b94a; --spslowc:#c98be0; --spgrid:#213150;
+    --spupbar:#3f8f5e; --spdnbar:#a54b48;
+    --spmono:'Courier New',ui-monospace,monospace;
+  }
+  #tab-signals .sp-card{background:linear-gradient(180deg,var(--sppanel2),var(--sppanel));border:1px solid var(--spedge);
+    border-radius:14px;padding:20px 22px 16px;box-shadow:0 20px 60px -30px #000,inset 0 1px 0 #ffffff0a;color:var(--spink)}
+  #tab-signals .sp-status{font-family:var(--spmono);font-size:11px;color:#8a94a8;margin:0 2px 10px;min-height:15px}
+  #tab-signals .sp-status.err{color:#c0392b}
+  #tab-signals .sp-hd{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
+  #tab-signals .sp-tick{font-family:var(--spmono);font-size:30px;font-weight:700;letter-spacing:2px;line-height:1}
+  #tab-signals .sp-tick b{color:var(--spgold)}
+  #tab-signals .sp-name{color:var(--spmuted);font-size:12.5px;margin-top:5px;letter-spacing:.3px}
+  #tab-signals .sp-pxwrap{text-align:right}
+  #tab-signals .sp-px{font-family:var(--spmono);font-size:26px;font-weight:700}
+  #tab-signals .sp-freshrow{display:flex;gap:6px;justify-content:flex-end;margin-top:6px;flex-wrap:wrap}
+  #tab-signals .sp-chip{font-family:var(--spmono);font-size:10px;letter-spacing:.4px;padding:2px 7px;border-radius:999px;
+    border:1px solid var(--spedge);color:var(--spmuted);background:#0d1830}
+  #tab-signals .sp-chip.live{color:var(--spbull);border-color:#2f6b47;background:#0f2419}
+  #tab-signals .sp-chip.warn{color:var(--spgold);border-color:#6b5a2f;background:#241f0f}
+  #tab-signals .sp-rule{height:1px;background:linear-gradient(90deg,transparent,var(--spedge) 12%,var(--spedge) 88%,transparent);margin:16px 0}
+  #tab-signals .sp-eye{font-size:10px;letter-spacing:2.4px;color:var(--spfaint);text-transform:uppercase;margin-bottom:9px}
+  #tab-signals .sp-funnel{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:0 10px;align-items:stretch}
+  #tab-signals .sp-tier{background:#0e1b32;border:1px solid var(--spedge);border-radius:11px;padding:12px 14px;position:relative;overflow:hidden}
+  #tab-signals .sp-tier::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--c,var(--spslate))}
+  #tab-signals .sp-tier .sp-lab{font-size:9.5px;letter-spacing:2px;color:var(--spfaint);text-transform:uppercase}
+  #tab-signals .sp-tier .sp-st{font-family:var(--spmono);font-weight:700;font-size:17px;margin-top:6px;color:var(--c,var(--spink));letter-spacing:.5px;display:flex;align-items:center;gap:7px}
+  #tab-signals .sp-tier .sp-st .sp-d{width:8px;height:8px;border-radius:50%;background:var(--c);box-shadow:0 0 10px var(--c);flex-shrink:0}
+  #tab-signals .sp-tier .sp-sub{font-size:11px;color:var(--spmuted);margin-top:5px;line-height:1.35}
+  #tab-signals .sp-arw{display:flex;align-items:center;color:var(--spfaint);font-size:18px}
+  #tab-signals .sp-verdict{display:flex;align-items:center;gap:16px;margin-top:14px;background:#0d1830;border:1px solid var(--spedge);border-radius:10px;padding:11px 14px}
+  #tab-signals .sp-vtext{flex:1}
+  #tab-signals .sp-vtext .sp-vh{font-family:var(--spmono);font-weight:700;font-size:14px;letter-spacing:.4px}
+  #tab-signals .sp-vtext .sp-vs{font-size:11px;color:var(--spmuted);margin-top:3px}
+  #tab-signals .sp-meter{width:210px;flex-shrink:0}
+  #tab-signals .sp-meter .sp-track{height:7px;border-radius:6px;background:linear-gradient(90deg,var(--spbear),#c9a24a 46%,var(--spbull));position:relative;opacity:.85}
+  #tab-signals .sp-meter .sp-pin{position:absolute;top:-4px;width:3px;height:15px;border-radius:2px;background:#fff;box-shadow:0 0 8px #fff9;transform:translateX(-50%);transition:left .6s ease}
+  #tab-signals .sp-meter .sp-scale{display:flex;justify-content:space-between;font-size:8.5px;color:var(--spfaint);letter-spacing:.6px;margin-top:5px;text-transform:uppercase}
+  #tab-signals .sp-chiprow{display:flex;flex-wrap:wrap;gap:7px;margin-top:15px}
+  #tab-signals .sp-mchip{font-family:var(--spmono);font-size:11px;padding:4px 9px;border-radius:7px;background:#0d1830;border:1px solid var(--spedge);color:var(--spmuted)}
+  #tab-signals .sp-mchip b{color:var(--spink)}
+  #tab-signals .sp-mchip .up{color:var(--spbull)} #tab-signals .sp-mchip .dn{color:var(--spbear)} #tab-signals .sp-mchip .gd{color:var(--spgold)}
+  #tab-signals .sp-panel{margin-top:16px;background:#0c1730;border:1px solid var(--spedge);border-radius:11px;padding:12px 12px 6px}
+  #tab-signals .sp-ptitle{font-size:10px;letter-spacing:2px;color:var(--spfaint);text-transform:uppercase;margin:0 2px 6px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px}
+  #tab-signals .sp-legend{display:flex;gap:14px;font-family:var(--spmono);font-size:10.5px;color:var(--spmuted);text-transform:none;letter-spacing:0}
+  #tab-signals .sp-legend i{display:inline-block;width:14px;height:2.5px;border-radius:2px;vertical-align:middle;margin-right:5px}
+  #tab-signals svg{display:block;width:100%;height:auto}
+  #tab-signals .sp-gl{stroke:var(--spgrid);stroke-width:1}
+  #tab-signals .sp-ln{fill:none;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+  #tab-signals .sp-xm{stroke:#ffffff55;stroke-width:1;stroke-dasharray:3 3}
+  #tab-signals .sp-xmlab{font-family:var(--spmono);font-size:9.5px;fill:var(--spink)}
+  #tab-signals .sp-subnote{font-size:9.5px;color:var(--spfaint);font-family:var(--spmono);margin:2px 2px 0}
+  #tab-signals .sp-foot{font-size:10px;color:var(--spfaint);margin-top:12px;line-height:1.5}
+  #tab-signals .sp-foot b{color:var(--spmuted)}
+  #tab-signals .sp-skel{padding:40px 0;text-align:center;color:#8a94a8;font-family:var(--spmono);font-size:13px;letter-spacing:1px}
+  #tab-signals .sp-refresh{background:none;border:1px solid var(--spedge);color:var(--spmuted);border-radius:7px;
+    font-family:var(--spmono);font-size:10px;letter-spacing:.5px;padding:3px 9px;cursor:pointer}
+  #tab-signals .sp-refresh:hover{color:var(--spgold);border-color:var(--spgold)}
+  @media (max-width:680px){
+    #tab-signals .sp-funnel{grid-template-columns:1fr;gap:8px}
+    #tab-signals .sp-arw{transform:rotate(90deg);justify-content:center;height:14px}
+    #tab-signals .sp-verdict{flex-direction:column;align-items:stretch}
+    #tab-signals .sp-meter{width:100%}
+  }
+  </style>
+
+  <div class="tab-panel" id="tab-signals">
+    <div class="sp-status" id="spStatus"></div>
+    <div class="sp-card">
+      <div class="sp-skel" id="spSkel">Load a stock (search above), then open this tab.</div>
+      <div id="spContent" style="display:none">
+
+        <div class="sp-hd">
+          <div>
+            <div class="sp-tick" id="spTick"><b>—</b></div>
+            <div class="sp-name" id="spName">&nbsp;</div>
+          </div>
+          <div class="sp-pxwrap">
+            <div class="sp-px" id="spPx">—</div>
+            <div class="sp-freshrow" id="spChips"></div>
+          </div>
+        </div>
+
+        <div class="sp-rule"></div>
+
+        <div class="sp-eye" style="display:flex;justify-content:space-between;align-items:center">
+          <span>Decision funnel — market ▸ sector ▸ stock</span>
+          <button class="sp-refresh" onclick="renderSignalsTab(true)">↻ refresh</button>
+        </div>
+        <div class="sp-funnel">
+          <div class="sp-tier" id="spTMkt"><div class="sp-lab">Market</div><div class="sp-st"><span class="sp-d"></span><span id="spTMktSt">—</span></div><div class="sp-sub" id="spTMktSub">&nbsp;</div></div>
+          <div class="sp-arw">▸</div>
+          <div class="sp-tier" id="spTSec"><div class="sp-lab">Sector</div><div class="sp-st"><span class="sp-d"></span><span id="spTSecSt">—</span></div><div class="sp-sub" id="spTSecSub">&nbsp;</div></div>
+          <div class="sp-arw">▸</div>
+          <div class="sp-tier" id="spTStk"><div class="sp-lab">Stock</div><div class="sp-st"><span class="sp-d"></span><span id="spTStkSt">—</span></div><div class="sp-sub" id="spTStkSub">&nbsp;</div></div>
+        </div>
+
+        <div class="sp-verdict">
+          <div class="sp-vtext">
+            <div class="sp-vh" id="spVH">—</div>
+            <div class="sp-vs" id="spVS">&nbsp;</div>
+          </div>
+          <div class="sp-meter">
+            <div class="sp-track"><div class="sp-pin" id="spVPin" style="left:50%"></div></div>
+            <div class="sp-scale"><span>Avoid</span><span>Watch</span><span>Hold</span><span>Add</span></div>
+          </div>
+        </div>
+
+        <div class="sp-chiprow" id="spMChips"></div>
+
+        <div class="sp-panel">
+          <div class="sp-ptitle"><span>Price · EMA 20 / 50 / 200 — adjusted close</span>
+            <span class="sp-legend"><span><i style="background:var(--spbull)"></i>Price</span><span><i style="background:var(--spfastc)"></i>20</span><span><i style="background:var(--spmidc)"></i>50</span><span><i style="background:var(--spslowc)"></i>200</span></span></div>
+          <svg id="spSvgPrice" viewBox="0 0 880 298" preserveAspectRatio="none" style="height:300px"></svg>
+        </div>
+
+        <div class="sp-panel">
+          <div class="sp-ptitle"><span>Volume · bars by up / down day · 20-day average</span>
+            <span class="sp-legend"><span style="color:var(--spbull)">▮ up</span><span style="color:var(--spbear)">▮ down</span><span style="color:var(--spgold)"><i style="background:var(--spgold)"></i>avg</span></span></div>
+          <svg id="spSvgVol" viewBox="0 0 880 78" preserveAspectRatio="none" style="height:78px"></svg>
+          <div class="sp-subnote" id="spVolNote"></div>
+        </div>
+
+        <div class="sp-panel">
+          <div class="sp-ptitle"><span>OBV — on-balance volume · accumulation</span><span class="sp-legend" id="spObvLeg"></span></div>
+          <svg id="spSvgObv" viewBox="0 0 880 92" preserveAspectRatio="none" style="height:92px"></svg>
+        </div>
+
+        <div class="sp-foot" id="spFoot"></div>
+
+      </div>
+    </div>
   </div>
 
 </div>
@@ -1078,6 +1219,7 @@ document.querySelectorAll('.tab').forEach(tab => {
     if (tab.dataset.tab === 'flow') renderFlowTab();
     if (tab.dataset.tab === 'buffett') renderBuffettTab();
     if (tab.dataset.tab === 'predict') renderPredictTab();
+    if (tab.dataset.tab === 'signals') renderSignalsTab();
   });
 });
 
@@ -2705,6 +2847,247 @@ document.querySelectorAll('#pdLensBtns .pd-pill').forEach(b => b.addEventListene
 document.getElementById('pdSims').addEventListener('change', runPrediction);
 document.getElementById('pdRunBtn').addEventListener('click', () => { pdState.ranKey = null; runPrediction(); });
 
+</script>
+<script>
+/* ═══════════════════════════════════════════════
+   SIGNALS TAB — EMA 20/50/200 + volume engine
+   Additive block · talks to ?action=signals (SignalEngine.gs)
+   Exposes only window.renderSignalsTab
+═══════════════════════════════════════════════ */
+(function(){
+  var CHART_BARS = 180;              /* trailing window drawn (engine returns ~500) */
+  var lastSym = null;                /* re-fetch only when the loaded stock changes */
+
+  function E(id){ return document.getElementById(id); }
+  function escS(s){ return String(s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+  function inrS(n){ return '₹' + Number(n).toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+  function fJson(url){ return fetch(url).then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); }); }
+  function setTier(id, color, state, sub){
+    var t = E(id); t.style.setProperty('--c', color);
+    E(id+'St').textContent = state; E(id+'Sub').innerHTML = sub;
+  }
+  function tailA(arr, n){ return arr.length > n ? arr.slice(arr.length - n) : arr; }
+
+  /* ── SVG builders (real series) ── */
+  function linePath(vals, X, Y){
+    var d=''; for(var k=0;k<vals.length;k++){ if(vals[k]==null) continue;
+      d += (d?'L':'M') + X(k).toFixed(1) + ' ' + Y(vals[k]).toFixed(1) + ' '; }
+    return d.trim();
+  }
+  function findLastCross(fast, slow){
+    var ps=null, last=null;
+    for(var k=0;k<fast.length;k++){
+      if(fast[k]==null||slow[k]==null) continue;
+      var sg=Math.sign(fast[k]-slow[k]); if(sg===0) continue;
+      if(ps!=null && sg!==ps) last=k; ps=sg;
+    } return last;
+  }
+
+  function drawPrice(S, sig){
+    var close=tailA(S.close,CHART_BARS), e20=tailA(S.ema20,CHART_BARS),
+        e50=tailA(S.ema50,CHART_BARS), e200=tailA(S.ema200,CHART_BARS);
+    var W=close.length, CW=880, CH=298, PL=6, PR=54, PT=12, PB=6;
+    var all=[].concat(close,e20,e50,e200).filter(function(v){return v!=null;});
+    var lo=Math.min.apply(null,all), hi=Math.max.apply(null,all), pd=(hi-lo)*0.08; lo-=pd; hi+=pd;
+    var X=function(k){return PL+k/(W-1)*(CW-PL-PR);}, Y=function(v){return PT+(1-(v-lo)/(hi-lo))*(CH-PT-PB);};
+    var s='';
+    [0.2,0.4,0.6,0.8].forEach(function(f){ var y=(PT+f*(CH-PT-PB)).toFixed(0);
+      s+='<line class="sp-gl" x1="'+PL+'" x2="'+(CW-PR)+'" y1="'+y+'" y2="'+y+'"/>'; });
+    var gx=findLastCross(e50,e200), cx=findLastCross(e20,e50);
+    if(cx!=null){ s+='<line class="sp-xm" x1="'+X(cx).toFixed(1)+'" x2="'+X(cx).toFixed(1)+'" y1="'+PT+'" y2="'+(CH-PB)+'"/>'
+      +'<text class="sp-xmlab" x="'+X(cx).toFixed(1)+'" y="'+(PT+12)+'" text-anchor="middle">20/50 ✕</text>'; }
+    if(gx!=null){ s+='<line class="sp-xm" x1="'+X(gx).toFixed(1)+'" x2="'+X(gx).toFixed(1)+'" y1="'+PT+'" y2="'+(CH-PB)+'"/>'
+      +'<text class="sp-xmlab" x="'+X(gx).toFixed(1)+'" y="'+(CH-10)+'" text-anchor="middle" fill="var(--spgold)">golden ✕</text>'; }
+    s+='<path class="sp-ln" style="stroke:var(--spslowc)" d="'+linePath(e200,X,Y)+'"/>'
+     + '<path class="sp-ln" style="stroke:var(--spmidc)" d="'+linePath(e50,X,Y)+'"/>'
+     + '<path class="sp-ln" style="stroke:var(--spfastc)" d="'+linePath(e20,X,Y)+'"/>'
+     + '<path class="sp-ln" style="stroke:var(--spbull);stroke-width:1.4;opacity:.9" d="'+linePath(close,X,Y)+'"/>';
+    var dots=[[sig.price,'var(--spbull)'],[sig.ema.fast,'var(--spfastc)'],[sig.ema.mid,'var(--spmidc)'],[sig.ema.slow,'var(--spslowc)']];
+    dots.forEach(function(p){ if(p[0]==null)return;
+      s+='<circle cx="'+(CW-PR+7)+'" cy="'+Y(p[0]).toFixed(1)+'" r="3.4" fill="'+p[1]+'"/>'; });
+    s+='<text x="'+(CW-PR+13)+'" y="'+(Y(sig.price)+3.2).toFixed(1)+'" fill="var(--spbull)" font-family="var(--spmono)" font-size="10.5">'+Math.round(sig.price)+'</text>';
+    E('spSvgPrice').innerHTML=s;
+  }
+
+  function drawVolume(S){
+    var close=tailA(S.close,CHART_BARS), vol=tailA(S.volume,CHART_BARS);
+    var W=vol.length, CW=880, CH=78, PL=6, PR=54, vT=8, vB=CH-4;
+    var vma=[]; for(var k=0;k<W;k++){ var s0=0,n=0; for(var j=Math.max(0,k-19);j<=k;j++){s0+=vol[j];n++;} vma.push(s0/n); }
+    var vMax=Math.max(Math.max.apply(null,vol), Math.max.apply(null,vma))*1.06 || 1;
+    var X=function(k){return PL+k/(W-1)*(CW-PL-PR);}, Y=function(v){return vT+(1-v/vMax)*(vB-vT);};
+    var bw=Math.max(1.4,(CW-PL-PR)/W*0.62), s='';
+    for(var k=0;k<W;k++){
+      var up=(k===0)||(close[k]>=close[k-1]);
+      var y=Y(vol[k]);
+      s+='<rect x="'+(X(k)-bw/2).toFixed(1)+'" y="'+y.toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+(vB-y).toFixed(1)+'" fill="'+(up?'var(--spupbar)':'var(--spdnbar)')+'" opacity="0.9"/>';
+    }
+    s+='<path class="sp-ln" style="stroke:var(--spgold);stroke-width:1.4;opacity:.85" d="'+linePath(vma,X,Y)+'"/>';
+    E('spSvgVol').innerHTML=s;
+  }
+
+  function drawObv(S, trend){
+    var obv=tailA(S.obv,CHART_BARS);
+    var W=obv.length, CW=880, CH=92, PL=6, PR=54;
+    var lo=Math.min.apply(null,obv), hi=Math.max.apply(null,obv), pd=(hi-lo)*0.14||1;
+    var X=function(k){return PL+k/(W-1)*(CW-PL-PR);}, Y=function(v){return 6+(1-(v-(lo-pd))/((hi+pd)-(lo-pd)))*(CH-12);};
+    var line=linePath(obv,X,Y);
+    var area='M '+X(0).toFixed(1)+' '+(CH-4)+' ';
+    for(var k=0;k<W;k++) area+='L '+X(k).toFixed(1)+' '+Y(obv[k]).toFixed(1)+' ';
+    area+='L '+X(W-1).toFixed(1)+' '+(CH-4)+' Z';
+    var c = trend==='rising' ? 'var(--spbull)' : trend==='falling' ? 'var(--spbear)' : 'var(--spmuted)';
+    E('spSvgObv').innerHTML =
+      '<defs><linearGradient id="spOg" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="'+c+'" stop-opacity=".3"/><stop offset="1" stop-color="'+c+'" stop-opacity="0"/></linearGradient></defs>'
+      +'<path d="'+area+'" fill="url(#spOg)"/>'
+      +'<path class="sp-ln" style="stroke:'+c+';stroke-width:1.8" d="'+line+'"/>';
+    E('spObvLeg').innerHTML = trend==='rising' ? '<span style="color:var(--spbull)">▲ rising — accumulation</span>'
+                         : trend==='falling' ? '<span style="color:var(--spbear)">▼ falling — distribution</span>'
+                         : '<span>◆ flat</span>';
+  }
+
+  /* ── interpretation ── */
+  function verdictOf(sig, mktRegime){
+    var st=sig.stack, gx=sig.cross_mid_slow;
+    var rv=sig.volume && sig.volume.rvol, obv=sig.volume && sig.volume.obvTrend;
+    var risingSlow = sig.ema200Slope===1;
+    var volBacked = rv!=null && rv>=1.5;
+    var freshGolden = gx.crossed && gx.direction==='bullish' && gx.barsAgo<=5;
+    var freshDeath  = gx.crossed && gx.direction==='bearish' && gx.barsAgo<=5;
+    var riskOff = mktRegime==='falling';
+
+    if(st==='bull'){
+      if(freshGolden && volBacked) return {h:'Fresh golden cross on volume — strongest setup', s:'50/200 crossed within the week with RVOL '+rv.toFixed(2)+' and OBV '+obv+'. Trend igniting with participation.', pin:88};
+      if(freshGolden) return {h:'Fresh golden cross — watch for volume confirmation', s:'The cross fired but participation is average. Real breakouts bring volume; give it a session or two.', pin:72};
+      if(riskOff) return {h:'Bull stack, but the market is risk-off', s:'The stock is aligned but Nifty is in drawdown — the regime gate says size cautiously.', pin:58};
+      if(volBacked && obv==='rising') return {h:'Trend intact and volume is picking up', s:'Aligned stack with above-average participation and rising OBV — constructive.', pin:78};
+      return {h:'Trend intact — established, no fresh trigger', s:'Bull stack'+(risingSlow?' on a rising 200':'')+', but crosses are aged and volume is average. Ride it; not an ignition point.', pin:66};
+    }
+    if(st==='bear'){
+      if(freshDeath) return {h:'Fresh death cross — trend breaking down', s:'50/200 crossed bearish within the week. Stand aside or defend positions.', pin:12};
+      return {h:'Bear stack — trend is against you', s:'Price below all three EMAs. Oversold bounces happen, but the structure is down.', pin:20};
+    }
+    if(st==='tangled') return {h:'Tangled — no clear trend', s:'EMAs are crossing back and forth. Whipsaw zone: crossover signals are unreliable here.', pin:44};
+    return {h:'Insufficient history', s:'Not enough bars to seed the 200-day EMA. Signals unavailable for this name.', pin:50};
+  }
+
+  /* ── main render (lazy, symbol-cached) ── */
+  window.renderSignalsTab = function(force){
+    if(!currentStock){
+      E('spSkel').style.display='block';
+      E('spSkel').textContent='Load a stock (search above), then open this tab.';
+      E('spContent').style.display='none';
+      E('spStatus').textContent='';
+      return;
+    }
+    var sym = currentStock.sym;
+    if(!force && sym===lastSym) return;               /* already rendered for this stock */
+
+    E('spStatus').className='sp-status'; E('spStatus').textContent='fetching signals + sector state for '+sym+' …';
+    E('spSkel').style.display='block'; E('spSkel').textContent='loading '+sym+' …';
+    E('spContent').style.display='none';
+
+    var pSig = fJson(BACKEND+'?action=signals&sym='+encodeURIComponent(sym));
+    var pSec = fJson(BACKEND+'?action=sector&sub=stock&sym='+encodeURIComponent(sym)).catch(function(){return null;});
+
+    Promise.all([pSig,pSec]).then(function(res){
+      var sig=res[0], sec=res[1];
+      if(!sig || !sig.ok) throw new Error(sig && sig.error ? sig.error : 'signals route returned no data');
+      lastSym = sym;
+      paint(sym, sig, sec);
+      E('spStatus').textContent='loaded '+new Date().toLocaleTimeString('en-IN',{hour12:false})+' IST · signals live · '
+        + (sec && sec.ok ? 'sector live' : 'sector unavailable');
+    }).catch(function(e){
+      E('spStatus').className='sp-status err';
+      E('spStatus').textContent='✗ '+e.message+' — check the deployment if this persists';
+      E('spSkel').textContent='could not load '+sym;
+    });
+  };
+
+  function paint(sym, sig, sec){
+    /* header — name/sector come from the already-loaded steam header, no extra fetch */
+    E('spTick').innerHTML='<b>'+escS(sym)+'</b>';
+    var longName = currentStock && currentStock.name ? currentStock.name : '';
+    var secLabel = (sec && sec.ok && sec.sectorLabel) ? sec.sectorLabel : (currentStock && currentStock.sector) || '';
+    E('spName').textContent = [longName, secLabel].filter(Boolean).join(' · ') || '—';
+    E('spPx').textContent = inrS(sig.price);
+    E('spChips').innerHTML =
+      '<span class="sp-chip live">● LIVE</span>'
+      +'<span class="sp-chip'+(sig.adjusted?'':' warn')+'">'+(sig.adjusted?'ADJUSTED':'⚠ RAW CLOSE')+' · '+sig.bars+' BARS</span>';
+
+    /* market tier */
+    if(sec && sec.regime){
+      var rg=sec.regime;
+      var mc = rg==='normal' ? '#c9b24a' : rg==='recovery' ? 'var(--spbull)' : rg==='falling' ? 'var(--spbear)' : 'var(--spslate)';
+      var msub = rg==='normal' ? 'Above the drawdown gate · risk-on'
+               : rg==='recovery' ? 'Post-drawdown turn confirmed · leadership odds active'
+               : rg==='falling' ? 'In drawdown, no turn yet · risk-off — size cautiously'
+               : 'Regime unavailable';
+      setTier('spTMkt', mc, rg.toUpperCase(), msub);
+    } else {
+      setTier('spTMkt','var(--spslate)','UNAVAILABLE','Sector route returned nothing — regime unknown (run sectorRefresh once?)');
+    }
+
+    /* sector tier */
+    if(sec && sec.ok && sec.rotation){
+      var r=sec.rotation;
+      var rs6=r.rs6!=null?(r.rs6>=0?'+':'')+(r.rs6*100).toFixed(1)+'%':'—';
+      var sc = r.rs6!=null && r.rs6>0 ? 'var(--spbull)' : r.rs6!=null ? 'var(--spbear)' : 'var(--spslate)';
+      var lead = sec.leadership ? ' · <b style="color:var(--spgold)">top-3 leadership odds</b>' : '';
+      setTier('spTSec', sc, (sec.sectorLabel||'SECTOR').toUpperCase()+' #'+r.rank,
+        'RS vs Nifty: '+rs6+' (6M) · rank '+r.rank+'/'+sec.totalSectors+lead
+        +(r.valLabel?' · P/E '+escS(r.valLabel):''));
+    } else if(sec && sec.ok===false && /no sector mapping/.test(sec.error||'')){
+      setTier('spTSec','var(--spslate)', (secLabel||'NO INDEX'),
+        'No NSE sectoral index mapped for this stock — tier degrades gracefully rather than faking a read');
+    } else {
+      setTier('spTSec','var(--spslate)','UNAVAILABLE','Sector state not loaded — rotation standing unknown');
+    }
+
+    /* stock tier */
+    var stC = sig.stack==='bull'?'var(--spbull)':sig.stack==='bear'?'var(--spbear)':sig.stack==='tangled'?'var(--spgold)':'var(--spslate)';
+    var stTxt = sig.stack==='bull'?'BULL STACK':sig.stack==='bear'?'BEAR STACK':sig.stack==='tangled'?'TANGLED':'UNAVAILABLE';
+    var stSub = sig.stack==='bull' ? 'price ▸ EMA20 ▸ EMA50 ▸ EMA200 aligned'+(sig.ema200Slope===1?' · 200 rising':sig.ema200Slope===-1?' · 200 falling':'')
+              : sig.stack==='bear' ? 'price ▾ EMA20 ▾ EMA50 ▾ EMA200 — structure is down'
+              : sig.stack==='tangled' ? 'EMAs interleaved — whipsaw zone, low signal reliability'
+              : 'Under 200 bars of history — long EMAs cannot seed';
+    setTier('spTStk', stC, stTxt, stSub);
+
+    /* verdict */
+    var v = verdictOf(sig, sec && sec.regime);
+    E('spVH').textContent=v.h; E('spVS').textContent=v.s; E('spVPin').style.left=v.pin+'%';
+
+    /* chips */
+    var ch='';
+    function chip(html){ ch+='<span class="sp-mchip">'+html+'</span>'; }
+    if(sig.ema.fast!=null) chip('EMA20 <b>'+sig.ema.fast.toFixed(1)+'</b>');
+    if(sig.ema.mid!=null)  chip('EMA50 <b>'+sig.ema.mid.toFixed(1)+'</b>');
+    if(sig.ema.slow!=null) chip('EMA200 <b>'+sig.ema.slow.toFixed(1)+'</b> '+(sig.ema200Slope===1?'<span class="up">↑</span>':sig.ema200Slope===-1?'<span class="dn">↓</span>':''));
+    var gx=sig.cross_mid_slow, cx=sig.cross_fast_mid;
+    chip((gx.crossed? (gx.direction==='bullish'?'Golden':'<span class="dn">Death</span>')+' cross <b>'+gx.barsAgo+'d</b>'+(gx.fresh?' <span class="gd">● fresh</span>':'') : '50/200 <b>no cross</b>'));
+    chip((cx.crossed? '20/50 '+(cx.direction==='bullish'?'<span class="up">bull</span>':'<span class="dn">bear</span>')+' <b>'+cx.barsAgo+'d</b>'+(cx.fresh?' <span class="gd">● fresh</span>':'') : '20/50 <b>no cross</b>'));
+    if(sig.volume && sig.volume.rvol!=null){
+      var rv=sig.volume.rvol;
+      chip('RVOL <b>'+rv.toFixed(2)+'</b>'+(rv>=2?' <span class="gd">▲▲</span>':rv>=1.5?' <span class="up">▲</span>':''));
+      chip('OBV '+(sig.volume.obvTrend==='rising'?'<span class="up">▲ rising</span>':sig.volume.obvTrend==='falling'?'<span class="dn">▼ falling</span>':'◆ flat'));
+    } else {
+      chip('Volume <b>unavailable</b>');
+    }
+    E('spMChips').innerHTML=ch;
+
+    /* charts from the real series */
+    var S=sig.series||{};
+    if(S.close && S.ema20){ drawPrice(S,sig); } else { E('spSvgPrice').innerHTML='<text x="440" y="150" text-anchor="middle" fill="#63769a" font-family="Courier New" font-size="12">series unavailable — redeploy the engine with close+volume in series</text>'; }
+    if(S.close && S.volume){ drawVolume(S);
+      var rvN = sig.volume&&sig.volume.rvol!=null?sig.volume.rvol.toFixed(2):'—';
+      E('spVolNote').textContent = 'RVOL '+rvN+(sig.volume&&sig.volume.rvol>=1.5?' — above-average participation':' — average participation, no volume surge');
+    } else { E('spSvgVol').innerHTML=''; E('spVolNote').textContent='volume series unavailable'; }
+    if(S.obv){ drawObv(S, sig.volume?sig.volume.obvTrend:null); } else { E('spSvgObv').innerHTML=''; }
+
+    E('spFoot').innerHTML='<b>All values live</b> — '+sig.bars+' split-adjusted bars via the signals route; market/sector tiers via the sector route; crosses marked where the real EMA series intersect within the drawn window ('+CHART_BARS+' bars).';
+
+    E('spSkel').style.display='none';
+    E('spContent').style.display='block';
+  }
+})();
 </script>
 </body>
 </html>
