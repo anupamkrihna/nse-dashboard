@@ -171,9 +171,12 @@ body {
 .tag { font-size: 10px; padding: 3px 9px; border-radius: 4px; font-weight: 500; }
 .card-1 .tag { background: rgba(232,185,74,0.12); color: #9a6f10; }
 .card-2 .tag { background: rgba(45,122,79,0.1); color: #1a5c35; }
-.card-3 { grid-column: 1 / -1; min-height: auto; }
-.card-3 .card-eyebrow { color: #1a2744; }
-.card-3 .tag { background: rgba(26,39,68,0.08); color: #1a2744; }
+.card-3:hover { border-color: rgba(176,65,62,0.35); }
+.card-3::before { background: #b0413e; }
+.card-3 .card-eyebrow { color: #b0413e; }
+.card-3 .tag { background: rgba(176,65,62,0.08); color: #7c2b29; }
+.card-4 .card-eyebrow { color: #1a2744; }
+.card-4 .tag { background: rgba(26,39,68,0.08); color: #1a2744; }
 
 .card-cta {
   display: inline-flex;
@@ -221,6 +224,7 @@ body {
   <nav class="u-tabs">
     <a href="dashboard.html" class="u-tab">📊 Dashboard</a>
     <a href="steam.html"     class="u-tab">🔥 Steam Gauge</a>
+    <a href="https://anupamkrihna.github.io/nse-indicators/indicators.html" class="u-tab">⚡ Indicators</a>
     <a href="backtest.html" class="u-tab">🎯 Calibration</a>
   </nav>
   <div class="u-right">
@@ -267,8 +271,22 @@ body {
       </div>
       <div class="card-cta">Open Steam Gauge <span class="arrow">→</span></div>
     </a>
-    <a class="card card-3" href="backtest.html">
+    <a class="card card-3" href="https://anupamkrihna.github.io/nse-indicators/indicators.html">
       <div class="card-eyebrow">Module 03</div>
+      <div class="card-icon">⚡</div>
+      <div class="card-title">Indicators &amp; Cross Radar</div>
+      <div class="card-desc">Early-warning engine across all 438 NSE stocks — know a golden or death cross is coming before it prints. EMA/SMA convergence ETA, ADX gatekeeper, MACD, RSI divergence, Supertrend, false-signal hazards and A/B/C setup grades. Build portfolios; scan the whole universe daily.</div>
+      <div class="card-tags">
+        <span class="tag">Pre-cross ETA</span>
+        <span class="tag">Golden / Death Radar</span>
+        <span class="tag">ADX Gatekeeper</span>
+        <span class="tag">Hazard Flags</span>
+        <span class="tag">Portfolios</span>
+      </div>
+      <div class="card-cta">Open Indicators <span class="arrow">→</span></div>
+    </a>
+    <a class="card card-4" href="backtest.html">
+      <div class="card-eyebrow">Module 04</div>
       <div class="card-icon">🎯</div>
       <div class="card-title">Prediction Calibration Lab</div>
       <div class="card-desc">Backtest the Monte Carlo prediction engines against real history — 10 random stocks × 10 time points, scored on whether actual prices landed inside the predicted P5–P95 bands. Trust, but verify.</div>
@@ -291,6 +309,7 @@ body {
   <div class="footer-links">
     <a href="dashboard.html">Dashboard Pro</a>
     <a href="steam.html">Steam Gauge</a>
+    <a href="https://anupamkrihna.github.io/nse-indicators/indicators.html">Indicators</a>
     <a href="backtest.html">Calibration Lab</a>
   </div>
 </footer>
