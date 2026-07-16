@@ -2875,12 +2875,12 @@ document.getElementById('pdRunBtn').addEventListener('click', () => { pdState.ra
     return d.trim();
   }
   function findLastCross(fast, slow){
-    var ps=null, last=null;
+    var ps=null, last=null, dir=null;
     for(var k=0;k<fast.length;k++){
       if(fast[k]==null||slow[k]==null) continue;
       var sg=Math.sign(fast[k]-slow[k]); if(sg===0) continue;
-      if(ps!=null && sg!==ps) last=k; ps=sg;
-    } return last;
+      if(ps!=null && sg!==ps){ last=k; dir=(sg>0?'bullish':'bearish'); } ps=sg;
+    } return last==null ? null : {idx:last, dir:dir};
   }
 
   function drawPrice(S, sig){
@@ -2894,10 +2894,18 @@ document.getElementById('pdRunBtn').addEventListener('click', () => { pdState.ra
     [0.2,0.4,0.6,0.8].forEach(function(f){ var y=(PT+f*(CH-PT-PB)).toFixed(0);
       s+='<line class="sp-gl" x1="'+PL+'" x2="'+(CW-PR)+'" y1="'+y+'" y2="'+y+'"/>'; });
     var gx=findLastCross(e50,e200), cx=findLastCross(e20,e50);
-    if(cx!=null){ s+='<line class="sp-xm" x1="'+X(cx).toFixed(1)+'" x2="'+X(cx).toFixed(1)+'" y1="'+PT+'" y2="'+(CH-PB)+'"/>'
-      +'<text class="sp-xmlab" x="'+X(cx).toFixed(1)+'" y="'+(PT+12)+'" text-anchor="middle">20/50 ✕</text>'; }
-    if(gx!=null){ s+='<line class="sp-xm" x1="'+X(gx).toFixed(1)+'" x2="'+X(gx).toFixed(1)+'" y1="'+PT+'" y2="'+(CH-PB)+'"/>'
-      +'<text class="sp-xmlab" x="'+X(gx).toFixed(1)+'" y="'+(CH-10)+'" text-anchor="middle" fill="var(--spgold)">golden ✕</text>'; }
+    if(cx!=null){
+      var cxc = cx.dir==='bullish' ? 'var(--spbull)' : 'var(--spbear)';
+      var cxl = cx.dir==='bullish' ? '20/50 ▲' : '20/50 ▼';
+      s+='<line class="sp-xm" x1="'+X(cx.idx).toFixed(1)+'" x2="'+X(cx.idx).toFixed(1)+'" y1="'+PT+'" y2="'+(CH-PB)+'"/>'
+      +'<text class="sp-xmlab" x="'+X(cx.idx).toFixed(1)+'" y="'+(PT+12)+'" text-anchor="middle" fill="'+cxc+'">'+cxl+'</text>';
+    }
+    if(gx!=null){
+      var gxc = gx.dir==='bullish' ? 'var(--spgold)' : 'var(--spbear)';
+      var gxl = gx.dir==='bullish' ? 'golden ✕' : 'death ✕';
+      s+='<line class="sp-xm" x1="'+X(gx.idx).toFixed(1)+'" x2="'+X(gx.idx).toFixed(1)+'" y1="'+PT+'" y2="'+(CH-PB)+'"/>'
+      +'<text class="sp-xmlab" x="'+X(gx.idx).toFixed(1)+'" y="'+(CH-10)+'" text-anchor="middle" fill="'+gxc+'">'+gxl+'</text>';
+    }
     s+='<path class="sp-ln" style="stroke:var(--spslowc)" d="'+linePath(e200,X,Y)+'"/>'
      + '<path class="sp-ln" style="stroke:var(--spmidc)" d="'+linePath(e50,X,Y)+'"/>'
      + '<path class="sp-ln" style="stroke:var(--spfastc)" d="'+linePath(e20,X,Y)+'"/>'
