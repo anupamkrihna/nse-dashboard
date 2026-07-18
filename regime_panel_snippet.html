@@ -1,0 +1,100 @@
+<!-- ============================================================
+     REGIME PANEL — drop-in for dashboard.html. Additive only.
+     TWO paste steps. Nothing existing is modified.
+     ============================================================ -->
+
+<!-- ░░ STEP 1 ░░ HTML.
+     Paste immediately AFTER the line
+        <div class="tab-panel" id="panel-sector">      (line 965)
+     i.e. as the FIRST child of the Sector Rotation panel, above the
+     existing "🔄 Sector Rotation & Leadership Odds" card. -->
+
+<div class="card" style="margin-bottom:14px" id="regimeCard">
+  <div class="card-head">
+    <div>
+      <div class="card-title">🧭 Market Regime</div>
+      <div class="card-sub">Top-level condition read — trend × breadth × volatility. Consumed by Indicators &amp; Cross Radar to gate grading.</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <span id="regimePill" style="font-size:12px;font-weight:800;padding:5px 14px;border-radius:20px;background:#eee;color:#555">regime · —</span>
+      <button class="btn" style="font-size:11px" onclick="loadMarketRegime(true)">↻ Refresh</button>
+    </div>
+  </div>
+  <div class="card-body">
+    <div id="regimeHeadline" style="font-size:12px;color:#444;margin-bottom:12px">Loading market regime…</div>
+    <div id="regimeComponents" style="display:flex;gap:10px;flex-wrap:wrap"></div>
+    <div id="regimeMeta" style="font-size:10px;color:#aaa;margin-top:12px"></div>
+  </div>
+</div>
+
+<!-- ░░ STEP 2 ░░ JS.
+     Paste this <script> block anywhere inside dashboard.html's existing
+     scripts (e.g. right after the sector-rotation functions, ~line 4720).
+     Reuses the existing BACKEND const and the switchTab-wrapper pattern
+     already used for the macro tab, so it loads lazily on first tab open. -->
+<script>
+(function () {
+  var RCOL = {
+    risk_on:  ['#e6f5ec', '#1e7d34', 'RISK-ON'],
+    neutral:  ['#f4f1e6', '#8a6d1a', 'NEUTRAL'],
+    risk_off: ['#fdeceb', '#c0392b', 'RISK-OFF'],
+    stress:   ['#fbe3e0', '#8e1b10', 'STRESS'],
+    unknown:  ['#eee',     '#888',    '—']
+  };
+  var regimeLoaded = false;
+
+  function chip(label, big, sub, accent) {
+    return '<div style="flex:1;min-width:150px;background:#fbf7ea;border:1px solid #e8d9a8;border-radius:8px;padding:10px 12px">' +
+      '<div style="font-size:11px;color:#b8860b;font-weight:700">' + label + '</div>' +
+      '<div style="font-size:15px;font-weight:800;color:' + (accent || '#1a2744') + '">' + big + '</div>' +
+      '<div style="font-size:11px;color:#777">' + sub + '</div></div>';
+  }
+
+  function renderRegime(d) {
+    var pill = document.getElementById('regimePill');
+    var head = document.getElementById('regimeHeadline');
+    var comp = document.getElementById('regimeComponents');
+    var meta = document.getElementById('regimeMeta');
+    if (!d || d.ok === false) {
+      head.innerHTML = '<span style="color:#c0392b">' + ((d && d.error) ? d.error : 'No regime data yet.') +
+        '</span><br><span style="color:#888;font-size:11px">Returns once <code>action=regime</code> is live (run <code>runRegimeOnce</code>).</span>';
+      return;
+    }
+    var rc = RCOL[d.regime] || RCOL.unknown;
+    pill.style.background = rc[0]; pill.style.color = rc[1];
+    pill.textContent = 'regime · ' + rc[2] + '  (' + (d.score != null ? d.score.toFixed(2) : '—') + ')';
+    head.innerHTML = '<span style="font-weight:700;color:' + rc[1] + '">' + rc[2] + '.</span> ' + (d.headline || '');
+
+    var t = d.components && d.components.trend, b = d.components && d.components.breadth, v = d.components && d.components.vol;
+    var trendTxt = t ? (t.state || '—').replace('_', ' ') : '—';
+    var breadthTxt = (b && b.pctAbove200 != null) ? (Math.round(b.pctAbove200 * 100) + '% above 200-DMA') : 'n/a';
+    var vixTxt = (v && v.vixPctile != null) ? (Math.round(v.vixPctile * 100) + 'th pctile VIX') : 'n/a';
+    comp.innerHTML =
+      chip('Trend · NIFTY EMA stack', trendTxt, 'score ' + (t ? t.score.toFixed(2) : '—')) +
+      chip('Breadth · participation', breadthTxt, (d.breadthCount ? d.breadthCount + ' names' : '') + ' · score ' + (b ? b.score.toFixed(2) : '—')) +
+      chip('Volatility · India VIX', vixTxt, 'score ' + (v ? v.score.toFixed(2) : '—'), (v && v.vixPctile != null && v.vixPctile >= 0.85) ? '#c0392b' : '#1a2744');
+    meta.textContent = 'as of ' + (d.asOf || '—') + ' · composite = 0.40·trend + 0.35·breadth + 0.25·vol';
+  }
+
+  window.loadMarketRegime = function (force) {
+    if (regimeLoaded && !force) return;
+    regimeLoaded = true;
+    var head = document.getElementById('regimeHeadline');
+    if (head) head.textContent = 'Loading market regime…';
+    fetch(BACKEND + '?action=regime' + (force ? '&fresh=1' : ''))
+      .then(function (r) { return r.json(); })
+      .then(renderRegime)
+      .catch(function (e) { renderRegime({ ok: false, error: (e && e.message) || String(e) }); });
+  };
+
+  // lazy-load on first Sector tab open — wrap switchTab additively (same
+  // pattern the macro tab already uses), leaving the original intact.
+  if (typeof switchTab === 'function') {
+    var _prevSwitchTab = switchTab;
+    switchTab = function (el, panel) {
+      _prevSwitchTab(el, panel);
+      if (panel === 'sector') loadMarketRegime();
+    };
+  }
+})();
+</script>
