@@ -2881,21 +2881,25 @@ function bsReset_() {
   if (body) body.classList.remove('bs-stamped');
 }
 
-/* Tier-2 flags from a Buffett scorecard row. Pure — Node-tested. */
-function bsTier2_(d) {
+/* Tier-2 flags from a Buffett scorecard row. Pure — Node-tested.
+   v19.1: sector-aware — D/E is structural for financials (deposits/borrowings
+   ARE the business model), so the leverage flag is skipped for them. */
+const BS_FIN_SECTOR = /bank|financ|nbfc|insur|housing fin|broking|capital market|amc|asset manage/i;
+function bsTier2_(d, sector) {
   const flags = [];
   const num = v => (v === '' || v == null) ? null : Number(v);
   const pe = num(d.PE), spe = num(d.SectorPE), roe = num(d.ROE),
         de = num(d.DE_Ratio), pq = num(d.PromoterQoQ);
+  const isFin = BS_FIN_SECTOR.test(String(sector || ''));
   if (pe == null || pe <= 0)
     flags.push({ tier:2, sev:'MED', code:'NO_EARNINGS', text:'PE unavailable or negative — loss-making or earnings not meaningful' });
   else if (spe != null && spe > 0 && pe > 3 * spe)
     flags.push({ tier:2, sev:'MED', code:'PE_STRETCH', text:'PE ' + pe.toFixed(1) + ' is over 3× the sector PE (' + spe.toFixed(1) + ') — valuation stretched' });
   if (roe != null && roe < 0)
     flags.push({ tier:2, sev:'MED', code:'NEG_ROE', text:'ROE negative (' + roe.toFixed(1) + '%) — equity being eroded' });
-  if (de != null && de > 4)
+  if (!isFin && de != null && de > 4)
     flags.push({ tier:2, sev:'HIGH', code:'LEVERAGE', text:'debt-to-equity ' + de.toFixed(2) + ' — balance sheet dangerously leveraged' });
-  else if (de != null && de > 2)
+  else if (!isFin && de != null && de > 2)
     flags.push({ tier:2, sev:'MED', code:'LEVERAGE', text:'debt-to-equity ' + de.toFixed(2) + ' — high leverage' });
   if (pq != null && pq <= -3)
     flags.push({ tier:2, sev:'MED', code:'PROMOTER_EXIT', text:'promoter holding fell ' + Math.abs(pq).toFixed(1) + ' pp QoQ — insiders reducing' });
@@ -2911,8 +2915,9 @@ async function bsRender_() {
   bsState.inFlight = true; bsState.sym = sym;
   el.innerHTML = '<div class="flow-note">🐏 Black-sheep screen running (data gaps · regulatory news)…</div>';
   try {
-    const info = getStockInfo(sym);
-    const r = await fetch(BACKEND + '?action=blacksheep&sym=' + encodeURIComponent(sym) +
+    const bare = sym.replace(/\.(NS|BO)$/i, '');        /* v19.1: flowState.symbol carries .NS */
+    const info = getStockInfo(bare);
+    const r = await fetch(BACKEND + '?action=blacksheep&sym=' + encodeURIComponent(bare) +
       '&name=' + encodeURIComponent(info.name) + '&yf=' + encodeURIComponent(info.yf || ''));
     const j = await r.json();
     if (sym !== flowState.symbol) return;               // user moved on mid-fetch
@@ -2928,7 +2933,7 @@ function bsDraw_() {
   const el = document.getElementById('bsBanner');
   if (!el || !bsState.data) return;
   const backend = bsState.data.flags || [];
-  const t2 = bfState.row ? bsTier2_(bfState.row) : [];
+  const t2 = bfState.row ? bsTier2_(bfState.row, getStockInfo(String(flowState.symbol||'').replace(/\.(NS|BO)$/i,'')).sector) : [];
   const flags = backend.concat(t2);
   let high = flags.some(f => f.sev === 'HIGH'), med = flags.some(f => f.sev === 'MED');
   const verdict = high ? 'BLACKSHEEP' : (med ? 'GREY' : 'CLEAN');
