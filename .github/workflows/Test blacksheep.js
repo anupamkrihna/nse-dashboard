@@ -105,8 +105,10 @@ T('bsEtaDate_ formats', /^[A-Z][a-z]{2}-\d{4}$/.test(bsEtaDate_(T0, 130)));
 /* ── Tier 2 (frontend, sourced from steam.html) ── */
 (function(){
   var sh = fs.readFileSync('steam.html', 'utf8');
+  var cm = sh.match(/const BS_FIN_SECTOR = [^;]+;/);
   var fm = sh.match(/function bsTier2_[\s\S]*?\n}/);
-  if (!fm) { console.log('  ✗ bsTier2_ not found in steam.html'); bad++; n++; return; }
+  if (!fm || !cm) { console.log('  ✗ bsTier2_/BS_FIN_SECTOR not found in steam.html'); bad++; n++; return; }
+  eval(cm[0].replace('const ','var '));
   var bsTier2_ = eval('(' + fm[0].replace('function bsTier2_', 'function ') + ')');
   var clean = { PE:22, SectorPE:25, ROE:16, DE_Ratio:0.6, PromoterQoQ:0.2 };
   T('tier2: healthy row → zero flags', bsTier2_(clean).length===0);
@@ -120,6 +122,10 @@ T('bsEtaDate_ formats', /^[A-Z][a-z]{2}-\d{4}$/.test(bsEtaDate_(T0, 130)));
   T('tier2: promoter −1pp is tolerated', !bsTier2_({PE:15, SectorPE:20, ROE:10, DE_Ratio:1, PromoterQoQ:-1}).length);
   T('tier2: null D/E does not flag (missing ≠ bad)', !bsTier2_({PE:15, SectorPE:20, ROE:10, DE_Ratio:null}).some(function(f){return f.code==='LEVERAGE';}));
   T('tier2: HDFC-Bank-style zero-promoter row not flagged', bsTier2_({PE:19, SectorPE:18, ROE:16, DE_Ratio:null, Promoter:0, PromoterQoQ:0}).length===0);
+  T('tier2 v19.1: bank D/E 7.16 NOT flagged', bsTier2_({PE:15.9, SectorPE:21.3, ROE:13.1, DE_Ratio:7.16, PromoterQoQ:0}, 'Bank').length===0);
+  T('tier2 v19.1: NBFC D/E 5 NOT flagged', !bsTier2_({PE:20, SectorPE:22, ROE:14, DE_Ratio:5}, 'Financial Services').some(function(f){return f.code==='LEVERAGE';}));
+  T('tier2 v19.1: non-fin D/E 5 STILL flagged HIGH', bsTier2_({PE:15, SectorPE:20, ROE:10, DE_Ratio:5}, 'Infrastructure').some(function(f){return f.code==='LEVERAGE'&&f.sev==='HIGH';}));
+  T('tier2 v19.1: undefined sector defaults to strict', bsTier2_({PE:15, SectorPE:20, ROE:10, DE_Ratio:5}).some(function(f){return f.code==='LEVERAGE';}));
 })();
 
 console.log((bad ? '✗ ' + bad + ' of ' : '✓ all ') + n + ' assertions ' + (bad ? 'FAILED' : 'passed'));
