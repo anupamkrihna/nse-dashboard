@@ -295,6 +295,19 @@ select.pd-sel { font-size:11px; padding:6px 8px; border:1px solid #e2ddd2; borde
 .bf-out .src { font-size:10px; color:#999; }
 .bf-decision { display:inline-block; padding:3px 12px; border-radius:6px; font-weight:800; font-size:13px; letter-spacing:0.5px; margin-top:6px; }
 .bf-decision.acc { background:#e3f2e8; color:#2d7a4f; } .bf-decision.wat { background:#fdf3dc; color:#b8860b; } .bf-decision.avd { background:#fbe4e0; color:#c0392b; }
+/* ── Black Sheep banner (v19 — additive) ── */
+.bs-banner { border-radius:10px; padding:11px 14px; margin-bottom:12px; font-size:12.5px; line-height:1.55; }
+.bs-banner.sheep { background:#fbe4e0; border:1px solid #e5a49c; color:#7c2b29; }
+.bs-banner.grey  { background:#fdf3dc; border:1px solid #e8d4a0; color:#8a6d1f; }
+.bs-banner.clean { background:#e3f2e8; border:1px solid #b7d9c3; color:#2d7a4f; }
+.bs-pill { display:inline-block; padding:2px 11px; border-radius:6px; font-weight:800; font-size:12px; letter-spacing:0.6px; margin-right:8px; }
+.bs-banner.sheep .bs-pill { background:#c0392b; color:#fff; }
+.bs-banner.grey  .bs-pill { background:#b8860b; color:#fff; }
+.bs-banner.clean .bs-pill { background:#2d7a4f; color:#fff; }
+.bs-flag { margin:4px 0 0 2px; }
+.bs-flag a { color:inherit; text-decoration:underline; }
+.bs-flag .bs-t { font-size:9px; font-weight:700; letter-spacing:0.5px; opacity:0.75; margin-right:5px; }
+.bs-stamped .bf-score { color:#bbb !important; text-decoration:line-through; text-decoration-thickness:3px; text-decoration-color:#c0392b; }
 </style>
 </head>
 <body>
@@ -520,6 +533,7 @@ select.pd-sel { font-size:11px; padding:6px 8px; border:1px solid #e2ddd2; borde
   <div class="tab-panel" id="tab-buffett">
     <div class="flow-card">
       <div class="flow-hdr"><span class="flow-title">🎩 Buffett Scorecard</span><span class="flow-sub" id="bfMeta"></span></div>
+      <div id="bsBanner"></div>
       <div id="bfBody"><div class="flow-note">Load a stock, then open this tab.</div></div>
     </div>
     <div class="flow-card">
@@ -1489,6 +1503,7 @@ async function loadStock(stock) {
   flowState.rendered  = false;
   flowState.merged    = merged;
   bfState.row = null; bfState.rendered = false;
+  bsReset_();                                     /* v19 black sheep */
   pdResetForNewStock();
   const _ao = document.getElementById('bfAiOut'); if (_ao) _ao.innerHTML = '';
 
@@ -2140,10 +2155,12 @@ async function renderBuffettTab() {
     if (!j.ok || !j.rows || !j.rows.length) {
       body.innerHTML = '<div class="flow-note">No cached score yet for ' + flowState.symbol +
         ' — the batch engine refreshes the universe roughly daily. Curated stocks appear first; others as coverage expands.</div>';
+      bsRender_();                                /* v19 black sheep — runs even without a cached score */
       return;
     }
     bfState.row = j.rows[0]; bfState.rendered = true;
     drawBuffett_(bfState.row);
+    bsRender_();                                  /* v19 black sheep */
   } catch(e) { body.innerHTML = '<div class="flow-note">⚠ Scorecard fetch failed: ' + e.message + '</div>'; }
 }
 
@@ -2846,6 +2863,98 @@ document.querySelectorAll('#pdLensBtns .pd-pill').forEach(b => b.addEventListene
 }));
 document.getElementById('pdSims').addEventListener('change', runPrediction);
 document.getElementById('pdRunBtn').addEventListener('click', () => { pdState.ranKey = null; runPrediction(); });
+
+/* ═══════════════════════════════════════════════
+   BLACK SHEEP LAYER (v19 — additive)
+   Backend tiers 1+3 via ?action=blacksheep (BlackSheep.gs);
+   tier 2 (PE / ROE / D/E / promoter) computed here from the
+   Buffett scorecard row already in hand. Any HIGH flag stamps
+   the Buffett score as unreliable.
+═══════════════════════════════════════════════ */
+let bsState = { sym:null, data:null, inFlight:false };
+
+function bsReset_() {
+  bsState = { sym:null, data:null, inFlight:false };
+  const el = document.getElementById('bsBanner');
+  if (el) el.innerHTML = '';
+  const body = document.getElementById('bfBody');
+  if (body) body.classList.remove('bs-stamped');
+}
+
+/* Tier-2 flags from a Buffett scorecard row. Pure — Node-tested. */
+function bsTier2_(d) {
+  const flags = [];
+  const num = v => (v === '' || v == null) ? null : Number(v);
+  const pe = num(d.PE), spe = num(d.SectorPE), roe = num(d.ROE),
+        de = num(d.DE_Ratio), pq = num(d.PromoterQoQ);
+  if (pe == null || pe <= 0)
+    flags.push({ tier:2, sev:'MED', code:'NO_EARNINGS', text:'PE unavailable or negative — loss-making or earnings not meaningful' });
+  else if (spe != null && spe > 0 && pe > 3 * spe)
+    flags.push({ tier:2, sev:'MED', code:'PE_STRETCH', text:'PE ' + pe.toFixed(1) + ' is over 3× the sector PE (' + spe.toFixed(1) + ') — valuation stretched' });
+  if (roe != null && roe < 0)
+    flags.push({ tier:2, sev:'MED', code:'NEG_ROE', text:'ROE negative (' + roe.toFixed(1) + '%) — equity being eroded' });
+  if (de != null && de > 4)
+    flags.push({ tier:2, sev:'HIGH', code:'LEVERAGE', text:'debt-to-equity ' + de.toFixed(2) + ' — balance sheet dangerously leveraged' });
+  else if (de != null && de > 2)
+    flags.push({ tier:2, sev:'MED', code:'LEVERAGE', text:'debt-to-equity ' + de.toFixed(2) + ' — high leverage' });
+  if (pq != null && pq <= -3)
+    flags.push({ tier:2, sev:'MED', code:'PROMOTER_EXIT', text:'promoter holding fell ' + Math.abs(pq).toFixed(1) + ' pp QoQ — insiders reducing' });
+  return flags;
+}
+
+async function bsRender_() {
+  const el = document.getElementById('bsBanner');
+  if (!el || !flowState.symbol) return;
+  const sym = flowState.symbol;
+  if (bsState.inFlight && bsState.sym === sym) return;
+  if (bsState.sym === sym && bsState.data) { bsDraw_(); return; }
+  bsState.inFlight = true; bsState.sym = sym;
+  el.innerHTML = '<div class="flow-note">🐏 Black-sheep screen running (data gaps · regulatory news)…</div>';
+  try {
+    const info = getStockInfo(sym);
+    const r = await fetch(BACKEND + '?action=blacksheep&sym=' + encodeURIComponent(sym) +
+      '&name=' + encodeURIComponent(info.name) + '&yf=' + encodeURIComponent(info.yf || ''));
+    const j = await r.json();
+    if (sym !== flowState.symbol) return;               // user moved on mid-fetch
+    bsState.data = j.ok ? j : { ok:true, verdict:null, flags:[], error:j.error };
+  } catch (e) {
+    bsState.data = { ok:true, verdict:null, flags:[], error:e.message };
+  }
+  bsState.inFlight = false;
+  bsDraw_();
+}
+
+function bsDraw_() {
+  const el = document.getElementById('bsBanner');
+  if (!el || !bsState.data) return;
+  const backend = bsState.data.flags || [];
+  const t2 = bfState.row ? bsTier2_(bfState.row) : [];
+  const flags = backend.concat(t2);
+  let high = flags.some(f => f.sev === 'HIGH'), med = flags.some(f => f.sev === 'MED');
+  const verdict = high ? 'BLACKSHEEP' : (med ? 'GREY' : 'CLEAN');
+  const body = document.getElementById('bfBody');
+  if (body) body.classList.toggle('bs-stamped', verdict === 'BLACKSHEEP');
+  const esc = s => String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  const tierName = { 1:'DATA', 2:'FUNDAMENTALS', 3:'REG/NEWS' };
+  if (verdict === 'CLEAN') {
+    const note = bsState.data.error ? ' <span style="opacity:.7">(screen partial: ' + esc(bsState.data.error) + ')</span>' : '';
+    el.innerHTML = '<div class="bs-banner clean"><span class="bs-pill">🟢 CLEAN</span>no data gaps, no regulatory red flags' +
+      (bfState.row ? ', fundamentals within bounds' : '') +
+      (bsState.data.bars ? ' · ' + bsState.data.bars + ' clean bars' : '') + note + '</div>';
+    return;
+  }
+  const rows = flags.map(f =>
+    '<div class="bs-flag"><span class="bs-t">[' + (tierName[f.tier] || f.tier) + ' · ' + esc(f.sev) + ']</span>' +
+    (f.url ? '<a href="' + esc(f.url) + '" target="_blank" rel="noopener">' + esc(f.text) + '</a>' : esc(f.text)) +
+    (f.date ? ' <span style="opacity:.65">(' + esc(f.date) + ')</span>' : '') + '</div>').join('');
+  if (verdict === 'BLACKSHEEP') {
+    el.innerHTML = '<div class="bs-banner sheep"><span class="bs-pill">🐏 BLACK SHEEP</span>' +
+      '<b>Buffett score unreliable</b> — this is a special-situation stock; the numbers below blend economically different eras or carry regulatory red flags. Judge it on events, not this scorecard.' + rows + '</div>';
+  } else {
+    el.innerHTML = '<div class="bs-banner grey"><span class="bs-pill">⚠ GREY</span>' +
+      'caution flags present — score usable, but read these first:' + rows + '</div>';
+  }
+}
 
 </script>
 <script>
