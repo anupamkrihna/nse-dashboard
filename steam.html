@@ -1584,24 +1584,33 @@ const SEARCH_LIST = (() => {
   return arr;
 })();
 
-/* v16.1: extend SEARCH_LIST with the full NSE universe (ISIN_Master
-   via backend). Runs async at startup; until it lands (or if it
-   fails), the hardcoded list still works and the direct-load row
-   below covers anything missing. */
+/* FEATURE-001 (v20): single source of truth — pull the canonical universe
+   from the INDICATORS backend (the list the gate maintains), so steam
+   inherits every gate admission automatically and can never drift from it.
+   Runs async at startup; the hardcoded STOCK_MASTER is the instant fallback,
+   so search works immediately and this only ADDS names it doesn't yet have.
+   Also enriches STOCK_MASTER itself so getStockInfo()/yf-lookup benefit. */
+const INDICATORS_UNIVERSE_API = 'https://script.google.com/macros/s/AKfycbzZ6mQ6z50KRcNbFq7zWgY_sTjXOBTi-3GGye8EEWFM8cBX8mwxPmqatZ7edsEIaSw7fw/exec';
 (async function loadUniverse() {
   try {
-    const r = await fetch(BACKEND + '?action=universe');
+    const r = await fetch(INDICATORS_UNIVERSE_API + '?action=universe');
     const j = await r.json();
-    if (!j.ok || !j.stocks) return;
+    const list = j.universe || j.stocks || [];
+    if (!Array.isArray(list) || !list.length) return;
     const seen = new Set(SEARCH_LIST.map(s => s.sym));
-    j.stocks.forEach(([sym, name]) => {
-      if (!seen.has(sym)) {
-        seen.add(sym);
-        SEARCH_LIST.push({ sym, name: name || sym, sector: 'NSE Listed', yf: sym + '.NS' });
-      }
+    let added = 0;
+    list.forEach(u => {
+      // accept {sym,name,sector,yf} objects (Indicators shape) or [sym,name] pairs
+      const sym    = u.sym || (Array.isArray(u) ? u[0] : null);
+      if (!sym) return;
+      const name   = u.name   || (Array.isArray(u) ? u[1] : null) || sym;
+      const sector = u.sector || 'NSE Listed';
+      const yf     = u.yf     || sym + '.NS';
+      if (!STOCK_MASTER[sym]) STOCK_MASTER[sym] = { n: name, yf: yf, s: sector };  // enrich master
+      if (!seen.has(sym)) { seen.add(sym); SEARCH_LIST.push({ sym, name, sector, yf }); added++; }
     });
-    console.log('Search universe: ' + SEARCH_LIST.length + ' symbols');
-  } catch(e) { console.warn('Universe load failed — search runs on built-in list', e); }
+    console.log('FEATURE-001: universe synced from Indicators — ' + SEARCH_LIST.length + ' searchable (' + added + ' added beyond built-in ' + Object.keys(STOCK_MASTER).length + '-name master)');
+  } catch(e) { console.warn('Universe sync failed — search runs on built-in STOCK_MASTER', e); }
 })();
 
 function getStockInfo(sym) {
@@ -2040,7 +2049,10 @@ function renderSteam(stock, chart, s) {
   const growth   = s.revenueGrowth;
   const rev      = s.totalRevenue;
   const ni       = s.netIncome;
-  const spe      = s.sectorPE || null;
+  // BUG-001 fix: a sector PE that is <=0 (loss-makers poison the aggregate) or
+  // implausibly large is not meaningful — treat as unavailable rather than printing it.
+  const speRaw   = s.sectorPE;
+  const spe      = (speRaw != null && speRaw > 0 && speRaw < 200) ? speRaw : null;
 
   let ret1y = s.return1y;
   if (ret1y == null) {
@@ -2074,10 +2086,10 @@ function renderSteam(stock, chart, s) {
   document.getElementById('g1pb').textContent   = pb  ? pb.toFixed(2)+'x'  : '–';
   document.getElementById('g1eps').textContent  = eps ? '₹'+eps.toFixed(2) : '–';
   document.getElementById('g1dy').textContent   = dy  ? (dy*100).toFixed(2)+'%' : '0%';
-  document.getElementById('g1spe').textContent  = spe ? spe.toFixed(1)+'x' : '–';
+  document.getElementById('g1spe').textContent  = spe ? spe.toFixed(1)+'x' : ((speRaw != null && (speRaw <= 0 || speRaw >= 200)) ? 'n/m' : '–');
   const pvs = (pe&&spe&&spe>0)
     ? ` Sector avg PE: <strong>${spe.toFixed(1)}x</strong> — ${stock.sym} at <strong>${(pe/spe).toFixed(2)}x</strong> the sector (${pe>spe?'⬆ premium':'⬇ discount'}).`
-    : (spe ? ` Sector avg PE: ${spe.toFixed(1)}x.` : '');
+    : ((speRaw != null && (speRaw <= 0 || speRaw >= 200)) ? ` Sector PE not meaningful (n/m) — sector aggregate distorted by loss-making constituents.` : '');
   document.getElementById('g1analysis').innerHTML = pe>60
     ? `<strong>TTM PE ${pe.toFixed(1)}x is elevated.</strong>${pvs} Earnings growth must justify this multiple over 2–3 years.`
     : pe>30
@@ -2613,7 +2625,7 @@ function drawBuffett_(d) {
       ((p[1] === '' || p[1] == null) ? 0 : Math.min(100, Number(p[1]) / 20 * 100)) + '%"></div></div></div>').join('') +
     '</div></div>' +
     '<div class="bf-grid">' +
-    '<div class="bf-cell"><div class="bf-cl">PE vs Sector</div><div class="bf-cv">' + f(d.PE) + ' / ' + f(d.SectorPE) + '</div></div>' +
+    '<div class="bf-cell"><div class="bf-cl">PE vs Sector</div><div class="bf-cv">' + f(d.PE) + ' / ' + fSpe_(d.SectorPE) + '</div></div>' +
     '<div class="bf-cell"><div class="bf-cl">Graham № vs Price</div><div class="bf-cv ' + cls(d.GrahamMarginPct) + '">₹' + fi(d.GrahamNum) + ' (' + sgn(d.GrahamMarginPct) + '%)</div></div>' +
     '<div class="bf-cell"><div class="bf-cl">ROE / ROCE</div><div class="bf-cv">' + f(d.ROE) + ' / ' + f(d.ROCE) + '</div></div>' +
     '<div class="bf-cell"><div class="bf-cl">Rev / Profit CAGR 3Y</div><div class="bf-cv">' + f(d.RevCAGR) + '% / ' + f(d.ProfCAGR) + '%</div></div>' +
@@ -2622,6 +2634,15 @@ function drawBuffett_(d) {
     '<div class="bf-cell"><div class="bf-cl">Promoter (QoQ)</div><div class="bf-cv ' + cls(d.PromoterQoQ) + '">' + f(d.Promoter) + '% (' + sgn(d.PromoterQoQ) + ')</div></div>' +
     '<div class="bf-cell"><div class="bf-cl">FII (QoQ)</div><div class="bf-cv ' + cls(d.FIIQoQ) + '">' + f(d.FII) + '% (' + sgn(d.FIIQoQ) + ')</div></div>' +
     '</div>';
+}
+
+/* BUG-001: sector-PE display guard — negative (loss-maker-poisoned) or
+   implausible aggregates render as 'n/m' instead of a misleading number. */
+function fSpe_(v) {
+  var n = (v === '' || v == null) ? null : Number(v);
+  if (n == null || isNaN(n)) return '—';
+  if (n <= 0 || n >= 200) return 'n/m';
+  return n.toFixed(1) + 'x';
 }
 
 async function bfAi_(kind) {
