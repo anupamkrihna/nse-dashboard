@@ -1,0 +1,98 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   BACKEND_FIXES.gs — drop-in corrections for the Steam Gauge Code.gs
+   Two fixes, both additive/surgical. Apply in the Steam Gauge GAS project.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+
+/* ─────────────────────────────────────────────────────────────────────────
+   BUG-001 (ROOT CAUSE) · Sector PE aggregation
+
+   The frontend now guards the DISPLAY (renders 'n/m' for spe<=0 or >=200),
+   so the ugly "-204.4x" is already gone for the user. This fixes the SOURCE
+   so the backend stops emitting a nonsensical number in the first place.
+
+   THE PROBLEM: sector PE was computed as a simple mean (or aggregate
+   price/EPS) across constituents. A single loss-making constituent (negative
+   EPS) drags a mean PE negative, or a near-zero aggregate EPS explodes it.
+
+   THE FIX: aggregate only positive-earnings constituents, and prefer the
+   MEDIAN (robust to the handful of extreme-PE names every sector has).
+   Return null when too few positive-PE names exist to be meaningful.
+
+   HOW TO APPLY: find wherever Code.gs currently computes the sector PE that
+   populates `sectorPE` in the summary payload (likely a mean over an array
+   of constituent PEs, or built from the Upstox key-ratios sectorPE field).
+   Replace that computation with a call to ugSectorPE_(peArray). If the
+   backend instead passes through Upstox's own sectorPE value directly, wrap
+   it: sectorPE = sanitizeSectorPE_(upstoxSectorPE).
+   ───────────────────────────────────────────────────────────────────────── */
+
+/* Robust sector PE from an array of constituent trailing P/E values.
+   Drops non-positive and implausible PEs, returns the median, or null. */
+function computeSectorPE_(peValues) {
+  if (!peValues || !peValues.length) return null;
+  var clean = [];
+  for (var i = 0; i < peValues.length; i++) {
+    var v = Number(peValues[i]);
+    if (isFinite(v) && v > 0 && v < 200) clean.push(v);   // positive, plausible only
+  }
+  if (clean.length < 3) return null;                       // too thin to be meaningful
+  clean.sort(function(a, b){ return a - b; });
+  var mid = Math.floor(clean.length / 2);
+  return (clean.length % 2) ? clean[mid] : (clean[mid - 1] + clean[mid]) / 2;
+}
+
+/* Guard a single pass-through sector PE value (e.g. from Upstox). */
+function sanitizeSectorPE_(v) {
+  var n = Number(v);
+  return (isFinite(n) && n > 0 && n < 200) ? n : null;
+}
+
+/* Optional self-test — run from the editor, check the log.
+   Proves a loss-maker no longer poisons the aggregate. */
+function testSectorPE_() {
+  Logger.log('mixed w/ loss-maker → ' + computeSectorPE_([22, 25, 30, -180, 28]));   // ~26.5, not negative
+  Logger.log('all positive       → ' + computeSectorPE_([18, 20, 22]));              // 20
+  Logger.log('too few positive   → ' + computeSectorPE_([-5, -8, 40]));              // null (only 1 positive)
+  Logger.log('implausible huge   → ' + computeSectorPE_([22, 25, 3000, 28, 24]));    // ~24.5 (3000 dropped)
+  Logger.log('passthrough -204   → ' + sanitizeSectorPE_(-204.4));                   // null
+}
+
+
+/* ─────────────────────────────────────────────────────────────────────────
+   FEATURE-001 · Single source of truth for the universe
+
+   PROBLEM: steam.html STOCK_MASTER and the Indicators UNIVERSE constant are
+   maintained separately and drift (a ~52-name gap was found during Tranche 1).
+
+   APPROACH: expose the Steam Gauge project's own stock list over a route so
+   steam.html can fetch it at load instead of hardcoding STOCK_MASTER — OR,
+   better for your setup, have steam.html read the INDICATORS universe (the
+   canonical list the gate maintains). Since the two projects are separate GAS
+   deployments, the clean path is: steam.html fetches the Indicators
+   ?action=universe route at startup and builds STOCK_MASTER from it, falling
+   back to the hardcoded copy if the fetch fails.
+
+   This is a FRONTEND change (steam.html), delivered separately in
+   steam.html — see the STEAM_UNIVERSE_SYNC block. No backend change needed if
+   the Indicators ?action=universe route already returns {sym,name,sector,yf}.
+   Confirm that route's shape first; the frontend loader expects:
+     { universe: [ {sym, name, sector, yf}, ... ] }
+   If it returns a different shape, tell me and I adjust the loader.
+   ───────────────────────────────────────────────────────────────────────── */
+
+/* (No backend code required for FEATURE-001 if ?action=universe exists on the
+   Indicators project. If you'd rather steam serve its OWN list canonically,
+   add this route to the Steam Gauge doGet and point Indicators at it instead.)
+
+   Example route to expose STOCK_MASTER as JSON, if ever needed:
+
+   if (e.parameter.action === 'stockmaster') {
+     var out = Object.keys(STOCK_MASTER).map(function(k){
+       var m = STOCK_MASTER[k];
+       return { sym:k, name:m.n, sector:m.s, yf:m.yf };
+     });
+     return ContentService.createTextOutput(JSON.stringify({ stocks: out }))
+       .setMimeType(ContentService.MimeType.JSON);
+   }
+*/
