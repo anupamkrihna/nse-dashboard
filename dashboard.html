@@ -5895,6 +5895,179 @@ document.getElementById('mcSims')?.addEventListener('change', runMC);
 setTimeout(()=>{ try{ runMC(); }catch(e){} }, 3000);
 
 </script>
-  
+  <!-- ─────────────── 3 of 3 · LIVE INDEX HYDRATION ───────────────
+     Rewrites the hardcoded ALL_INDICES arrays with current NSE
+     membership, so Index Stocks and Signal Lab stop screening
+     retired symbols (ZOMATO, TATAMOTORS, MAZAGON).
+
+     Requires ?action=indexconstituents (IndexConstituents-v24.gs).
+     Runs lazily on first open of Index Stocks or Signal Lab, so
+     it costs nothing if you never visit those tabs. Falls back
+     silently to the built-in lists if the route is unavailable.
+     ─────────────────────────────────────────────────────────── -->
+<script>
+(function () {
+  'use strict';
+  if (window.__ixHydrated) return;
+  window.__ixHydrated = 'pending';
+
+  /* ALL_INDICES label → IC_INDEX_CATALOG code.
+     Labels not listed here keep their hardcoded list. */
+  var MAP = {
+    'Nifty 50':                 'NIFTY50',
+    'Nifty Next 50':            'NIFTYNEXT50',
+    'Nifty 100':                'NIFTY100',
+    'Nifty Midcap 50':          'MIDCAP50',
+    'Nifty Midcap 100':         'MIDCAP100',
+    'Nifty Smallcap 100':       'SMALLCAP100',
+    'Nifty Bank':               'BANK',
+    'Nifty IT':                 'IT',
+    'Nifty Auto':               'AUTO',
+    'Nifty FMCG':               'FMCG',
+    'Nifty Pharma':             'PHARMA',
+    'Nifty Metal':              'METAL',
+    'Nifty Realty':             'REALTY',
+    'Nifty Energy':             'ENERGY',
+    'Nifty PSE':                'PSE',
+    'Nifty PSU Bank':           'PSUBANK',
+    'Nifty Defence':            'DEFENCE',
+    'Nifty Infra':              'INFRA',
+    'Nifty Financial Services': 'FINSERV',
+    'Nifty Healthcare':         'HEALTHCARE',
+    'Nifty Oil & Gas':          'OILGAS',
+    'Nifty CPSE':               'CPSE'
+  };
+
+  /* Signal Lab universe key → ALL_INDICES label.
+     watchlist is user-owned and never touched. */
+  var SL_MAP = {
+    nifty50: 'Nifty 50',
+    defence: 'Nifty Defence',
+    it:      'Nifty IT',
+    banking: 'Nifty Bank',
+    pharma:  'Nifty Pharma',
+    pse:     'Nifty PSE'
+  };
+
+  function backendUrl() {
+    return (typeof BACKEND !== 'undefined' && BACKEND) ? BACKEND : '';
+  }
+
+  function hydrate() {
+    if (window.__ixHydrated === true) return;
+    if (!backendUrl() || typeof ALL_INDICES === 'undefined') return;
+
+    var labels = Object.keys(MAP).filter(function (l) { return ALL_INDICES[l]; });
+    var codes  = labels.map(function (l) { return MAP[l]; });
+    if (!codes.length) return;
+
+    fetch(backendUrl() + '?action=indexconstituents&codes=' + encodeURIComponent(codes.join(',')))
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d || !d.ok || !d.indices) throw new Error((d && d.error) || 'no data');
+        apply(d, labels);
+        window.__ixHydrated = true;
+      })
+      .catch(function (e) {
+        window.__ixHydrated = false;   // allow a retry on next tab open
+        console.warn('Index hydration unavailable, using built-in lists:', e.message);
+      });
+  }
+
+  function apply(d, labels) {
+    var changed = 0, added = 0, newSyms = [];
+
+    labels.forEach(function (label) {
+      var live = d.indices[MAP[label]];
+      if (!live || !live.stocks || !live.stocks.length) return;
+
+      var before = ALL_INDICES[label].stocks || [];
+      var after  = live.stocks.map(function (t) { return t[0]; });
+
+      // Mutate in place — ALL_INDICES is a const binding.
+      ALL_INDICES[label].stocks = after;
+      if (after.join(',') !== before.join(',')) changed++;
+
+      // Teach STOCK_MASTER any symbol it doesn't know, so tables and
+      // search show a real company name rather than a bare ticker.
+      if (typeof STOCK_MASTER !== 'undefined') {
+        live.stocks.forEach(function (t) {
+          var sym = t[0];
+          if (STOCK_MASTER[sym]) return;
+          STOCK_MASTER[sym] = { n: t[1] || sym, s: t[2] || 'Unclassified', yf: sym + '.NS' };
+          newSyms.push(sym);
+          added++;
+        });
+      }
+    });
+
+    // Rebuild the search index so new listings are findable.
+    if (newSyms.length && typeof SEARCH_INDEX !== 'undefined' && SEARCH_INDEX.push) {
+      newSyms.forEach(function (sym) {
+        var info = STOCK_MASTER[sym];
+        SEARCH_INDEX.push({
+          sym: sym, name: info.n, sector: info.s, yf: info.yf,
+          _q: (sym + ' ' + info.n + ' ' + info.s).toLowerCase()
+        });
+      });
+    }
+
+    // Repoint Signal Lab universes at the refreshed arrays.
+    if (typeof SL_UNIVERSES !== 'undefined') {
+      Object.keys(SL_MAP).forEach(function (key) {
+        var label = SL_MAP[key];
+        if (!ALL_INDICES[label] || !ALL_INDICES[label].stocks) return;
+        var list = ALL_INDICES[label].stocks;
+        SL_UNIVERSES[key] = (key === 'nifty50') ? list.slice(0, 30)
+                          : (key === 'pse')     ? list.slice(0, 25)
+                          : list;
+      });
+    }
+
+    // If the Index Stocks pills were already drawn, redraw them.
+    try {
+      if (typeof idxPillsBuilt !== 'undefined' && idxPillsBuilt &&
+          typeof buildIdxPills === 'function') {
+        buildIdxPills();
+      }
+    } catch (e) {}
+
+    stamp(d, changed, added);
+    console.log('Index hydration: ' + d.resolved + '/' + d.requested + ' indices live, '
+      + changed + ' membership lists updated, ' + added + ' new symbols learned'
+      + (d.failed && d.failed.length ? ' | failed: ' + d.failed.join(', ') : ''));
+  }
+
+  function stamp(d, changed, added) {
+    var el = document.getElementById('idxStocksTitle');
+    if (!el) return;
+    var sub = el.querySelector('.card-sub');
+    if (!sub) return;
+    var when = '';
+    try {
+      var first = d.indices[Object.keys(d.indices)[0]];
+      if (first && first.fetchedAt) {
+        when = new Date(first.fetchedAt).toLocaleString('en-IN',
+          { dateStyle: 'medium', timeStyle: 'short' });
+      }
+    } catch (e) {}
+    sub.textContent = 'Live NSE constituents \u00b7 ' + d.resolved + ' indices'
+      + (added ? ' \u00b7 ' + added + ' new symbols' : '')
+      + (when ? ' \u00b7 fetched ' + when : '');
+  }
+
+  // Lazy trigger — only when a tab that depends on this is opened.
+  if (typeof switchTab === 'function') {
+    var prev = switchTab;
+    switchTab = function (el, p) {
+      if (p === 'idxstocks' || p === 'signallab') hydrate();
+      prev(el, p);
+    };
+  }
+
+  // Manual trigger from the console if you want it early.
+  window.hydrateIndices = function () { window.__ixHydrated = false; hydrate(); };
+})();
+</script>
 </body>
 </html>
