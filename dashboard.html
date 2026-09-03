@@ -5626,6 +5626,258 @@ setTimeout(()=>{ try{ runMC(); }catch(e){} }, 3000);
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', install);
   else install();
 })();
+  <!-- ═══════════════════════════════════════════════════════════════
+     METALS IN ₹ — self-installing add-on for NSE Pro dashboard.html
+
+     INSTALL: paste this entire block immediately before  </body>
+              (alongside the Index Compare add-on, if present).
+
+     Requires the ?action=metals route from Metals-v23.gs.
+     Injects its own sidebar tab, panel and styles at runtime and
+     wraps switchTab additively — nothing else in the file changes.
+     ═══════════════════════════════════════════════════════════ -->
+
+<script>
+(function () {
+  'use strict';
+  if (window.__mtInstalled) return;
+  window.__mtInstalled = true;
+
+  var CSS = ''
+    + '#panel-metals .mt-fx{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}'
+    + '#panel-metals .mt-fx-rate{font-family:"Courier New",monospace;font-size:26px;font-weight:700;color:#1a2744}'
+    + '#panel-metals .mt-fx-lbl{font-size:10px;color:#888;text-transform:uppercase;letter-spacing:0.6px}'
+    + '#panel-metals .mt-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:10px}'
+    + '#panel-metals .mt-card{background:#fff;border-radius:9px;padding:13px 15px;border-top:3px solid #ddd;border-left:1px solid rgba(0,0,0,0.05);border-right:1px solid rgba(0,0,0,0.05);border-bottom:1px solid rgba(0,0,0,0.05)}'
+    + '#panel-metals .mt-card.precious{border-top-color:#e8b94a}'
+    + '#panel-metals .mt-card.base{border-top-color:#4a90d9}'
+    + '#panel-metals .mt-name{font-size:11px;font-weight:700;color:#1a2744;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:6px}'
+    + '#panel-metals .mt-inr{font-family:"Courier New",monospace;font-size:21px;font-weight:700;color:#1a2744;line-height:1.15}'
+    + '#panel-metals .mt-unit{font-size:10px;color:#999;margin-left:3px;font-family:Arial,sans-serif}'
+    + '#panel-metals .mt-chg{font-size:11px;margin-top:3px;font-family:"Courier New",monospace}'
+    + '#panel-metals .mt-chg.up{color:#2d7a4f}#panel-metals .mt-chg.dn{color:#c0392b}'
+    + '#panel-metals .mt-usd{font-size:10px;color:#aaa;margin-top:6px;padding-top:6px;border-top:1px solid #f2f2f2}'
+    + '#panel-metals .mt-landed{font-size:10px;color:#9a6f10;margin-top:4px}'
+    + '#panel-metals .mt-range{margin-top:7px}'
+    + '#panel-metals .mt-range-bar{height:4px;background:#f0ede6;border-radius:2px;position:relative}'
+    + '#panel-metals .mt-range-dot{position:absolute;top:-2px;width:8px;height:8px;border-radius:50%;background:#1a2744;transform:translateX(-50%)}'
+    + '#panel-metals .mt-range-lbl{display:flex;justify-content:space-between;font-size:9px;color:#bbb;margin-top:3px;font-family:"Courier New",monospace}'
+    + '#panel-metals .mt-sec{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:#8a9ab8;margin:14px 0 8px}'
+    + '#panel-metals .mt-table{width:100%;border-collapse:collapse;font-size:12px}'
+    + '#panel-metals .mt-table th{background:#f7f5f0;padding:8px 12px;text-align:right;font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:#888;border-bottom:1px solid #eee;font-weight:600}'
+    + '#panel-metals .mt-table th:first-child{text-align:left}'
+    + '#panel-metals .mt-table td{padding:8px 12px;text-align:right;border-bottom:1px solid #f5f5f5;font-family:"Courier New",monospace}'
+    + '#panel-metals .mt-table td:first-child{text-align:left;font-family:Arial,sans-serif;font-weight:600;color:#1a2744}'
+    + '#panel-metals .mt-table tr:hover td{background:#fdf6e3}'
+    + '#panel-metals .mt-note{font-size:10px;color:#999;line-height:1.7;margin-top:10px}'
+    + '#panel-metals .mt-ratio{background:#f7f5f0;border-radius:8px;padding:12px 15px}'
+    + '#panel-metals .mt-ratio-val{font-family:"Courier New",monospace;font-size:24px;font-weight:700;color:#1a2744}';
+
+  var PANEL = ''
+  + '<div class="card" style="margin-bottom:14px">'
+  +   '<div class="card-head">'
+  +     '<div><div class="card-title">\u20b9 Metals \u2014 Priced in Rupees</div>'
+  +     '<div class="card-sub" id="mtSub">International spot converted at live USD/INR</div></div>'
+  +     '<button class="btn" id="mtRefresh">\u21bb Refresh</button>'
+  +   '</div>'
+  +   '<div class="card-body">'
+  +     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">'
+  +       '<div class="mt-ratio">'
+  +         '<div class="mt-fx-lbl">USD / INR</div>'
+  +         '<div class="mt-fx"><span class="mt-fx-rate" id="mtFx">\u2026</span>'
+  +         '<span class="mt-chg" id="mtFxChg"></span></div>'
+  +         '<div style="font-size:10px;color:#999;margin-top:3px">Conversion rate applied to every price below</div>'
+  +       '</div>'
+  +       '<div class="mt-ratio">'
+  +         '<div class="mt-fx-lbl">Gold / Silver Ratio</div>'
+  +         '<div class="mt-ratio-val" id="mtGsr">\u2026</div>'
+  +         '<div style="font-size:10px;color:#999;margin-top:3px" id="mtGsrNote">Ounces of silver per ounce of gold</div>'
+  +       '</div>'
+  +     '</div>'
+  +     '<div id="mtStatus" style="margin-top:11px;font-size:12px;color:#888"></div>'
+  +   '</div>'
+  + '</div>'
+
+  + '<div id="mtResult" style="display:none">'
+  +   '<div class="mt-sec">Precious metals</div>'
+  +   '<div class="mt-grid" id="mtPrecious"></div>'
+  +   '<div class="mt-sec">Base &amp; industrial metals</div>'
+  +   '<div class="mt-grid" id="mtBase"></div>'
+
+  +   '<div class="card" style="margin-top:16px">'
+  +     '<div class="card-head"><div><div class="card-title">All metals \u2014 detail</div>'
+  +     '<div class="card-sub">USD source price, Indian unit conversion, and 52-week position</div></div></div>'
+  +     '<div class="card-body" style="padding:0">'
+  +       '<div style="overflow-x:auto"><table class="mt-table">'
+  +         '<thead><tr><th>Metal</th><th>USD</th><th>Unit</th><th>\u20b9 Price</th><th>Unit</th>'
+  +         '<th>Change</th><th>52W Low</th><th>52W High</th></tr></thead>'
+  +         '<tbody id="mtTbody"></tbody>'
+  +       '</table></div>'
+  +       '<div class="mt-note" style="padding:10px 14px" id="mtNote"></div>'
+  +     '</div>'
+  +   '</div>'
+  + '</div>';
+
+  var mtData = null, mtBooted = false;
+
+  function $(id) { return document.getElementById(id); }
+  function backendUrl() { return (typeof BACKEND !== 'undefined' && BACKEND) ? BACKEND : ''; }
+  function say(m, err) {
+    var e = $('mtStatus'); if (!e) return;
+    e.textContent = m || ''; e.style.color = err ? '#c0392b' : '#888';
+  }
+  function inr(n, dp) {
+    if (n == null) return '\u2014';
+    return '\u20b9' + Number(n).toLocaleString('en-IN', { maximumFractionDigits: dp == null ? 0 : dp });
+  }
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
+      return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c];
+    });
+  }
+
+  function install() {
+    var style = document.createElement('style');
+    style.textContent = CSS;
+    document.head.appendChild(style);
+
+    var sidebar = $('sidebar');
+    if (sidebar) {
+      var tab = document.createElement('div');
+      tab.className = 'sb-tab';
+      tab.setAttribute('data-panel', 'metals');
+      tab.innerHTML = '<span class="tab-icon">\u26cf</span>\u20b9 Metals';
+      tab.onclick = function () { switchTab(this, 'metals'); };
+      var spacer = sidebar.querySelector('div[style*="flex:1"]');
+      if (spacer) sidebar.insertBefore(tab, spacer); else sidebar.appendChild(tab);
+    }
+
+    var main = document.querySelector('main.content');
+    if (main) {
+      var panel = document.createElement('div');
+      panel.className = 'tab-panel';
+      panel.id = 'panel-metals';
+      panel.innerHTML = PANEL;
+      main.appendChild(panel);
+    }
+
+    if (typeof switchTab === 'function') {
+      var prev = switchTab;
+      switchTab = function (el, p) { prev(el, p); if (p === 'metals') boot(); };
+    }
+
+    $('mtRefresh').addEventListener('click', function () { load(true); });
+  }
+
+  function boot() { if (mtBooted) return; mtBooted = true; load(false); }
+
+  function load(fresh) {
+    if (!backendUrl()) { say('No backend URL configured.', true); return; }
+    $('mtRefresh').disabled = true;
+    say(fresh ? 'Refetching live prices\u2026' : 'Loading metal prices\u2026');
+
+    fetch(backendUrl() + '?action=metals' + (fresh ? '&fresh=1' : ''))
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d || !d.ok) throw new Error((d && d.error) || 'no data');
+        mtData = d;
+        render(d);
+        say(d.cached ? 'Showing cached prices \u2014 Refresh for live.' : '');
+      })
+      .catch(function (e) {
+        $('mtResult').style.display = 'none';
+        say('Could not load metals: ' + e.message + '. Check that the metals route is deployed.', true);
+      })
+      .then(function () { $('mtRefresh').disabled = false; });
+  }
+
+  function card(m) {
+    var cls = m.group === 'Precious' ? 'precious' : 'base';
+    var chg = m.changePct;
+    var chgHtml = chg == null ? '' :
+      '<div class="mt-chg ' + (chg >= 0 ? 'up' : 'dn') + '">' +
+      (chg >= 0 ? '\u25b2 ' : '\u25bc ') + Math.abs(chg).toFixed(2) + '% today</div>';
+
+    var dp = (m.inr != null && m.inr < 1000) ? 2 : 0;
+
+    var range = '';
+    if (m.low52Inr != null && m.high52Inr != null && m.high52Inr > m.low52Inr && m.inr != null) {
+      var pos = Math.max(0, Math.min(100, (m.inr - m.low52Inr) / (m.high52Inr - m.low52Inr) * 100));
+      range = '<div class="mt-range">'
+        + '<div class="mt-range-bar"><div class="mt-range-dot" style="left:' + pos + '%"></div></div>'
+        + '<div class="mt-range-lbl"><span>' + inr(m.low52Inr, dp) + '</span>'
+        + '<span>' + Math.round(pos) + '% of 52W range</span>'
+        + '<span>' + inr(m.high52Inr, dp) + '</span></div></div>';
+    }
+
+    var landed = m.landedInr != null
+      ? '<div class="mt-landed">Indicative landed \u2248 ' + inr(m.landedInr, dp) + ' incl. duty + GST</div>'
+      : '';
+
+    return '<div class="mt-card ' + cls + '">'
+      + '<div class="mt-name">' + esc(m.label) + '</div>'
+      + '<div class="mt-inr">' + inr(m.inr, dp) + '<span class="mt-unit">' + esc(m.inrUnit.replace('\u20b9/', '/')) + '</span></div>'
+      + chgHtml + landed + range
+      + '<div class="mt-usd">$' + Number(m.usd).toLocaleString('en-US', { maximumFractionDigits: 2 }) + ' ' + esc(m.usdUnit) + '</div>'
+      + '</div>';
+  }
+
+  function render(d) {
+    $('mtResult').style.display = 'block';
+
+    $('mtFx').textContent = Number(d.usdinr.rate).toFixed(4);
+    var fc = d.usdinr.changePct;
+    var fce = $('mtFxChg');
+    if (fc == null) { fce.textContent = ''; }
+    else {
+      fce.textContent = (fc >= 0 ? '\u25b2 ' : '\u25bc ') + Math.abs(fc).toFixed(2) + '%';
+      fce.className = 'mt-chg ' + (fc >= 0 ? 'up' : 'dn');
+    }
+
+    $('mtGsr').textContent = d.goldSilverRatio != null ? d.goldSilverRatio : '\u2014';
+    if (d.goldSilverRatio != null) {
+      var r = d.goldSilverRatio;
+      $('mtGsrNote').textContent = r > 85 ? 'Historically high \u2014 silver cheap relative to gold'
+        : r < 60 ? 'Historically low \u2014 silver rich relative to gold'
+        : 'Within its usual band';
+    }
+
+    var prec = d.metals.filter(function (m) { return m.group === 'Precious'; });
+    var base = d.metals.filter(function (m) { return m.group === 'Base'; });
+    $('mtPrecious').innerHTML = prec.map(card).join('');
+    $('mtBase').innerHTML     = base.map(card).join('');
+
+    $('mtTbody').innerHTML = d.metals.map(function (m) {
+      var dp = (m.inr != null && m.inr < 1000) ? 2 : 0;
+      var chg = m.changePct;
+      return '<tr>'
+        + '<td>' + esc(m.label) + '</td>'
+        + '<td>' + Number(m.usd).toLocaleString('en-US', { maximumFractionDigits: 2 }) + '</td>'
+        + '<td style="color:#999;font-size:11px">' + esc(m.usdUnit) + '</td>'
+        + '<td style="font-weight:700">' + inr(m.inr, dp) + '</td>'
+        + '<td style="color:#999;font-size:11px">' + esc(m.inrUnit) + '</td>'
+        + '<td class="' + (chg == null ? '' : chg >= 0 ? 'up-c' : 'dn-c') + '">'
+        + (chg == null ? '\u2014' : (chg >= 0 ? '+' : '') + chg.toFixed(2) + '%') + '</td>'
+        + '<td style="color:#888">' + inr(m.low52Inr, dp) + '</td>'
+        + '<td style="color:#888">' + inr(m.high52Inr, dp) + '</td>'
+        + '</tr>';
+    }).join('');
+
+    var when = new Date(d.ts).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
+    $('mtNote').innerHTML = esc(d.note)
+      + '<br>Landed estimate applies ' + d.duty.importPct + '% import duty and '
+      + d.duty.gstPct + '% GST to bullion spot \u2014 indicative only, and the duty rate changes with the Budget.'
+      + '<br>Fetched ' + when + ' \u00b7 cached 10 minutes'
+      + (d.unavailable && d.unavailable.length
+          ? ' \u00b7 <span style="color:#c0392b">unavailable: ' + esc(d.unavailable.join(', ')) + '</span>' : '');
+
+    $('mtSub').textContent = 'International spot converted at USD/INR '
+      + Number(d.usdinr.rate).toFixed(2) + ' \u2014 ' + d.metals.length + ' metals';
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', install);
+  else install();
+})();
 </script>
 </body>
 </html>
