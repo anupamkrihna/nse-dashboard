@@ -5111,32 +5111,40 @@ async function runMC(){
     document.getElementById('mcRunBtn').textContent = 'Run ▶';
   }
 }
+<!-- ═══════════════════════════════════════════════════════════════
+     NSE PRO DASHBOARD — ADD-ON BUNDLE
+     Index Compare  +  Metals in Rupees      (v23, 03-Sep-2026)
+     ───────────────────────────────────────────────────────────────
+     INSTALL — this REPLACES any add-on blocks already pasted.
 
-document.getElementById('mcIndex')?.addEventListener('change', runMC);
-document.getElementById('mcSims')?.addEventListener('change', runMC);
-/* Auto-run once after the Overview tiles have had a head start */
-setTimeout(()=>{ try{ runMC(); }catch(e){} }, 3000);
+     1. Open dashboard.html and scroll to the very bottom.
 
-</script>
-  <!-- ═══════════════════════════════════════════════════════════════
-     INDEX COMPARE — self-installing add-on for NSE Pro dashboard.html
+     2. Search the file for      __icInstalled
 
-     INSTALL: paste this entire block immediately before  </body>
-              (the very last lines of dashboard.html are:
-                 </script>
-                 </body>
-                 </html>
-               — put this between </script> and </body>)
+     3. Scroll UP from that hit to the nearest closing script tag.
+        KEEP that tag — it closes the main dashboard script.
 
-     Nothing else in the file changes. The block injects its own
-     sidebar tab, panel and styles at runtime, and wraps switchTab
-     additively — the same pattern the macro and sector tabs use.
+     4. Delete everything from just after that tag down to (but not
+        including) the closing body tag. That removes the earlier
+        Index Compare and Metals pastes, wherever they landed.
 
-     Works immediately using the dashboard's built-in ALL_INDICES
-     lists. Once IndexCompare.gs is deployed to the GAS backend it
-     switches automatically to live NSE constituent files.
+     5. Paste this entire file into the gap you just made.
+
+     The bottom of dashboard.html should then read, in order:
+        closing script tag of the main dashboard script
+        this bundle
+        closing body tag
+        closing html tag
+
+     Both blocks guard against double-install, so re-pasting is safe.
+
+     Metals needs the metals route from Metals-v23.gs.
+     Index Compare works with or without IndexCompare.gs — without it
+     it falls back to the built-in ALL_INDICES lists.
      ═══════════════════════════════════════════════════════════ -->
 
+
+<!-- ─────────────── 1 of 2 · INDEX COMPARE ─────────────── -->
 <script>
 (function () {
   'use strict';
@@ -5626,17 +5634,10 @@ setTimeout(()=>{ try{ runMC(); }catch(e){} }, 3000);
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', install);
   else install();
 })();
-  <!-- ═══════════════════════════════════════════════════════════════
-     METALS IN ₹ — self-installing add-on for NSE Pro dashboard.html
+</script>
 
-     INSTALL: paste this entire block immediately before  </body>
-              (alongside the Index Compare add-on, if present).
 
-     Requires the ?action=metals route from Metals-v23.gs.
-     Injects its own sidebar tab, panel and styles at runtime and
-     wraps switchTab additively — nothing else in the file changes.
-     ═══════════════════════════════════════════════════════════ -->
-
+<!-- ─────────────── 2 of 2 · METALS IN RUPEES ─────────────── -->
 <script>
 (function () {
   'use strict';
@@ -5879,5 +5880,12 @@ setTimeout(()=>{ try{ runMC(); }catch(e){} }, 3000);
   else install();
 })();
 </script>
+document.getElementById('mcIndex')?.addEventListener('change', runMC);
+document.getElementById('mcSims')?.addEventListener('change', runMC);
+/* Auto-run once after the Overview tiles have had a head start */
+setTimeout(()=>{ try{ runMC(); }catch(e){} }, 3000);
+
+</script>
+  
 </body>
 </html>
