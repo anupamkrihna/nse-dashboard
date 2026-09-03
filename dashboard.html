@@ -5118,5 +5118,514 @@ document.getElementById('mcSims')?.addEventListener('change', runMC);
 setTimeout(()=>{ try{ runMC(); }catch(e){} }, 3000);
 
 </script>
+  <!-- ═══════════════════════════════════════════════════════════════
+     INDEX COMPARE — self-installing add-on for NSE Pro dashboard.html
+
+     INSTALL: paste this entire block immediately before  </body>
+              (the very last lines of dashboard.html are:
+                 </script>
+                 </body>
+                 </html>
+               — put this between </script> and </body>)
+
+     Nothing else in the file changes. The block injects its own
+     sidebar tab, panel and styles at runtime, and wraps switchTab
+     additively — the same pattern the macro and sector tabs use.
+
+     Works immediately using the dashboard's built-in ALL_INDICES
+     lists. Once IndexCompare.gs is deployed to the GAS backend it
+     switches automatically to live NSE constituent files.
+     ═══════════════════════════════════════════════════════════ -->
+
+<script>
+(function () {
+  'use strict';
+  if (window.__icInstalled) return;
+  window.__icInstalled = true;
+
+  /* ── styles ─────────────────────────────────────────────── */
+  var CSS = ''
+    + '.ic-controls{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap}'
+    + '.ic-picker{display:flex;flex-direction:column;gap:5px;min-width:210px;flex:1 1 210px}'
+    + '.ic-picker label{font-size:10px;color:#888;text-transform:uppercase;letter-spacing:0.6px}'
+    + '.ic-picker select{width:100%}'
+    + '.ic-swap{width:34px;height:32px;border-radius:5px;border:1px solid #ddd;background:#f7f5f0;cursor:pointer;color:#888;font-size:15px}'
+    + '.ic-swap:hover{background:#e8b94a;color:#1a2744;border-color:#e8b94a}'
+    + '.ic-bar{display:flex;height:9px;border-radius:5px;overflow:hidden;background:#f0ede6}'
+    + '.ic-seg-a{background:#4a90d9}.ic-seg-c{background:#e8b94a}.ic-seg-b{background:#2d7a4f}'
+    + '.ic-legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:9px;font-size:11px;color:#666}'
+    + '.ic-dot{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px;vertical-align:middle}'
+    + '.ic-bar-note{font-size:11px;color:#666;margin-top:9px;line-height:1.8}'
+    + '.ic-cols{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}'
+    + '.ic-col{border:1px solid rgba(0,0,0,0.08);border-radius:8px;overflow:hidden;background:#fff}'
+    + '.ic-col.mid{border-color:rgba(232,185,74,0.55)}'
+    + '.ic-col-head{padding:9px 12px;background:#f7f5f0;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:baseline;gap:8px}'
+    + '.ic-col.mid .ic-col-head{background:rgba(232,185,74,0.10)}'
+    + '.ic-col-head h4{font-size:11px;font-weight:700;color:#1a2744;margin:0}'
+    + '.ic-col-count{font-size:10px;color:#888;font-family:"Courier New",monospace;white-space:nowrap}'
+    + '.ic-list{list-style:none;margin:0;padding:0;max-height:430px;overflow-y:auto}'
+    + '.ic-list li{padding:7px 12px;border-bottom:1px solid #f5f5f5;cursor:pointer}'
+    + '.ic-list li:hover{background:#fdf6e3}'
+    + '.ic-sym{font-family:"Courier New",monospace;font-size:12px;font-weight:700;color:#1a2744}'
+    + '.ic-name{display:block;font-size:11px;color:#777;margin-top:1px}'
+    + '.ic-ind{display:block;font-size:10px;color:#aaa;margin-top:1px}'
+    + '.ic-empty{padding:14px 12px;font-size:11px;color:#999}'
+    + '.ic-sect-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}'
+    + '.ic-sect-grid h5{font-size:10px;color:#888;text-transform:uppercase;letter-spacing:0.6px;margin:0 0 7px;font-weight:600}'
+    + '.ic-sect-grid ul{list-style:none;margin:0;padding:0}'
+    + '.ic-sect-grid li{display:flex;justify-content:space-between;font-size:11px;padding:4px 0;border-bottom:1px solid #f7f7f7;color:#555}'
+    + '.ic-sect-grid li span:last-child{font-family:"Courier New",monospace;color:#1a2744;font-weight:600}'
+    + '@media(max-width:900px){.ic-cols,.ic-sect-grid{grid-template-columns:1fr}}';
+
+  /* ── panel markup ───────────────────────────────────────── */
+  var PANEL = ''
+  + '<div class="card" style="margin-bottom:14px">'
+  +   '<div class="card-head">'
+  +     '<div><div class="card-title">\u2696 Index Compare \u2014 Constituent Overlap</div>'
+  +     '<div class="card-sub" id="icSub">Pick two indices to see which stocks they share and which are unique</div></div>'
+  +     '<button class="btn" id="icRefreshBtn" title="Bypass the 6-hour cache and refetch from NSE">\u21bb Refresh data</button>'
+  +   '</div>'
+  +   '<div class="card-body">'
+  +     '<div class="ic-controls">'
+  +       '<div class="ic-picker"><label for="icSelA">First index</label><select id="icSelA"></select></div>'
+  +       '<button class="ic-swap" id="icSwapBtn" title="Swap the two indices">\u21c4</button>'
+  +       '<div class="ic-picker"><label for="icSelB">Second index</label><select id="icSelB"></select></div>'
+  +       '<button class="btn btn-primary" id="icRunBtn">Compare \u2192</button>'
+  +     '</div>'
+  +     '<div id="icStatus" style="margin-top:11px;font-size:12px;color:#888"></div>'
+  +   '</div>'
+  + '</div>'
+
+  + '<div id="icResult" style="display:none">'
+
+  +   '<div class="macro-tile-row" id="icTiles" style="margin-bottom:12px"></div>'
+
+  +   '<div class="card" style="margin-bottom:14px"><div class="card-body">'
+  +     '<div class="ic-bar">'
+  +       '<div class="ic-seg-a" id="icSegA" style="width:33%"></div>'
+  +       '<div class="ic-seg-c" id="icSegC" style="width:34%"></div>'
+  +       '<div class="ic-seg-b" id="icSegB" style="width:33%"></div>'
+  +     '</div>'
+  +     '<div class="ic-legend">'
+  +       '<span><span class="ic-dot" style="background:#4a90d9"></span><span id="icLegA">Only in first</span></span>'
+  +       '<span><span class="ic-dot" style="background:#e8b94a"></span>In both</span>'
+  +       '<span><span class="ic-dot" style="background:#2d7a4f"></span><span id="icLegB">Only in second</span></span>'
+  +     '</div>'
+  +     '<div class="ic-bar-note" id="icBarNote"></div>'
+  +   '</div></div>'
+
+  +   '<div class="card" style="margin-bottom:14px">'
+  +     '<div class="card-head" style="flex-wrap:wrap;gap:8px">'
+  +       '<div><div class="card-title">Stock-level breakdown</div>'
+  +       '<div class="card-sub">Click any stock to open it in Steam Gauge</div></div>'
+  +       '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">'
+  +         '<input type="text" id="icFilter" placeholder="Filter symbol, company or industry" style="width:240px">'
+  +         '<button class="btn" id="icCopyBtn">Copy symbols</button>'
+  +         '<button class="btn" id="icCsvBtn">\u2b07 CSV</button>'
+  +       '</div>'
+  +     '</div>'
+  +     '<div class="card-body">'
+  +       '<div class="ic-cols">'
+  +         '<div class="ic-col"><div class="ic-col-head"><h4 id="icHeadA">Only in first</h4><span class="ic-col-count" id="icCountA">0</span></div><ul class="ic-list" id="icListA"></ul></div>'
+  +         '<div class="ic-col mid"><div class="ic-col-head"><h4>In both indices</h4><span class="ic-col-count" id="icCountC">0</span></div><ul class="ic-list" id="icListC"></ul></div>'
+  +         '<div class="ic-col"><div class="ic-col-head"><h4 id="icHeadB">Only in second</h4><span class="ic-col-count" id="icCountB">0</span></div><ul class="ic-list" id="icListB"></ul></div>'
+  +       '</div>'
+  +     '</div>'
+  +   '</div>'
+
+  +   '<div class="card">'
+  +     '<div class="card-head"><div><div class="card-title">Industry split</div>'
+  +     '<div class="card-sub">Where the overlap sits, and what each index holds alone</div></div></div>'
+  +     '<div class="card-body"><div class="ic-sect-grid" id="icSectGrid"></div></div>'
+  +   '</div>'
+
+  +   '<div style="margin-top:11px;font-size:10px;color:#aaa" id="icFoot"></div>'
+  + '</div>';
+
+  /* ── state ──────────────────────────────────────────────── */
+  var icCatalog = null;      // [{code,label,group}]
+  var icLast    = null;      // last comparison payload
+  var icBackend = false;     // IndexCompare.gs reachable?
+  var icBooted  = false;
+
+  var LOCAL_GROUP = { broad: 'Broad market', size: 'Market cap', sector: 'Sector' };
+  var DEFAULT_A   = ['NIFTY50', 'L:Nifty 50'];
+  var DEFAULT_B   = ['NIFTYNEXT50', 'L:Nifty Next 50'];
+
+  function $(id) { return document.getElementById(id); }
+  function backendUrl() { return (typeof BACKEND !== 'undefined' && BACKEND) ? BACKEND : ''; }
+
+  function say(msg, isErr) {
+    var el = $('icStatus');
+    if (!el) return;
+    el.textContent = msg || '';
+    el.style.color = isErr ? '#c0392b' : '#888';
+  }
+
+  /* ── install into the existing page ─────────────────────── */
+  function install() {
+    var style = document.createElement('style');
+    style.textContent = CSS;
+    document.head.appendChild(style);
+
+    // Sidebar tab — inserted above the flex spacer so it stays with the module list
+    var sidebar = $('sidebar');
+    if (sidebar) {
+      var tab = document.createElement('div');
+      tab.className = 'sb-tab';
+      tab.setAttribute('data-panel', 'idxcompare');
+      tab.innerHTML = '<span class="tab-icon">\u2696</span>Index Compare';
+      tab.onclick = function () { switchTab(this, 'idxcompare'); };
+      var spacer = sidebar.querySelector('div[style*="flex:1"]');
+      if (spacer) sidebar.insertBefore(tab, spacer); else sidebar.appendChild(tab);
+    }
+
+    // Panel
+    var main = document.querySelector('main.content');
+    if (main) {
+      var panel = document.createElement('div');
+      panel.className = 'tab-panel';
+      panel.id = 'panel-idxcompare';
+      panel.innerHTML = PANEL;
+      main.appendChild(panel);
+    }
+
+    // Lazy-load hook — additive wrap, same pattern as macro/sector tabs
+    if (typeof switchTab === 'function') {
+      var prev = switchTab;
+      switchTab = function (el, p) {
+        prev(el, p);
+        if (p === 'idxcompare') boot();
+      };
+    }
+
+    $('icRunBtn').addEventListener('click', function () { run(false); });
+    $('icRefreshBtn').addEventListener('click', function () { run(true); });
+    $('icSwapBtn').addEventListener('click', function () {
+      var a = $('icSelA'), b = $('icSelB'), t = a.value;
+      a.value = b.value; b.value = t;
+      if (icLast) run(false);
+    });
+    $('icFilter').addEventListener('input', paint);
+    $('icCopyBtn').addEventListener('click', copySymbols);
+    $('icCsvBtn').addEventListener('click', downloadCsv);
+
+    ['icListA', 'icListC', 'icListB'].forEach(function (id) {
+      $(id).addEventListener('click', function (ev) {
+        var li = ev.target.closest ? ev.target.closest('li[data-sym]') : null;
+        if (li) window.location.href = 'steam.html?stock=' + li.getAttribute('data-sym');
+      });
+    });
+  }
+
+  /* ── boot: build the index dropdowns ────────────────────── */
+  function boot() {
+    if (icBooted) return;
+    icBooted = true;
+    say('Loading index list\u2026');
+
+    var done = function () {
+      fillSelects();
+      say('');
+      run(false);
+    };
+
+    if (!backendUrl()) { useLocalCatalog(); done(); return; }
+
+    fetch(backendUrl() + '?action=indexCatalog')
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        if (j && j.ok && j.indices && j.indices.length) {
+          icCatalog = j.indices;
+          icBackend = true;
+          $('icSub').textContent = 'Live constituents from NSE index files \u00b7 cached 6 hours';
+        } else {
+          useLocalCatalog();
+        }
+      })
+      .catch(function () { useLocalCatalog(); })
+      .then(done);
+  }
+
+  function useLocalCatalog() {
+    icBackend = false;
+    icCatalog = Object.keys(ALL_INDICES).map(function (name) {
+      return { code: 'L:' + name, label: name, group: LOCAL_GROUP[ALL_INDICES[name].type] || 'Other' };
+    });
+    $('icSub').innerHTML = 'Using the dashboard\u2019s built-in constituent lists \u2014 '
+      + '<span style="color:#b8860b">deploy IndexCompare.gs to the GAS backend for live NSE data</span>';
+    var rb = $('icRefreshBtn');
+    if (rb) { rb.disabled = true; rb.style.opacity = '0.45'; rb.title = 'Needs the live NSE backend'; }
+  }
+
+  function fillSelects() {
+    var groups = {}, order = [];
+    icCatalog.forEach(function (ix) {
+      if (!groups[ix.group]) { groups[ix.group] = []; order.push(ix.group); }
+      groups[ix.group].push(ix);
+    });
+    ['icSelA', 'icSelB'].forEach(function (id) {
+      var sel = $(id);
+      sel.innerHTML = '';
+      order.forEach(function (g) {
+        var og = document.createElement('optgroup');
+        og.label = g;
+        groups[g].forEach(function (ix) {
+          var o = document.createElement('option');
+          o.value = ix.code;
+          o.textContent = ix.label;
+          og.appendChild(o);
+        });
+        sel.appendChild(og);
+      });
+    });
+    var pick = function (sel, prefs, fallbackIdx) {
+      for (var i = 0; i < prefs.length; i++) {
+        if (icCatalog.some(function (x) { return x.code === prefs[i]; })) { sel.value = prefs[i]; return; }
+      }
+      sel.selectedIndex = fallbackIdx;
+    };
+    pick($('icSelA'), DEFAULT_A, 0);
+    pick($('icSelB'), DEFAULT_B, 1);
+  }
+
+  /* ── compare ────────────────────────────────────────────── */
+  function run(refresh) {
+    var a = $('icSelA').value, b = $('icSelB').value;
+    if (!a || !b) return;
+    if (a === b) { say('Pick two different indices.', true); return; }
+
+    $('icRunBtn').disabled = true;
+    say(refresh ? 'Refetching both lists from NSE\u2026' : 'Comparing\u2026');
+
+    var finish = function (data, note, isErr) {
+      $('icRunBtn').disabled = false;
+      if (!data) { say(note || 'Could not build the comparison.', true); return; }
+      icLast = data;
+      render(data);
+      say(note || '', !!isErr);
+    };
+
+    var liveable = icBackend && a.indexOf('L:') !== 0 && b.indexOf('L:') !== 0;
+    if (!liveable) { finish(localCompare(a, b)); return; }
+
+    fetch(backendUrl() + '?action=indexCompare&a=' + encodeURIComponent(a)
+          + '&b=' + encodeURIComponent(b) + '&refresh=' + (refresh ? '1' : '0'))
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        if (j && j.ok) { finish(j); return; }
+        finish(localCompare(a, b), 'NSE feed said: ' + ((j && j.error) || 'no data') + ' \u2014 showing built-in lists instead.', true);
+      })
+      .catch(function (e) {
+        finish(localCompare(a, b), 'NSE feed unreachable (' + (e.message || e) + ') \u2014 showing built-in lists instead.', true);
+      });
+  }
+
+  function resolveLocal(code) {
+    var name = null;
+    if (code.indexOf('L:') === 0) name = code.slice(2);
+    else {
+      var hit = icCatalog.filter(function (x) { return x.code === code; })[0];
+      if (hit) name = hit.label;
+    }
+    if (name && ALL_INDICES[name]) return { label: name, stocks: ALL_INDICES[name].stocks };
+    return null;
+  }
+
+  function row(sym) {
+    var info = (typeof STOCK_MASTER !== 'undefined') ? STOCK_MASTER[sym] : null;
+    return { sym: sym, name: info ? info.n : '', industry: info ? info.s : '' };
+  }
+
+  function localCompare(aCode, bCode) {
+    var A = resolveLocal(aCode), B = resolveLocal(bCode);
+    if (!A || !B) return null;
+
+    var setB = {}, setA = {};
+    B.stocks.forEach(function (s) { setB[s] = 1; });
+    A.stocks.forEach(function (s) { setA[s] = 1; });
+
+    var common = [], onlyA = [], onlyB = [];
+    Object.keys(setA).sort().forEach(function (s) { (setB[s] ? common : onlyA).push(row(s)); });
+    Object.keys(setB).sort().forEach(function (s) { if (!setA[s]) onlyB.push(row(s)); });
+
+    var nA = Object.keys(setA).length, nB = Object.keys(setB).length;
+    var union = common.length + onlyA.length + onlyB.length;
+
+    return {
+      ok: true, local: true,
+      a: { label: A.label, code: aCode, count: nA },
+      b: { label: B.label, code: bCode, count: nB },
+      common: common, onlyA: onlyA, onlyB: onlyB,
+      stats: {
+        common: common.length, onlyA: onlyA.length, onlyB: onlyB.length, union: union,
+        jaccard: union ? +(common.length / union * 100).toFixed(1) : 0,
+        pctAinB: nA ? +(common.length / nA * 100).toFixed(1) : 0,
+        pctBinA: nB ? +(common.length / nB * 100).toFixed(1) : 0
+      },
+      sectors: { common: sectorCount(common), onlyA: sectorCount(onlyA), onlyB: sectorCount(onlyB) }
+    };
+  }
+
+  function sectorCount(rows) {
+    var m = {};
+    rows.forEach(function (r) {
+      var k = r.industry || 'Unclassified';
+      m[k] = (m[k] || 0) + 1;
+    });
+    return Object.keys(m).sort(function (x, y) { return m[y] - m[x] || (x < y ? -1 : 1); })
+      .map(function (k) { return { industry: k, count: m[k] }; });
+  }
+
+  /* ── render ─────────────────────────────────────────────── */
+  function render(d) {
+    $('icResult').style.display = 'block';
+    var s = d.stats;
+
+    var tiles = [
+      { lbl: 'In both indices', val: s.common, sub: s.jaccard + '% of the combined universe', cls: 'neu' },
+      { lbl: 'Only in ' + d.a.label, val: s.onlyA, sub: 'of ' + d.a.count + ' constituents', cls: 'dn' },
+      { lbl: 'Only in ' + d.b.label, val: s.onlyB, sub: 'of ' + d.b.count + ' constituents', cls: 'up' },
+      { lbl: 'Combined universe', val: s.union, sub: 'unique names across both', cls: 'neu' }
+    ];
+    $('icTiles').innerHTML = tiles.map(function (t) {
+      return '<div class="macro-tile ' + t.cls + '">'
+        + '<div class="mt-lbl">' + esc(t.lbl) + '</div>'
+        + '<div class="mt-val">' + t.val + '</div>'
+        + '<div class="mt-sub">' + esc(t.sub) + '</div></div>';
+    }).join('');
+
+    var u = s.union || 1;
+    $('icSegA').style.width = (s.onlyA / u * 100) + '%';
+    $('icSegC').style.width = (s.common / u * 100) + '%';
+    $('icSegB').style.width = (s.onlyB / u * 100) + '%';
+
+    $('icLegA').textContent  = 'Only in ' + d.a.label;
+    $('icLegB').textContent  = 'Only in ' + d.b.label;
+    $('icHeadA').textContent = 'Only in ' + d.a.label;
+    $('icHeadB').textContent = 'Only in ' + d.b.label;
+
+    $('icBarNote').innerHTML =
+      '<strong>' + s.common + '</strong> of ' + esc(d.a.label) + '\u2019s ' + d.a.count
+      + ' names (<strong>' + s.pctAinB + '%</strong>) also sit in ' + esc(d.b.label)
+      + ', which is <strong>' + s.pctBinA + '%</strong> of its ' + d.b.count + '. '
+      + (s.common === 0 ? 'The two indices are fully disjoint \u2014 no shared exposure.'
+        : s.onlyB === 0 ? esc(d.b.label) + ' is entirely contained within ' + esc(d.a.label) + '.'
+        : s.onlyA === 0 ? esc(d.a.label) + ' is entirely contained within ' + esc(d.b.label) + '.'
+        : 'Holding both gives you ' + s.union + ' distinct names, with ' + s.common + ' double-counted.');
+
+    paint();
+    renderSectors(d);
+
+    $('icFoot').textContent = d.local
+      ? 'Built-in constituent lists from ALL_INDICES in dashboard.html \u2014 indicative, not exchange-current. Deploy IndexCompare.gs for live NSE files.'
+      : 'Constituents from NSE index files \u00b7 ' + d.a.label + ' fetched ' + fmtTime(d.a.fetchedAt)
+        + ', ' + d.b.label + ' fetched ' + fmtTime(d.b.fetchedAt) + ' \u00b7 cached 6 hours.';
+  }
+
+  function fmtTime(iso) {
+    if (!iso) return '\u2014';
+    try { return new Date(iso).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }); }
+    catch (e) { return iso; }
+  }
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+    });
+  }
+
+  function matches(r, q) {
+    if (!q) return true;
+    return (r.sym + ' ' + r.name + ' ' + r.industry).toLowerCase().indexOf(q) >= 0;
+  }
+
+  function paint() {
+    if (!icLast) return;
+    var q = $('icFilter').value.trim().toLowerCase();
+    var f = function (r) { return matches(r, q); };
+    fill('icListA', 'icCountA', icLast.onlyA.filter(f),  icLast.onlyA.length);
+    fill('icListC', 'icCountC', icLast.common.filter(f), icLast.common.length);
+    fill('icListB', 'icCountB', icLast.onlyB.filter(f),  icLast.onlyB.length);
+  }
+
+  function fill(listId, countId, rows, total) {
+    $(countId).textContent = (rows.length === total) ? total : (rows.length + ' of ' + total);
+    if (!rows.length) {
+      $(listId).innerHTML = '<li class="ic-empty">' + (total ? 'Nothing matches this filter.' : 'No stocks in this bucket.') + '</li>';
+      return;
+    }
+    $(listId).innerHTML = rows.map(function (r) {
+      return '<li data-sym="' + esc(r.sym) + '" title="Open ' + esc(r.sym) + ' in Steam Gauge">'
+        + '<span class="ic-sym">' + esc(r.sym) + '</span>'
+        + (r.name ? '<span class="ic-name">' + esc(r.name) + '</span>' : '')
+        + (r.industry ? '<span class="ic-ind">' + esc(r.industry) + '</span>' : '')
+        + '</li>';
+    }).join('');
+  }
+
+  function renderSectors(d) {
+    var blocks = [
+      ['Only in ' + d.a.label, d.sectors.onlyA],
+      ['In both indices',      d.sectors.common],
+      ['Only in ' + d.b.label, d.sectors.onlyB]
+    ];
+    $('icSectGrid').innerHTML = blocks.map(function (p) {
+      var items = (p[1] || []).map(function (x) {
+        return '<li><span>' + esc(x.industry) + '</span><span>' + x.count + '</span></li>';
+      }).join('') || '<li style="color:#aaa;border:none">\u2014</li>';
+      return '<div><h5>' + esc(p[0]) + '</h5><ul>' + items + '</ul></div>';
+    }).join('');
+  }
+
+  /* ── export ─────────────────────────────────────────────── */
+  function visible() {
+    var q = $('icFilter').value.trim().toLowerCase();
+    var f = function (r) { return matches(r, q); };
+    return { onlyA: icLast.onlyA.filter(f), common: icLast.common.filter(f), onlyB: icLast.onlyB.filter(f) };
+  }
+
+  function copySymbols() {
+    if (!icLast) return;
+    var v = visible();
+    var syms = v.onlyA.concat(v.common, v.onlyB).map(function (r) { return r.sym; });
+    var text = syms.join(', ');
+    var ok = function () { say('Copied ' + syms.length + ' symbols \u2014 paste into the watchlist bulk-edit box.'); };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(ok, function () { say('Clipboard blocked by the browser.', true); });
+    } else {
+      var ta = document.createElement('textarea');
+      ta.value = text; document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); ok(); } catch (e) { say('Clipboard blocked by the browser.', true); }
+      document.body.removeChild(ta);
+    }
+  }
+
+  function downloadCsv() {
+    if (!icLast) return;
+    var v = visible();
+    var q = function (s) { return '"' + String(s == null ? '' : s).replace(/"/g, '""') + '"'; };
+    var lines = ['Bucket,Symbol,Company,Industry'];
+    var push = function (bucket, rows) {
+      rows.forEach(function (r) { lines.push([q(bucket), q(r.sym), q(r.name), q(r.industry)].join(',')); });
+    };
+    push('Only ' + icLast.a.label, v.onlyA);
+    push('Both', v.common);
+    push('Only ' + icLast.b.label, v.onlyB);
+
+    var blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = (icLast.a.label + ' vs ' + icLast.b.label).replace(/[^a-z0-9]+/gi, '_').toLowerCase() + '.csv';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  /* ── go ─────────────────────────────────────────────────── */
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', install);
+  else install();
+})();
+</script>
 </body>
 </html>
