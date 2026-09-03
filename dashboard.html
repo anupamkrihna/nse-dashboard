@@ -5112,6 +5112,12 @@ async function runMC(){
   }
 }
   
+document.getElementById('mcIndex')?.addEventListener('change', runMC);
+document.getElementById('mcSims')?.addEventListener('change', runMC);
+/* Auto-run once after the Overview tiles have had a head start */
+setTimeout(()=>{ try{ runMC(); }catch(e){} }, 3000);
+
+
 </script>
   
 <!-- ═══════════════════════════════════════════════════════════════
